@@ -1,8 +1,6 @@
 # Scan4Disease — Project Report & Change Log
 
 **AI-Assisted Dermatology Screening**
-**Student:** Rajrup Roy Chowdhury (23BAI10213) · B.Tech AI · SCSAI, VIT Bhopal · 2026–2027
-**Report generated:** 2026-08-10
 
 > This is a **screening and educational decision-support system, not a medical diagnostic
 > device.** It does not diagnose. Every result recommends consulting a qualified dermatologist.
@@ -314,11 +312,7 @@ other_damage = Kaggle `ibrahimfateen/wound-classification` (2,740 wound images).
 
 ---
 
-## 7. Mobile application — changes in the latest session
-
-The Flutter app (`app/`) was extended and hardened. All changes below were
-verified with `flutter analyze` (no errors/warnings on touched files) and a successful
-`flutter build apk --debug`.
+## 7. Mobile application 
 
 ### 7.1 Find a dermatologist — reliability rewrite + inline dropdown
 - **Problem fixed:** the feature always errored with *"Could not reach the map service"* because
@@ -382,25 +376,10 @@ header **"Clear all"**, each with a confirmation dialog, wired through the exist
 - Fixed a layout bug where short content rows self-centred (glossary "Dermatologist"): content
   columns now pin to `CrossAxisAlignment.start`.
 
----
-
-## 8. Repository hygiene (latest session)
-
-- **Removed 4 dead source files** (verified unreferenced): `lib/Screens/Reports/temp.dart`,
-  `temp.txt`, `lib/Screens/Home/otherStyles.dart` (carried a `primaryClr` **compile error**),
-  and `lib/Screens/Reports/reportDetails.dart` (unused Lorem-ipsum placeholder). This cleared the
-  Flutter analyzer's only real error and its one warning.
-- **Purged macOS cruft:** 1,315 `._*`/`.DS_Store` resource-fork files and one `__MACOSX/` folder
-  (all inside the git-ignored `data/` dataset). Added `._*` and `__MACOSX/` to `.gitignore`.
-- **Left untouched** (they are real documentation, not clutter): `docs/`, `ml/results/`, all
-  READMEs, `LICENSE`, both `PROJECT_STATUS.md` files, and the `data/` dataset contents.
-
-> ⚠️ **This repository still has no git commits** — the working tree is entirely untracked, so
-> deletions are permanent (no `git restore`). Recommend an initial commit before further cleanup.
 
 ---
 
-## 9. Implementation phases (project-wide status)
+## 8. Implementation phases (project-wide status)
 
 | Phase | Content | State |
 |---|---|---|
@@ -419,7 +398,7 @@ header **"Clear all"**, each with a confirmation dialog, wired through the exist
 
 ---
 
-## 10. Known limitations
+## 9. Known limitations
 
 - Deployed model is **dermoscopy-trained**; smartphone performance is quantified as poor (§5.5) —
   a PAD-specific model or domain adaptation is needed before real phone deployment.
@@ -433,7 +412,7 @@ header **"Clear all"**, each with a confirmation dialog, wired through the exist
 
 ---
 
-## 11. Artifact & source reference
+## 10. Artifact & source reference
 
 | Area | Path |
 |---|---|

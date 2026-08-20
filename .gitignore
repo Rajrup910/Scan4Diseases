@@ -83,3 +83,7 @@ app/.flutter-plugins-dependencies
 # ---------- .NET gateway build output ----------
 dotnet/**/bin/
 dotnet/**/obj/
+
+# ---------- Local AI development context ----------
+PROJECT_STATUS.md
+

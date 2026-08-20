@@ -4,7 +4,7 @@
 > device.** It does not diagnose. Every result it produces recommends consulting a
 > qualified dermatologist.
 
-B.Tech MP online · Rajrup Roy Chowdhury (23BAI10213) · SCSAI, VIT Bhopal · 2026–2027
+For MP online 
 
 ---
 
@@ -135,12 +135,6 @@ If ISIC 2019 is ingested later, SCC is added as a genuine 8th class — it is **
 into `akiec`, because invasive squamous cell carcinoma and actinic keratosis are medically
 distinct.
 
-## Model Comparison
-
-**No results yet — no model has been trained.** Once training runs,
-`ml/results/comparison/comparison.md` is generated from measured numbers and linked here.
-Nothing in this repository quotes a performance figure that was not produced by
-`ml/evaluation/evaluate.py` on the held-out test split.
 
 ## Grad-CAM Explainability
 
@@ -313,11 +307,6 @@ Run the test suite with:
 .venv/Scripts/python.exe -m pytest
 ```
 
-## Screenshots
-
-App screenshots and demo media live under [`assets/screenshots/`](assets/screenshots/) and
-[`assets/demo/`](assets/demo/) as they are captured.
-
 ## Limitations
 
 State these plainly; they are not weaknesses in the write-up, they are the write-up.
@@ -347,25 +336,6 @@ State these plainly; they are not weaknesses in the write-up, they are the write
 - ONNX export for CPU serving; deployment to Hugging Face Spaces.
 - Human evaluation of explanation quality (n≈100, 3 raters, Cohen's κ).
 
-## Contributors
 
-| Role | Owns |
-|---|---|
-| ML lead | Datasets, training, tuning, Grad-CAM, vision metrics |
-| LLM + backend lead | Prompts, guard-rails, FastAPI, model serving |
-| App lead | Flutter, localisation, device testing |
-| Evaluation + docs lead | Literature review, human evaluation, reports |
 
-## Acknowledgements
 
-HAM10000: Tschandl, Rosendahl & Kittler, *Sci. Data* 5, 180161 (2018).
-Grad-CAM: Selvaraju et al., ICCV 2017.
-Class-balanced loss: Cui et al., CVPR 2019.
-Temperature scaling: Guo et al., ICML 2017.
-
-Prior-batch work (Scan4Disease / EPICS_Demo) is audited in
-[`docs/reference/upstream_audit.md`](docs/reference/upstream_audit.md).
-
-## License
-
-See [`LICENSE`](LICENSE). Note that HAM10000 itself is CC BY-NC-SA 4.0 (non-commercial).
