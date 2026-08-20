@@ -84,6 +84,8 @@ app/.flutter-plugins-dependencies
 dotnet/**/bin/
 dotnet/**/obj/
 
-# ---------- Local AI development context ----------
+# ---------- Local planning / working notes (not part of the published repo) ----------
 PROJECT_STATUS.md
+docs/reference/MASTER_SPEC.md
+docs/reference/Scan4Disease - Project Plan & Roadmap.md
 

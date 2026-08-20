@@ -4,7 +4,16 @@
 > device.** It does not diagnose. Every result it produces recommends consulting a
 > qualified dermatologist.
 
-For MP online 
+B.Tech project · Rajrup Roy Chowdhury · SCSAI, VIT Bhopal
+
+<p align="center">
+  <img src="Demo_images/Home%20screen.jpeg" width="195" alt="Home screen">
+  <img src="Demo_images/Mole%20identified.jpeg" width="195" alt="Screening result">
+  <img src="Demo_images/Mole%20detection%20grad%20cam%20view.jpeg" width="195" alt="Grad-CAM view">
+  <img src="Demo_images/Chatbot%20convo.jpeg" width="195" alt="Follow-up chat">
+</p>
+
+<p align="center"><a href="App%20Demo.md">Full app walkthrough, 28 screens</a></p>
 
 ---
 
@@ -58,8 +67,9 @@ The point of the separation is that the parts which matter medically are not gen
   lesion appears on both sides of the boundary, and this is asserted programmatically.
 - **Grad-CAM** implemented from first principles, with a validation pass that flags
   heatmaps landing on the image border rather than the lesion.
-- **ResNet-50 vs EfficientNet-B0** comparison on an identical split, with the deployment
-  decision made by a rule stated before the results were seen.
+- **Six architectures compared** on identical splits (ResNet-50, EfficientNet-B0 and B3,
+  ConvNeXt-Tiny and Small, DenseNet-121), with the deployment rule fixed before the results
+  were seen.
 - **Deterministic triage layer**: nine numbered rules, unit-tested, that decide urgency.
   The language model receives the category and explains it — it cannot change it.
 - **Safety filter** on all generated text: blocks definitive diagnoses, false reassurance,
@@ -71,6 +81,46 @@ The point of the separation is that the parts which matter medically are not gen
 - **Free to run end to end**: local GPU training, local Qwen via Ollama, free hosting.
   No API keys, no credit card.
 
+## Results
+
+Every number below comes from `ml/evaluation/evaluate.py` on a held-out, lesion-grouped test
+split. Nothing is hand-entered and no validation score is quoted as a test score.
+
+### Deployed model: ResNet-50 on HAM10000, 1,502 test images
+
+| Metric | Score |
+|---|---:|
+| Macro-F1 | 0.706 |
+| Balanced accuracy | 0.722 |
+| Accuracy | 0.822 |
+| Macro ROC-AUC | 0.945 |
+| Cohen's κ | 0.664 |
+| Expected calibration error | 0.101 |
+
+Accuracy is deliberately not the headline. `nv` is roughly two thirds of HAM10000, so a model
+that always answered "mole" would score about 67% while missing every melanoma.
+
+### The dermoscopy to smartphone domain gap
+
+Two ResNet-50 models, identical code, schedule and seed, differing only in training data. The
+dermoscopy model collapses when it is pointed at ordinary phone photographs.
+
+| Model → test set | Macro-F1 | Escalation sensitivity |
+|---|---:|---:|
+| HAM → HAM (in-domain dermoscopy) | 0.706 | 0.738 |
+| HAM → PAD (cross-domain phone photos) | 0.142 | 0.389 |
+| PAD → PAD (in-domain phone photos) | 0.472 | 0.939 |
+
+Melanoma recall for the dermoscopy model on phone photos is **0.00**. On the five classes the
+two datasets share, macro-F1 is 0.199 for the dermoscopy model against 0.661 for the
+smartphone-trained one. This is measured rather than assumed, and it is the reason the project
+treats a dermoscopy-trained classifier as unsafe to deploy directly in a phone app.
+
+Full breakdown, per-class tables and confusion matrices:
+[`docs/model_report.md`](docs/model_report.md) ·
+[`ml/results/RESULTS_SUMMARY.md`](ml/results/RESULTS_SUMMARY.md) ·
+[`ml/results/CROSS_DATASET_COMPARISON.md`](ml/results/CROSS_DATASET_COMPARISON.md)
+
 ## Technology Stack
 
 | Layer | Choice |
@@ -78,10 +128,10 @@ The point of the separation is that the parts which matter medically are not gen
 | Mobile | Flutter / Dart |
 | Backend | FastAPI + Uvicorn (Python 3.12) |
 | ML | PyTorch, torchvision, scikit-learn, OpenCV, Pillow |
-| Models | ResNet-50, EfficientNet-B0 (ImageNet transfer learning) |
+| Models | ResNet-50 (deployed); EfficientNet-B0/B3, ConvNeXt-T/S, DenseNet-121 compared |
 | Explainability | Grad-CAM (own implementation) |
 | LLM | Qwen3 via Ollama, OpenAI-compatible endpoint |
-| Datasets | HAM10000 (primary), ISIC 2019 / PAD-UFES-20 (planned) |
+| Datasets | HAM10000 (dermoscopy), PAD-UFES-20 (smartphone) |
 
 ## Machine Learning Pipeline
 
@@ -211,13 +261,12 @@ the lesion is new, changing, painful, bleeding, or otherwise concerning.
 │       ├── services/   api client, auth, chat, localisation, doctor lookup
 │       └── config.dart runtime-configurable backend base URL
 ├── dotnet/             optional .NET JWT gateway in front of the backend
-├── docs/               architecture, API, dataset, gradcam, llm, safety, development
+├── docs/               architecture, API, dataset, gradcam, llm, safety, model report
 ├── scripts/            environment setup and run helpers
 ├── tests/              cross-component parity and ML pipeline tests
-├── PROJECT_STATUS.md   persistent development state — read this first
-├── PROJECT_REPORT.md   consolidated MP online report
-├── data/               datasets — never committed (git-ignored)
-└── upstream/           inherited repos, reference only (git-ignored)
+├── Demo_images/        app screenshots used by App Demo.md
+├── PROJECT_REPORT.md   consolidated project report and change log
+└── data/               datasets, never committed (git-ignored)
 ```
 
 ## Installation
@@ -242,9 +291,10 @@ powershell -ExecutionPolicy Bypass -File scripts/setup_env.ps1
 
 Interactive API docs at `http://localhost:8000/docs`.
 
-Without a trained checkpoint, `/predict` returns **503** by design. To build UI against it
-before training finishes, set `ALLOW_STUB_MODEL=true` — responses are then flagged
-`"stub": true` and must never be used for a demo.
+The trained checkpoint is not committed (it is too large for git), so a fresh clone needs one
+in `ml/checkpoints/` before `/predict` will work. Without it the endpoint returns **503** by
+design. Setting `ALLOW_STUB_MODEL=true` lets the UI be developed against a placeholder;
+those responses carry `"stub": true` and are not valid for a demo.
 
 ## Running the Mobile App
 
@@ -312,11 +362,15 @@ Run the test suite with:
 State these plainly; they are not weaknesses in the write-up, they are the write-up.
 
 - **Not a medical device.** It cannot replace a dermatologist and does not diagnose.
-- **Domain gap.** HAM10000 is dermoscopy, captured with a contact lens and controlled
-  lighting. The app takes smartphone photographs. Performance on phone images is
-  **unvalidated** until PAD-UFES-20 is added.
+- **Domain gap, measured rather than hypothetical.** HAM10000 is dermoscopy, captured with a
+  contact lens under controlled lighting, while the app takes smartphone photographs. The
+  dermoscopy model scores 0.142 macro-F1 on phone images with 0.00 melanoma recall. The
+  smartphone-trained model recovers most of that but is built on only 52 melanoma images.
+- **Small melanoma sample on the smartphone side.** PAD-UFES-20 has 8 melanoma images in its
+  test split, so that per-class figure moves by 0.125 with a single prediction.
 - **Skin-tone representation.** HAM10000 is predominantly fair-skinned European patients.
-  Performance across the full Fitzpatrick range is unmeasured.
+  Performance across the full Fitzpatrick range is unmeasured. An ITA-based proxy was tried
+  and found invalid on dermoscopy, so it is withdrawn rather than reported.
 - **Rare classes.** `df` and `vasc` have very few examples; their per-class metrics carry
   wide uncertainty.
 - **Confidence is not clinical probability.** A high softmax score means the image resembled
@@ -329,13 +383,13 @@ State these plainly; they are not weaknesses in the write-up, they are the write
 
 ## Future Work
 
-- Train, evaluate and select the deployment model (Phases 3–5).
-- External validation on PAD-UFES-20 smartphone images.
-- Skin-tone fairness slice using Fitzpatrick17k.
-- Device testing of the Flutter application across multiple phones and cameras.
-- ONNX export for CPU serving; deployment to Hugging Face Spaces.
-- Human evaluation of explanation quality (n≈100, 3 raters, Cohen's κ).
-
-
-
+- Close the domain gap properly: fine-tune on combined HAM plus PAD data, or apply domain
+  adaptation, instead of shipping two separate models.
+- More melanoma examples on the smartphone side, since 52 images is too thin a base for the
+  class that matters most.
+- A valid skin-tone fairness slice, most likely on Fitzpatrick17k, after the ITA proxy failed.
+- Device testing across more phones and cameras, and quantifying how much camera variance
+  moves the prediction.
+- ONNX export for CPU serving so the backend does not need a GPU host.
+- Human evaluation of explanation quality with multiple raters and an agreement score.
 
