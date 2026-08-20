@@ -4,8 +4,6 @@
 > device.** It does not diagnose. Every result it produces recommends consulting a
 > qualified dermatologist.
 
-B.Tech project · Rajrup Roy Chowdhury · SCSAI, VIT Bhopal
-
 <p align="center">
   <img src="Demo_images/Home%20screen.jpeg" width="195" alt="Home screen">
   <img src="Demo_images/Mole%20identified.jpeg" width="195" alt="Screening result">
