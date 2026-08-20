@@ -1,0 +1,56 @@
+MIT License
+
+Copyright (c) 2026 Rajrup Roy Chowdhury and contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+ADDITIONAL NOTICES
+
+1. MEDICAL DISCLAIMER
+
+   This software is an AI-assisted screening and educational decision-support
+   system. It is NOT a medical device, NOT a diagnostic system, and has NOT
+   been evaluated or approved by any medical regulatory authority.
+
+   It must not be used as a substitute for professional medical advice,
+   diagnosis, or treatment. Always seek the advice of a qualified health
+   provider with any questions regarding a medical condition.
+
+2. DATASET LICENSING
+
+   The datasets this project trains on are licensed separately and are NOT
+   covered by the MIT license above. No dataset is distributed with this
+   repository.
+
+   HAM10000 is licensed CC BY-NC-SA 4.0 (non-commercial, share-alike). Models
+   trained on it inherit that restriction. Cite:
+
+     Tschandl, P., Rosendahl, C. & Kittler, H. The HAM10000 dataset, a large
+     collection of multi-source dermatoscopic images of common pigmented skin
+     lesions. Sci. Data 5, 180161 (2018).
+
+   Check the licence of any additional dataset before use.
+
+3. MODEL WEIGHTS
+
+   Pretrained ImageNet weights are obtained from torchvision and carry their
+   own licences. Fine-tuned checkpoints produced by this project inherit the
+   restrictions of the datasets they were trained on.

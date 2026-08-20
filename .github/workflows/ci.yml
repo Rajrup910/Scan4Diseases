@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install PyTorch (CPU)
+        # CI has no GPU, so the CPU index keeps the download small. The dev machine uses
+        # the cu128 index instead -- see scripts/setup_env.ps1.
+        run: pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Install project dependencies
+        run: |
+          pip install -r ml/requirements.txt
+          pip install -r backend/requirements.txt
+
+      - name: Validate the class mapping
+        # The class mapping is the contract between training, the backend and the report.
+        # A malformed one should fail here rather than at inference time.
+        run: python -c "from ml.paths import load_class_mapping; m = load_class_mapping(); print(f'v{m.version}: {m.num_classes} classes {m.codes}')"
+
+      - name: Run tests
+        # No checkpoint and no Ollama in CI -- the suite is written to pass without them.
+        run: python -m pytest -v
+
+      - name: Check the backend starts and serves /health
+        run: |
+          python -c "
+          from fastapi.testclient import TestClient
+          from backend.app.main import create_app
+          with TestClient(create_app()) as c:
+              r = c.get('/health')
+              assert r.status_code == 200, r.text
+              print(r.json())
+          "
+
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install ruff
+
+      - name: Lint
+        run: ruff check .
+
+      - name: Format check
+        run: ruff format --check .
+        continue-on-error: true

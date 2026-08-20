@@ -1,0 +1,85 @@
+# ---------- Python ----------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# ---------- Environment / secrets ----------
+.env
+.env.local
+*.key
+*.pem
+
+# ---------- Datasets (never commit) ----------
+data/
+ml/data/
+**/HAM10000*/
+**/ISIC*/
+*.csv.gz
+!ml/configs/*.csv
+
+# ---------- Model weights / checkpoints ----------
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.onnx
+*.tflite
+ml/checkpoints/*
+!ml/checkpoints/.gitkeep
+
+# ---------- Generated outputs ----------
+ml/results/*
+!ml/results/.gitkeep
+backend/storage/
+*.log
+runs/
+wandb/
+lightning_logs/
+
+# ---------- Mobile / Flutter ----------
+.dart_tool/
+.packages
+build/
+*.apk
+*.aab
+*.iml
+.flutter-plugins
+.flutter-plugins-dependencies
+mobile/flutter_app/ios/Pods/
+
+# ---------- Upstream / inherited repos ----------
+# Cloned for reference only. They carry their own .git and their own leaked
+# secrets - never vendor them into this repository's history.
+upstream/
+
+# ---------- Private media ----------
+assets/private/
+**/patient_images/
+
+# ---------- IDE / OS ----------
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini
+# macOS archive/resource-fork cruft (from unzipping datasets on a Mac)
+._*
+__MACOSX/
+
+# ---------- Flutter app (app/) build/tooling noise ----------
+app/build/
+app/.dart_tool/
+app/server/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+
+# ---------- .NET gateway build output ----------
+dotnet/**/bin/
+dotnet/**/obj/
