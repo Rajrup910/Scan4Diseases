@@ -6,8 +6,8 @@
 > device.** It does not diagnose. Every result recommends consulting a qualified dermatologist.
 
 This document is a single-file reference: what the project is, why it is novel, every model
-that was trained and its measured scores, and the full change log including the work done in
-the most recent development session. **Every performance number here comes from
+that was trained and its measured scores, and the full change log. **Every performance number
+here comes from
 `ml/evaluation/evaluate.py` on a held-out, lesion-grouped test split** (source files cited per
 table); none is hand-entered or quoted from validation as if it were a test number.
 
@@ -127,7 +127,7 @@ contributions are:
 | Mobile | Flutter / Dart |
 | Backend | FastAPI + Uvicorn (Python 3.12) |
 | ML | PyTorch (2.11.0+cu128), torchvision, scikit-learn, OpenCV, Pillow |
-| Models | ResNet-50 (deployed), EfficientNet-B0 (comparison, planned) |
+| Models | ResNet-50 (deployed); EfficientNet-B0/B3, ConvNeXt-T/S, DenseNet-121 (compared) |
 | Explainability | Grad-CAM (own implementation) |
 | LLM | Qwen3 via Ollama, OpenAI-compatible endpoint (gemma2:9b used in demo) |
 | Datasets | HAM10000 (primary), PAD-UFES-20 (smartphone validation) |
@@ -271,7 +271,7 @@ ECE 0.3857; `mel` precision/recall/F1 all **0.000** (8 support); escalation sens
 | Artifact | What it is | Key numbers | Source |
 |---|---|---|---|
 | `lesion_gate.npz` | OOD gate on 2048-d features (from `resnet50_best.pt`, epoch 16) | Threshold 0.996; **98.0% real lesions kept**, **100% held-out negatives rejected**; source-holdout (never-seen faces) 681/681 rejected; 800/800 COCO scenes rejected | `ml/results/ood_negatives_report.md` |
-| `lesion_router.npz` | 4-way front-stage router (added 2026-08-10) | Held-out val: lesion→healthy **0.3%**, healthy→healthy **97.4%**, not_skin **99.6%**, other_damage→other_damage **96.8%** | `PROJECT_STATUS.md` |
+| `lesion_router.npz` | 4-way front-stage router (added 2026-08-10) | Held-out val: lesion→healthy **0.3%**, healthy→healthy **97.4%**, not_skin **99.6%**, other_damage→other_damage **96.8%** | `ml/results/` |
 
 Router training data: healthy = curated Body-Parts images; not_skin = faces/hands/scenes;
 other_damage = Kaggle `ibrahimfateen/wound-classification` (2,740 wound images).
@@ -302,7 +302,7 @@ other_damage = Kaggle `ibrahimfateen/wound-classification` (2,740 wound images).
   paths incl. path-traversal, `ml`↔`backend` parity incl. bit-identical preprocessing, ML
   pipeline leakage both directions, lesion-router 7 tests). `ruff` clean.
 
-### Bugs found & fixed during verification (from PROJECT_STATUS)
+### Bugs found and fixed during verification
 1. `setup_env.ps1` interpreter check always failed (`-notmatch` on an array filters, not booleans).
 2. A dark image was misreported as "blurred" (black frame has no gradient → trips Laplacian);
    exposure is now checked first.
@@ -383,7 +383,7 @@ header **"Clear all"**, each with a confirmation dialog, wired through the exist
 
 | Phase | Content | State |
 |---|---|---|
-| 1 | Repo audit + restructure + PROJECT_STATUS | Done |
+| 1 | Repository audit and restructure | Done |
 | 2 | Dataset pipeline (mapping, validation, leakage-free split, transforms) | Done |
 | 3 | ResNet-50 baseline training (HAM10000) | **Done — trained & evaluated** |
 | 4 | EfficientNet-B0 + model comparison | Code done; not run |
@@ -424,7 +424,7 @@ header **"Clear all"**, each with a confirmation dialog, wired through the exist
 | Architecture / safety docs | `docs/architecture.md`, `docs/safety.md`, `docs/gradcam.md`, `docs/llm.md` |
 | Backend | `backend/app/` (routes, services, safety, schemas) |
 | Mobile app | `app/lib/` |
-| Persistent dev memory | `PROJECT_STATUS.md` |
+| Persistent dev memory | `ml/results/` |
 
 *All figures in this report were transcribed from the cited result files on 2026-08-10. Where a
 number is a validation metric it is labelled as such; every other performance number is a
