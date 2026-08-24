@@ -183,10 +183,44 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Brand mark — glowing electric teal emblem (twin of the web mark).
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 16),
-                      child: Center(child: AppLogoMark(size: 76, glow: true)),
+                    // Brand mark — with glowing ambient emerald/ruby tick/cross depth flourish in background
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Center(
+                        child: SizedBox(
+                          width: 110,
+                          height: 110,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            clipBehavior: Clip.none,
+                            children: [
+                              // Background glossy blurry tick / cross depth effect behind the emblem
+                              _LogoAuthHalo(
+                                active: _showSuccessVeil || _showFailureVeil,
+                                isError: _showFailureVeil,
+                                onPeak: () {
+                                  if (_showSuccessVeil && _authenticatedUser != null) {
+                                    AuthService.instance.activateUser(_authenticatedUser!);
+                                  }
+                                },
+                                onDismissed: () {
+                                  if (mounted && _showFailureVeil) {
+                                    setState(() => _showFailureVeil = false);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(_failureErrorMessage),
+                                        behavior: SnackBarBehavior.floating,
+                                        backgroundColor: Themes.danger,
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                              const AppLogoMark(size: 76, glow: true),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -291,30 +325,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-          Positioned.fill(
-            child: _LoginAuthEscalationVeil(
-              active: _showSuccessVeil || _showFailureVeil,
-              isError: _showFailureVeil,
-              errorMessage: _failureErrorMessage,
-              onPeak: () {
-                if (_showSuccessVeil && _authenticatedUser != null) {
-                  AuthService.instance.activateUser(_authenticatedUser!);
-                }
-              },
-              onDismissed: () {
-                if (mounted && _showFailureVeil) {
-                  setState(() => _showFailureVeil = false);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(_failureErrorMessage),
-                      behavior: SnackBarBehavior.floating,
-                      backgroundColor: Themes.danger,
-                    ),
-                  );
-                }
-              },
-            ),
-          ),
         ],
       ),
     ),
@@ -323,27 +333,27 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-/// Full-screen Expanding Waves with Logo Dismantling & Breathing Transparency Escalation/De-escalation
-class _LoginAuthEscalationVeil extends StatefulWidget {
+/// Ambient depth flourish in the background of the logo for login feedback:
+/// - Blurry, glossy emerald aura with checkmark tick radiating in background for success
+/// - Blurry, glossy ruby aura with access denied cross radiating in background for failure
+class _LogoAuthHalo extends StatefulWidget {
   final bool active;
   final bool isError;
-  final String? errorMessage;
   final VoidCallback? onPeak;
   final VoidCallback? onDismissed;
 
-  const _LoginAuthEscalationVeil({
+  const _LogoAuthHalo({
     required this.active,
     this.isError = false,
-    this.errorMessage,
     this.onPeak,
     this.onDismissed,
   });
 
   @override
-  State<_LoginAuthEscalationVeil> createState() => _LoginAuthEscalationVeilState();
+  State<_LogoAuthHalo> createState() => _LogoAuthHaloState();
 }
 
-class _LoginAuthEscalationVeilState extends State<_LoginAuthEscalationVeil>
+class _LogoAuthHaloState extends State<_LogoAuthHalo>
     with SingleTickerProviderStateMixin {
   late final AnimationController _c;
   bool _peaked = false;
@@ -353,10 +363,10 @@ class _LoginAuthEscalationVeilState extends State<_LoginAuthEscalationVeil>
     super.initState();
     _c = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2900),
+      duration: const Duration(milliseconds: 950),
     )
       ..addListener(() {
-        if (!widget.isError && !_peaked && _c.value >= 0.86) {
+        if (!widget.isError && !_peaked && _c.value >= 0.45) {
           _peaked = true;
           widget.onPeak?.call();
         }
@@ -370,7 +380,7 @@ class _LoginAuthEscalationVeilState extends State<_LoginAuthEscalationVeil>
   }
 
   @override
-  void didUpdateWidget(covariant _LoginAuthEscalationVeil old) {
+  void didUpdateWidget(covariant _LogoAuthHalo old) {
     super.didUpdateWidget(old);
     if (widget.active && !old.active) {
       _peaked = false;
@@ -386,177 +396,168 @@ class _LoginAuthEscalationVeilState extends State<_LoginAuthEscalationVeil>
     super.dispose();
   }
 
-  /// Multi-stage breathing transparency envelope:
-  /// - 0.00 -> 0.45: Escalation (opacity 0 -> 1.0, multi-shade waves bloom from dismantled logo)
-  /// - 0.45 -> 0.62: Full Abyss Peak (opaque 1.0 immersion)
-  /// - 0.62 -> 0.76: Breathing Dip (opacity dips to 0.74, increasing transparency to show glowing rings)
-  /// - 0.76 -> 0.86: Secondary Deep Pulse (opacity rises back to 0.94)
-  /// - 0.86 -> 1.00: Final De-escalation (opacity dissolves to 0.0, cleanly revealing home screen)
-  double _veil(double t) {
-    if (t <= 0.45) {
-      return Curves.easeOutCubic.transform((t / 0.45).clamp(0.0, 1.0));
-    }
-    if (t <= 0.62) {
-      return 1.0;
-    }
-    if (t <= 0.76) {
-      final p = (t - 0.62) / 0.14;
-      return 1.0 - 0.26 * Curves.easeInOutCubic.transform(p.clamp(0.0, 1.0));
-    }
-    if (t <= 0.86) {
-      final p = (t - 0.76) / 0.10;
-      return 0.74 + 0.20 * Curves.easeInOutCubic.transform(p.clamp(0.0, 1.0));
-    }
-    final p = (t - 0.86) / 0.14;
-    return (1.0 - Curves.easeOutCubic.transform(p.clamp(0.0, 1.0))) * 0.94;
-  }
-
   @override
   Widget build(BuildContext context) {
     if (!widget.active && _c.value == 0) return const SizedBox.shrink();
-    return IgnorePointer(
-      ignoring: !widget.active,
-      child: AnimatedBuilder(
-        animation: _c,
-        builder: (_, __) {
-          final t = _c.value;
-          final opacity = _veil(t).clamp(0.0, 1.0);
-          if (opacity <= 0.001) return const SizedBox.shrink();
+    final isErr = widget.isError;
 
-          final isErr = widget.isError;
-          final signScale = 0.5 + 0.5 * Curves.easeOutBack.transform(((t - 0.20) / 0.35).clamp(0.0, 1.0));
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, _) {
+        final t = _c.value;
+        // Smooth bell curve opacity
+        final double opacity;
+        if (t <= 0.3) {
+          opacity = (t / 0.3).clamp(0.0, 1.0);
+        } else if (t <= 0.7) {
+          opacity = 1.0;
+        } else {
+          opacity = (1.0 - (t - 0.7) / 0.3).clamp(0.0, 1.0);
+        }
 
-          // Dismantling parameters
-          final dismantleProgress = (t / 0.38).clamp(0.0, 1.0);
-          final ringDismantleScale = 1.0 + 3.0 * Curves.easeOutCubic.transform(dismantleProgress);
-          final ringDismantleAlpha = (1.0 - dismantleProgress).clamp(0.0, 1.0);
-          final crossDismantleScale = 1.0 + 2.4 * Curves.easeOutCubic.transform(dismantleProgress);
-          final crossDismantleRotation = 0.65 * Curves.easeOutCubic.transform(dismantleProgress);
+        final scale = 0.75 + 0.55 * Curves.easeOutBack.transform(t.clamp(0.0, 1.0));
 
-          return Opacity(
-            opacity: opacity,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                BackdropFilter(
-                  filter: ui.ImageFilter.blur(
-                    sigmaX: 24 * opacity,
-                    sigmaY: 24 * opacity,
-                  ),
-                  child: const SizedBox.expand(),
-                ),
-                CustomPaint(
-                  painter: ExpandingOrbsPainter(
-                    progress: t,
-                    opacity: opacity,
-                    isError: isErr,
-                  ),
-                  child: const SizedBox.expand(),
-                ),
+        if (opacity <= 0.01) return const SizedBox.shrink();
 
-                // Center Dismantling Logo Fragment Eruption
-                if (dismantleProgress < 0.98)
-                  Center(
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        // Dismantling expanding outer ring
-                        Transform.scale(
-                          scale: ringDismantleScale,
-                          child: Container(
-                            width: 76,
-                            height: 76,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: (isErr ? const Color(0xFFEF4444) : Themes.mint)
-                                    .withValues(alpha: 0.85 * ringDismantleAlpha),
-                                width: 3.5,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: (isErr ? const Color(0xFFEF4444) : Themes.brand)
-                                      .withValues(alpha: 0.70 * ringDismantleAlpha),
-                                  blurRadius: 28,
-                                  spreadRadius: 3,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-
-                        // Dismantling crossbars breaking apart
-                        Transform.scale(
-                          scale: crossDismantleScale,
-                          child: Transform.rotate(
-                            angle: crossDismantleRotation,
-                            child: Icon(
-                              Icons.all_inclusive_rounded,
-                              size: 48,
-                              color: (isErr ? const Color(0xFFFCA5A5) : const Color(0xFF6FE0CD))
-                                  .withValues(alpha: 0.85 * ringDismantleAlpha),
-                            ),
-                          ),
-                        ),
-                      ],
+        return Positioned.fill(
+          child: Center(
+            child: Transform.scale(
+              scale: scale,
+              child: Opacity(
+                opacity: opacity * 0.92,
+                child: Container(
+                  width: 110,
+                  height: 110,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: isErr
+                          ? [
+                              const Color(0xFFEF4444).withValues(alpha: 0.75),
+                              const Color(0xFFB91C1C).withValues(alpha: 0.40),
+                              const Color(0xFF7F1D1D).withValues(alpha: 0.15),
+                              Colors.transparent,
+                            ]
+                          : [
+                              const Color(0xFF2DD4BF).withValues(alpha: 0.80),
+                              const Color(0xFF15B79E).withValues(alpha: 0.45),
+                              const Color(0xFF0F766E).withValues(alpha: 0.18),
+                              Colors.transparent,
+                            ],
+                      stops: const [0.0, 0.45, 0.75, 1.0],
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (isErr ? const Color(0xFFEF4444) : Themes.brand)
+                            .withValues(alpha: 0.50),
+                        blurRadius: 28,
+                        spreadRadius: 2,
+                      ),
+                    ],
                   ),
-
-                // Central Glowing Sign (Checkmark for success, Cross for failure)
-                if (t >= 0.20)
-                  Center(
-                    child: Transform.scale(
-                      scale: signScale,
-                      child: Container(
-                        width: 96,
-                        height: 96,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: isErr
-                                ? const [
-                                    Color(0xFFEF4444),
-                                    Color(0xFFB3261E),
-                                    Color(0xFF7F1D1D),
-                                  ]
-                                : const [
-                                    Color(0xFF15B79E),
-                                    Color(0xFF12695A),
-                                    Color(0xFF0D4F44),
-                                  ],
-                          ),
-                          border: Border.all(
-                            color: isErr
-                                ? const Color(0xFFF87171)
-                                : const Color(0xFF6FE0CD),
-                            width: 2.8,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: isErr
-                                  ? const Color(0xFFEF4444).withValues(alpha: 0.75)
-                                  : const Color(0xFF15B79E).withValues(alpha: 0.75),
-                              blurRadius: 40,
-                              spreadRadius: 4,
+                  child: ClipOval(
+                    child: BackdropFilter(
+                      filter: ui.ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+                      child: Center(
+                        child: Icon(
+                          isErr ? Icons.close_rounded : Icons.check_rounded,
+                          size: 48,
+                          color: isErr
+                              ? const Color(0xFFFCA5A5)
+                              : const Color(0xFFE6FFFA),
+                          shadows: [
+                            Shadow(
+                              color: (isErr ? const Color(0xFFEF4444) : Themes.mint)
+                                  .withValues(alpha: 0.8),
+                              blurRadius: 12,
                             ),
                           ],
-                        ),
-                        child: Center(
-                          child: Icon(
-                            isErr ? Icons.close_rounded : Icons.check_rounded,
-                            color: Colors.white,
-                            size: 54,
-                          ),
                         ),
                       ),
                     ),
                   ),
-              ],
+                ),
+              ),
             ),
-          );
-        },
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Elegant glossy emerald button with dynamic waves of bright and dark green.
+class _GlowingSignInButton extends StatelessWidget {
+  final VoidCallback? onPressed;
+  final bool loading;
+  final String label;
+
+  const _GlowingSignInButton({
+    required this.onPressed,
+    required this.loading,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final borderRadius = BorderRadius.circular(14);
+
+    return Container(
+      height: 52,
+      decoration: BoxDecoration(
+        borderRadius: borderRadius,
+        boxShadow: [
+          // Subtle, soft depth shadow
+          BoxShadow(
+            color: Themes.brand.withValues(alpha: 0.25),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: borderRadius,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: borderRadius,
+            onTap: onPressed,
+            child: EmeraldWaves(
+              borderRadius: borderRadius,
+              height: 52,
+              child: loading
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        color: Colors.white,
+                      ),
+                    )
+                  : Text(
+                      label,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.2,
+                        shadows: [
+                          Shadow(
+                            color: Color(0x60000000),
+                            blurRadius: 3,
+                            offset: Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                    ),
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -1768,191 +1768,71 @@ table.data tbody tr:hover { background: var(--surface-3); }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 80px;
-  height: 80px;
+  width: 72px;
+  height: 72px;
 }
 .login-emblem-wrap .login-emblem {
   position: relative;
-  z-index: 3;
+  z-index: 2;
   width: 100%;
   height: 100%;
   color: var(--brand);
-  filter: drop-shadow(0 2px 10px var(--brand-glow));
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  filter: drop-shadow(0 2px 8px var(--brand-glow));
 }
-.login-exploding-halo {
+.login-auth-halo {
   position: absolute;
-  inset: 0;
+  inset: -16px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1;
   pointer-events: none;
   opacity: 0;
-}
-.halo-wave {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  border-radius: 50%;
-  transform: translate(-50%, -50%) scale(0.2);
-  opacity: 0;
-  pointer-events: none;
-}
-.halo-symbol-wrap {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(0.4);
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
+  transform: scale(0.65);
+  filter: blur(6px);
+  transition: opacity 0.35s var(--ease-out), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), filter 0.35s var(--ease-out);
 }
 .login-auth-symbol {
-  width: 60px;
-  height: 60px;
+  width: 52px;
+  height: 52px;
   display: none;
 }
-
-/* Emblem Dismantling on Authentication */
-.login-card.is-auth-success .login-emblem,
-.login-card.is-auth-error .login-emblem {
-  transform-origin: center center;
+/* Success State: Glossy blurry emerald glow & tick in the background of the logo */
+.login-card.is-auth-success .login-auth-halo {
+  opacity: 0.95;
+  transform: scale(1.25);
+  filter: blur(3px);
+  background: radial-gradient(circle, color-mix(in srgb, var(--brand) 70%, transparent) 0%, color-mix(in srgb, var(--brand-strong) 40%, transparent) 55%, transparent 75%);
+  box-shadow: 0 0 45px var(--brand-glow), inset 0 0 20px color-mix(in srgb, var(--mint) 60%, transparent);
+  color: var(--mint);
 }
-.login-card.is-auth-success .emblem-ring,
-.login-card.is-auth-error .emblem-ring {
-  transform-origin: 24px 24px;
-  animation: emblem-ring-dismantle 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+.login-card.is-auth-success .icon-tick {
+  display: block;
+  animation: tick-pop 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
-.login-card.is-auth-success .emblem-crosshair,
-.login-card.is-auth-error .emblem-crosshair {
-  transform-origin: 24px 24px;
-  animation: emblem-crosshair-dismantle 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-.login-card.is-auth-success .emblem-cross,
-.login-card.is-auth-error .emblem-cross {
-  transform-origin: 24px 24px;
-  animation: emblem-cross-dismantle 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-.login-card.is-auth-success .emblem-core-triangle,
-.login-card.is-auth-error .emblem-core-triangle,
-.login-card.is-auth-success .emblem-core-ring,
-.login-card.is-auth-error .emblem-core-ring {
-  transform-origin: 24px 24px;
-  animation: emblem-core-dismantle 1.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-@keyframes emblem-ring-dismantle {
-  0% { transform: scale(1); opacity: 1; }
-  35% { transform: scale(1.6); opacity: 0.95; }
-  70% { transform: scale(2.8); opacity: 0.45; }
-  100% { transform: scale(4.2); opacity: 0; }
-}
-@keyframes emblem-crosshair-dismantle {
-  0% { transform: scale(1) rotate(0deg); opacity: 1; }
-  40% { transform: scale(1.8) rotate(45deg); opacity: 0.85; }
-  100% { transform: scale(3.8) rotate(90deg); opacity: 0; }
-}
-@keyframes emblem-cross-dismantle {
-  0% { transform: scale(1); opacity: 0.85; }
-  30% { transform: scale(1.45); opacity: 1; filter: drop-shadow(0 0 16px var(--mint)); }
-  65% { transform: scale(2.4); opacity: 0.5; }
-  100% { transform: scale(3.5); opacity: 0; }
-}
-@keyframes emblem-core-dismantle {
-  0% { transform: scale(1) rotate(0deg); opacity: 1; }
-  45% { transform: scale(2.0) rotate(180deg); opacity: 0.85; }
-  100% { transform: scale(3.8) rotate(360deg); opacity: 0; }
-}
-
-.login-card.is-auth-success .wave-1 {
-  width: 140vmax;
-  height: 140vmax;
-  background: radial-gradient(circle, #A7F3D0 0%, #34D399 35%, #10B981 70%, transparent 100%);
-  animation: orb-escalation-cycle 2900ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-.login-card.is-auth-success .wave-2 {
-  width: 180vmax;
-  height: 180vmax;
-  background: radial-gradient(circle, #10B981 0%, #14B8A6 45%, #0D9488 75%, transparent 100%);
-  animation: orb-escalation-cycle 2900ms cubic-bezier(0.22, 1, 0.36, 1) 120ms forwards;
-}
-.login-card.is-auth-success .wave-3 {
-  width: 220vmax;
-  height: 220vmax;
-  background: radial-gradient(circle, #059669 0%, #0F766E 45%, #047857 75%, transparent 100%);
-  animation: orb-escalation-cycle 2900ms cubic-bezier(0.22, 1, 0.36, 1) 240ms forwards;
-}
-.login-card.is-auth-success .wave-4 {
-  width: 270vmax;
-  height: 270vmax;
-  background: radial-gradient(circle, #064E3B 0%, #134E4A 50%, #022C22 80%, transparent 100%);
-  animation: orb-escalation-cycle 2900ms cubic-bezier(0.22, 1, 0.36, 1) 360ms forwards;
-}
-
-/* ERROR: Ruby / Crimson Concentric Shockwave */
-.login-card.is-auth-error .login-emblem {
-  animation: emblem-shake 0.45s ease-in-out;
-}
-.login-card.is-auth-error .login-exploding-halo {
-  opacity: 1;
-}
-.login-card.is-auth-error .wave-1 {
-  width: 140px;
-  height: 140px;
-  background: radial-gradient(circle, rgba(239, 68, 68, 0.75) 0%, rgba(185, 28, 28, 0.45) 50%, transparent 75%);
-  box-shadow: 0 0 45px rgba(239, 68, 68, 0.6), inset 0 0 25px rgba(248, 113, 113, 0.6);
-  backdrop-filter: blur(4px);
-  animation: explode-wave-1 1250ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-.login-card.is-auth-error .wave-2 {
-  width: 230px;
-  height: 230px;
-  border: 2px solid rgba(239, 68, 68, 0.65);
-  background: radial-gradient(circle, rgba(127, 29, 29, 0.4) 0%, transparent 70%);
-  animation: explode-wave-2 1250ms 90ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-.login-card.is-auth-error .wave-3 {
-  width: 320px;
-  height: 320px;
-  border: 1.5px dashed rgba(239, 68, 68, 0.4);
-  background: radial-gradient(circle, rgba(127, 29, 29, 0.20) 0%, transparent 75%);
-  animation: explode-wave-3 1250ms 180ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-.login-card.is-auth-error .halo-symbol-wrap {
-  animation: symbol-pop 1250ms cubic-bezier(0.16, 1.3, 0.3, 1) forwards;
+/* Error State: Glossy blurry ruby glow & cross in the background of the logo */
+.login-card.is-auth-error .login-auth-halo {
+  opacity: 0.95;
+  transform: scale(1.25);
+  filter: blur(3px);
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.55) 0%, rgba(185, 28, 28, 0.30) 55%, transparent 75%);
+  box-shadow: 0 0 45px rgba(239, 68, 68, 0.45), inset 0 0 20px rgba(248, 113, 113, 0.5);
   color: #f87171;
-  filter: drop-shadow(0 0 18px rgba(239, 68, 68, 0.95));
 }
 .login-card.is-auth-error .icon-cross {
   display: block;
+  animation: cross-pop 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes tick-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes cross-pop {
+  0% { transform: scale(0.6) rotate(-15deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
 }
 
-@keyframes explode-wave-1 {
-  0% { transform: translate(-50%, -50%) scale(0.2); opacity: 0; }
-  35% { transform: translate(-50%, -50%) scale(1.15); opacity: 0.95; }
-  75% { transform: translate(-50%, -50%) scale(1.06); opacity: 0.90; }
-  100% { transform: translate(-50%, -50%) scale(1.0); opacity: 0.85; }
-}
-@keyframes explode-wave-2 {
-  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
-  45% { transform: translate(-50%, -50%) scale(1.2); opacity: 0.85; }
-  80% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.70; }
-  100% { transform: translate(-50%, -50%) scale(1.0); opacity: 0.50; }
-}
-@keyframes explode-wave-3 {
-  0% { transform: translate(-50%, -50%) scale(0.4); opacity: 0; }
-  55% { transform: translate(-50%, -50%) scale(1.22); opacity: 0.65; }
-  100% { transform: translate(-50%, -50%) scale(1.0); opacity: 0.25; }
-}
-@keyframes symbol-pop {
-  0% { transform: translate(-50%, -50%) scale(0.3); opacity: 0; }
-  35% { transform: translate(-50%, -50%) scale(1.28); opacity: 1; }
-  70% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.95; }
-  100% { transform: translate(-50%, -50%) scale(1.0); opacity: 0.90; }
-}
 @keyframes emblem-shake {
   0%, 100% { transform: translateX(0); }
   20% { transform: translateX(-7px); }
@@ -2044,7 +1924,8 @@ body.is-transitioning .flow-takeover,
   top: 50%;
   left: 50%;
   border-radius: 50%;
-  tran.flow-takeover .orb-1 {
+}
+.flow-takeover .orb-1 {
   width: 140vmax;
   height: 140vmax;
   background: radial-gradient(circle, #A7F3D0 0%, #34D399 35%, #10B981 70%, transparent 100%);

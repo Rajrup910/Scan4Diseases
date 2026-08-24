@@ -574,59 +574,47 @@
         });
       })
       .then(function (result) {
+        var card = document.querySelector(".login-card");
         if (!result.ok) {
-          // Authentication failed: trigger ruby multi-shade escalation & de-escalation cycle
+          // Authentication failed: render subtle glossy ruby cross in background of logo
           delete loginForm.dataset.going;
           var msg = (result.data && result.data.error) ? result.data.error : "Email or password is incorrect.";
           
-          var errOver = createOrbsContainer(true);
-          document.body.appendChild(errOver);
-          requestAnimationFrame(function () {
-            requestAnimationFrame(function () {
-              document.body.classList.add("is-transitioning");
-              errOver.classList.add("is-active");
-            });
-          });
-
-          setTimeout(function () {
-            errOver.classList.add("is-fading-out");
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalBtnText;
+          }
+          if (card) {
+            card.classList.remove("is-auth-success");
+            card.classList.add("is-auth-error");
             setTimeout(function () {
-              errOver.remove();
-              document.body.classList.remove("is-transitioning");
-              if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = originalBtnText;
-              }
-              var errEl = document.createElement("p");
-              errEl.className = "alert alert-error alert-shake";
-              errEl.setAttribute("role", "alert");
-              errEl.textContent = msg;
-              loginForm.parentNode.insertBefore(errEl, loginForm);
-              var pwd = loginForm.querySelector("input[name='password']");
-              if (pwd) {
-                pwd.value = "";
-                pwd.focus();
-              }
-            }, 550);
-          }, 2900);
+              card.classList.remove("is-auth-error");
+            }, 1800);
+          }
+
+          var errEl = document.createElement("p");
+          errEl.className = "alert alert-error alert-shake";
+          errEl.setAttribute("role", "alert");
+          errEl.textContent = msg;
+          loginForm.parentNode.insertBefore(errEl, loginForm);
+          var pwd = loginForm.querySelector("input[name='password']");
+          if (pwd) {
+            pwd.value = "";
+            pwd.focus();
+          }
           return;
         }
 
-        // Authentication succeeded: trigger emerald multi-shade escalation & de-escalation cycle
-        try { sessionStorage.setItem("s4d_login_wash", "1"); } catch (err) {}
-        var over = createOrbsContainer(false);
-        document.body.appendChild(over);
-        requestAnimationFrame(function () {
-          requestAnimationFrame(function () {
-            document.body.classList.add("is-transitioning");
-            over.classList.add("is-active");
-          });
-        });
+        // Authentication succeeded: render sleek blurry glossy emerald tick in the background of the logo
+        if (card) {
+          card.classList.remove("is-auth-error");
+          card.classList.add("is-auth-success");
+        }
 
         setTimeout(function () {
           var target = (result.data && result.data.redirect) ? result.data.redirect : "/portal/patients";
           window.location.href = target;
-        }, 2900);
+        }, 450);
       })
       .catch(function () {
         // Fallback standard submit
