@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}{{ patient.display_name or patient.email }}{% endblock %}
+{% block content %}
+<nav class="crumbs" aria-label="Breadcrumb">
+  <a href="/portal/patients">My patients</a>
+  <span aria-hidden="true">/</span>
+  <span>{{ patient.display_name or patient.email }}</span>
+</nav>
+
+<div class="page-head">
+  <h1>{{ patient.display_name or "Patient" }}</h1>
+  <p class="muted mono">{{ patient.email }}</p>
+</div>
+
+{% if reports %}
+<div class="list-head">
+  <div class="segmented" data-segmented data-filter-target="#reports-body">
+    <button class="seg" type="button" data-filter="all" aria-pressed="true">All</button>
+    <button class="seg" type="button" data-filter="new" aria-pressed="false">New</button>
+    <button class="seg" type="button" data-filter="under_review" aria-pressed="false">Under review</button>
+    <button class="seg" type="button" data-filter="reviewed" aria-pressed="false">Reviewed</button>
+    <button class="seg" type="button" data-filter="escalated" aria-pressed="false">Escalated</button>
+    <span class="seg-thumb" aria-hidden="true"></span>
+  </div>
+</div>
+
+<div class="table-wrap">
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Condition</th>
+        <th>Confidence</th>
+        <th>Triage</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="reports-body">
+      {% for r in reports %}
+      {% set _t = (r.triage or "")|lower %}
+      <tr data-status="{{ r.status }}" style="view-transition-name: report-{{ r.id }};">
+        <td class="nowrap">{{ r.created_at.strftime("%d %b %Y") }}</td>
+        <td>{{ r.condition }}</td>
+        <td>{% if r.confidence is not none %}{{ "%.0f%%"|format(r.confidence * 100) }}{% else %}—{% endif %}</td>
+        <td><span class="badge triage-{{ 'urgent' if 'urgent' in _t else ('soon' if 'prompt' in _t or 'soon' in _t else 'routine') }}">{{ r.triage }}</span></td>
+        <td><span class="badge status-{{ r.status }}">{{ status_labels.get(r.status, r.status) }}</span></td>
+        <td class="row-action">
+          <a class="btn btn-small" href="/portal/reports/{{ r.id }}">
+            Open <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#arrow-right"/></svg>
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+      <tr class="no-match" hidden><td colspan="6" class="muted" style="text-align:center">No reports with this status.</td></tr>
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty">
+  <p>This patient has an active link with you but has not shared any reports yet.</p>
+</div>
+{% endif %}
+{% endblock %}

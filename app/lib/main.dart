@@ -16,14 +16,14 @@ Future<void> main() async {
   await AuthService.instance.restore();
   await LanguageService.instance.load();
   await SelfExamReminder.load();
-  runApp(const DermaScreenApp());
+  runApp(const Scan4DiseasesApp());
 }
 
-class DermaScreenApp extends StatelessWidget {
-  const DermaScreenApp({super.key});
+class Scan4DiseasesApp extends StatelessWidget {
+  const Scan4DiseasesApp({super.key});
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'DermaScreen', debugShowCheckedModeBanner: false,
+    title: 'Scan4Diseases', debugShowCheckedModeBanner: false,
     theme: Themes.lightTheme,
     home: const AuthGate(child: LandingShell()),
   );

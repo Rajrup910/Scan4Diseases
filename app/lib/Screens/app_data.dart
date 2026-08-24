@@ -88,7 +88,10 @@ class AppData {
   /// Save a new screening. Persists to the backend and prepends the stored
   /// version (with its server id). If the save fails, the report is still shown
   /// for this session so the user never loses their result.
-  static Future<void> addReport(ScreeningReport report) async {
+  ///
+  /// Returns the stored report: the server-saved one (with an `id`, so it can be shared
+  /// with a doctor) on success, or the local-only copy (no `id`) if the save failed.
+  static Future<ScreeningReport> addReport(ScreeningReport report) async {
     try {
       final res = await http.post(
         _uri('/reports'),
@@ -101,12 +104,13 @@ class AppData {
           localImagePath: report.imagePath,
         );
         reports.value = [saved, ...reports.value];
-        return;
+        return saved;
       }
     } catch (_) {
       // fall through to the local-only fallback
     }
     reports.value = [report, ...reports.value];
+    return report;
   }
 
   /// Remove a report. Deletes on the server when it has an id; always updates

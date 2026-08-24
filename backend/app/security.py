@@ -36,12 +36,19 @@ def verify_password(password: str, password_hash: str) -> bool:
         return False
 
 
-def create_access_token(settings: Settings, subject: str) -> str:
+def create_access_token(
+    settings: Settings, subject: str, *, expires_minutes: int | None = None
+) -> str:
+    """Issue a signed token for `subject`. `expires_minutes` overrides the default lifetime
+    (used by the doctor portal for its shorter session); omitted, the mobile-client default
+    `settings.jwt_expire_minutes` applies. Nothing else about the token shape changed, so
+    existing tokens stay valid."""
     now = datetime.now(timezone.utc)
+    lifetime = settings.jwt_expire_minutes if expires_minutes is None else expires_minutes
     payload = {
         "sub": subject,
         "iat": int(now.timestamp()),
-        "exp": int((now + timedelta(minutes=settings.jwt_expire_minutes)).timestamp()),
+        "exp": int((now + timedelta(minutes=lifetime)).timestamp()),
     }
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
 

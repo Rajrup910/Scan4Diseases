@@ -33,6 +33,10 @@ ml/data/
 *.tflite
 ml/checkpoints/*
 !ml/checkpoints/.gitkeep
+!ml/checkpoints/resnet50_best.pt
+!ml/checkpoints/ood_mahalanobis.npz
+!ml/checkpoints/lesion_gate.npz
+!ml/checkpoints/lesion_router.npz
 
 # ---------- Generated outputs ----------
 ml/results/*
@@ -88,4 +92,6 @@ dotnet/**/obj/
 PROJECT_STATUS.md
 docs/reference/MASTER_SPEC.md
 docs/reference/Scan4Disease - Project Plan & Roadmap.md
+HANDOFF_*.md
+DEMO_RUNSHEET.md
 

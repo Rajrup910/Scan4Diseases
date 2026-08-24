@@ -25,6 +25,7 @@ class UserOut(BaseModel):
     id: int
     email: EmailStr
     display_name: str | None = None
+    role: str = "patient"
     created_at: datetime
 
 

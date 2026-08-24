@@ -150,6 +150,9 @@ class LLMService:
         """Cheap reachability probe for /health. Never raises."""
         if not self.settings.llm_enabled or self._client is None:
             return False
+        # Cloud endpoints require an API key to be considered available
+        if not self.settings.llm_api_key and "localhost" not in self.settings.llm_base_url and "127.0.0.1" not in self.settings.llm_base_url:
+            return False
         try:
             response = await self._client.get("/models", timeout=3.0)
             return response.status_code < 500

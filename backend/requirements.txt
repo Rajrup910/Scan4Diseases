@@ -10,6 +10,8 @@
 fastapi>=0.115
 uvicorn[standard]>=0.30
 python-multipart>=0.0.9
+# Server-rendered doctor web portal (FastAPI + Jinja2, same origin, no CDN).
+Jinja2>=3.1
 pydantic>=2.8
 pydantic-settings>=2.4
 python-dotenv>=1.0
@@ -23,6 +25,8 @@ SQLAlchemy>=2.0
 bcrypt>=4.1
 PyJWT>=2.9
 email-validator>=2.1
+# Fernet symmetric encryption for patient-shared images at rest (IMAGE_ENCRYPTION_KEY).
+cryptography>=42
 
 # --- dev / test ---
 pytest>=8.3

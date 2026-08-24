@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block body_attr %} class="on-login"{% endblock %}
+{% block content %}
+<section class="login">
+  <!-- One unified glass panel — logo/slogan sit on the LEFT, the sign-in form
+       sits on the RIGHT, no visible internal division. The card is the only
+       container; brand tile / plate / vertical border are gone. -->
+  <div class="login-card">
+    <aside class="login-brand">
+      <svg class="login-emblem" viewBox="0 0 48 48" aria-hidden="true">
+        <circle cx="24" cy="24" r="16.5" fill="none" stroke="currentColor" stroke-width="2.4"/>
+        <path d="M24 3.5v6M24 38.5v6M3.5 24h6M38.5 24h6"
+              stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M24 12.5v23M12.5 24h23" stroke="currentColor" stroke-width="4.5"
+              stroke-linecap="round" opacity=".85"/>
+        <circle cx="24" cy="24" r="6" fill="var(--surface)"/>
+        <circle cx="24" cy="24" r="6" fill="none" stroke="currentColor" stroke-width="2.4"/>
+        <path d="M24 20.5l2.6 4.5h-5.2z" fill="currentColor"/>
+      </svg>
+      <div class="login-brand-word">Scan4Disease</div>
+      <p class="login-brand-caption">
+        AI dermatology clinical screening.<br>
+        Read the signal, not the noise.
+      </p>
+    </aside>
+
+    <div class="login-form">
+      <h1>Clinician sign in</h1>
+      <p class="muted">Verified doctors only. Accounts are created by an administrator.</p>
+
+      {% if error %}
+      <p class="alert alert-error" role="alert">{{ error }}</p>
+      {% endif %}
+
+      <form method="post" action="/portal/login" class="stack" data-login-form>
+        <label>
+          Email
+          <input type="email" name="email" autocomplete="username" required autofocus>
+        </label>
+        <label>
+          Password
+          <input type="password" name="password" autocomplete="current-password" required>
+        </label>
+        <button class="btn btn-primary btn-glow" type="submit">Sign in</button>
+      </form>
+    </div>
+  </div>
+</section>
+{% endblock %}

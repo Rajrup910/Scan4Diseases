@@ -12,9 +12,10 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from backend.app.config import Settings, get_settings
-from backend.app.db.models import User
+from backend.app.db.models import ROLE_ADMIN, ROLE_DOCTOR, User
 from backend.app.db.session import get_db
 from backend.app.security import decode_token
+from backend.app.services.image_vault import ImageVault
 from backend.app.services.inference import InferenceService
 from backend.app.services.llm import LLMService
 from backend.app.services.storage import TemporaryStore
@@ -35,6 +36,12 @@ def get_llm_service(request: Request) -> LLMService:
 
 def get_store(request: Request) -> TemporaryStore:
     return request.app.state.store
+
+
+def get_image_vault(request: Request) -> ImageVault:
+    """The encrypted store for patient-shared images. Always present; may be unconfigured
+    (no key), in which case store/load raise a client-safe 503."""
+    return request.app.state.image_vault
 
 
 def get_ood(request: Request):
@@ -79,4 +86,31 @@ def get_current_user(
     user = db.get(User, int(subject)) if subject is not None else None
     if user is None:
         raise AppError("not_authenticated", "Please sign in to continue.", status_code=401)
+    return user
+
+
+def get_current_doctor(user: User = Depends(get_current_user)) -> User:
+    """A verified doctor account, or a client-safe 403.
+
+    Role is read from the User row (not the token), so promoting/demoting or verifying an
+    account takes effect immediately without waiting for a token to expire. Patients and
+    unverified doctor accounts are refused here, before any patient data is touched.
+    """
+    if user.role != ROLE_DOCTOR:
+        raise AppError(
+            "not_authorized", "This area is for verified doctors only.", status_code=403
+        )
+    if not user.is_verified:
+        raise AppError(
+            "account_unverified",
+            "Your doctor account is awaiting verification by an administrator.",
+            status_code=403,
+        )
+    return user
+
+
+def get_current_admin(user: User = Depends(get_current_user)) -> User:
+    """An administrator account, or a client-safe 403."""
+    if user.role != ROLE_ADMIN:
+        raise AppError("not_authorized", "Administrator access is required.", status_code=403)
     return user

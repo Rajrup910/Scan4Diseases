@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../../services/find_doctor.dart';
+import '../Doctors/nearbyDoctorsScreen.dart';
 import '../../services/self_exam_reminder.dart';
 import '../theme.dart';
 
@@ -123,7 +123,7 @@ class SkinGuideScreen extends StatelessWidget {
               ),
               const SizedBox(height: 10),
               OutlinedButton.icon(
-                onPressed: () => openNearbyDermatologists(context),
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NearbyDoctorsScreen())),
                 icon: const Icon(Icons.location_on_outlined, size: 18),
                 label: const Text('Find a dermatologist'),
               ),
@@ -158,6 +158,10 @@ class _Section extends StatelessWidget {
   Widget build(BuildContext context) => Card(
         margin: const EdgeInsets.only(bottom: 12),
         clipBehavior: Clip.antiAlias,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.85), width: 1.2),
+        ),
         child: Theme(
           data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
           child: ExpansionTile(
@@ -170,6 +174,7 @@ class _Section extends StatelessWidget {
               decoration: BoxDecoration(
                 color: accent.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.85)),
               ),
               child: Icon(icon, color: accent),
             ),
@@ -560,7 +565,7 @@ class _RedFlags extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           FilledButton.icon(
-            onPressed: () => openNearbyDermatologists(context),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NearbyDoctorsScreen())),
             style: FilledButton.styleFrom(backgroundColor: Themes.danger),
             icon: const Icon(Icons.location_on_outlined, size: 18),
             label: const Text('Find a dermatologist near me'),

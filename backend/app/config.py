@@ -87,6 +87,15 @@ class Settings(BaseSettings):
     storage_dir: str = "backend/storage"
     storage_ttl_minutes: int = 15
 
+    # --- shared-image encryption ---
+    # A patient's lesion image is persisted ONLY when they share a report, and only ever
+    # as a Fernet-encrypted blob. This is the symmetric key for that encryption; it MUST be
+    # set (a urlsafe-base64 32-byte Fernet key) before image sharing works. Generate one:
+    #   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+    # Left unset, /predict, saving reports and metadata-only sharing all still work; only an
+    # attempt to upload or serve a shared image fails loudly, never silently in plaintext.
+    image_encryption_key: str | None = None
+
     # --- database & auth ---
     # SQLite file, resolved relative to the repo root. Git-ignored under backend/storage.
     database_path: str = "backend/storage/app.db"
@@ -95,13 +104,17 @@ class Settings(BaseSettings):
     jwt_secret: str = "dev-insecure-change-me-set-JWT_SECRET-in-env"
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60 * 24 * 14  # 14 days
+    # Doctor web-portal session length. Deliberately much shorter than the mobile patient
+    # token above: the portal is used at a shared clinic workstation, so an idle session
+    # should lapse quickly. Both use the same JWT secret; only the expiry differs.
+    portal_session_minutes: int = 60
 
     # --- LLM ---
     llm_enabled: bool = True
-    llm_base_url: str = "http://localhost:11434/v1"
-    llm_model: str = "qwen3:8b"
-    llm_api_key: str = "ollama"
-    llm_timeout_seconds: float = 60.0
+    llm_base_url: str = "https://api.groq.com/openai/v1"
+    llm_model: str = "llama-3.3-70b-versatile"
+    llm_api_key: str = ""
+    llm_timeout_seconds: float = 30.0
     llm_max_tokens: int = 700
     llm_temperature: float = Field(default=0.3, ge=0.0, le=2.0)
 
@@ -130,6 +143,13 @@ class Settings(BaseSettings):
     @property
     def storage_path(self) -> Path:
         return self.resolve(self.storage_dir)
+
+    @property
+    def shared_image_path(self) -> Path:
+        """Directory for encrypted shared-image blobs. Kept apart from the Grad-CAM
+        overlays so the TTL janitor (which only touches `gradcam_*`) never deletes them --
+        shared images persist until the patient unshares, not on a timer."""
+        return self.storage_path / "shared"
 
     @property
     def ood_stats_file(self) -> Path:

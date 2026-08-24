@@ -63,10 +63,11 @@ class AuthService {
     }
   }
 
-  Future<void> register({
+  Future<AuthUser> register({
     required String email,
     required String password,
     String? displayName,
+    bool deferUserUpdate = false,
   }) async {
     final res = await http.post(
       _uri('/auth/register'),
@@ -78,16 +79,25 @@ class AuthService {
           'display_name': displayName.trim(),
       }),
     );
-    await _consumeAuth(res);
+    return await _consumeAuth(res, deferUserUpdate: deferUserUpdate);
   }
 
-  Future<void> login({required String email, required String password}) async {
+  Future<AuthUser> login({
+    required String email,
+    required String password,
+    bool deferUserUpdate = false,
+  }) async {
     final res = await http.post(
       _uri('/auth/login'),
       headers: const {'Content-Type': 'application/json'},
       body: jsonEncode({'email': email.trim(), 'password': password}),
     );
-    await _consumeAuth(res);
+    return await _consumeAuth(res, deferUserUpdate: deferUserUpdate);
+  }
+
+  void activateUser(AuthUser authUser) {
+    user.value = authUser;
+    AppData.refresh();
   }
 
   Future<void> logout() async {
@@ -98,7 +108,7 @@ class AuthService {
   }
 
   /// Parse a register/login response: store the token, set the user, refresh data.
-  Future<void> _consumeAuth(http.Response res) async {
+  Future<AuthUser> _consumeAuth(http.Response res, {bool deferUserUpdate = false}) async {
     final Map<String, dynamic> body =
         res.body.isNotEmpty ? jsonDecode(res.body) as Map<String, dynamic> : {};
     if (res.statusCode < 200 || res.statusCode >= 300) {
@@ -110,8 +120,12 @@ class AuthService {
     }
     _token = token;
     await _storage.write(key: _kTokenKey, value: token);
-    user.value = AuthUser.fromJson(body['user'] as Map<String, dynamic>);
-    await AppData.refresh();
+    final authUser = AuthUser.fromJson(body['user'] as Map<String, dynamic>);
+    if (!deferUserUpdate) {
+      user.value = authUser;
+      await AppData.refresh();
+    }
+    return authUser;
   }
 
   Future<AuthUser> _fetchMe() async {

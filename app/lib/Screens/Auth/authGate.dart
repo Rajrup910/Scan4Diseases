@@ -7,7 +7,7 @@ import 'loginScreen.dart';
 ///
 /// [AuthService.instance.restore] runs before the app is built (see main), so
 /// on launch this already reflects a remembered session. After login/logout the
-/// [AuthService.instance.user] notifier flips and this rebuilds.
+/// [AuthService.instance.user] notifier flips and this rebuilds with a smooth fade.
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key, required this.child});
 
@@ -17,6 +17,15 @@ class AuthGate extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ValueListenableBuilder<AuthUser?>(
         valueListenable: AuthService.instance.user,
-        builder: (_, user, __) => user == null ? const LoginScreen() : child,
+        builder: (_, user, __) => AnimatedSwitcher(
+          duration: const Duration(milliseconds: 450),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          transitionBuilder: (child, animation) =>
+              FadeTransition(opacity: animation, child: child),
+          child: user == null
+              ? const LoginScreen(key: ValueKey('login_screen'))
+              : KeyedSubtree(key: const ValueKey('app_shell'), child: child),
+        ),
       );
 }

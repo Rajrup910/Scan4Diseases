@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="color-scheme" content="light dark">
+  <title>{% block title %}Doctor Portal{% endblock %} · Scan4Disease</title>
+  <link rel="icon" type="image/png" href="/portal/static/brand_icon_transparent.png">
+  <link rel="apple-touch-icon" type="image/png" href="/portal/static/brand_icon.png">
+  {# Set the theme before first paint so there is no flash. Explicit choice wins;
+     otherwise the OS preference drives it (handled in CSS). #}
+  <script>
+    (function () {
+      try {
+        var t = localStorage.getItem("s4d-theme");
+        if (t === "light" || t === "dark") {
+          document.documentElement.setAttribute("data-theme", t);
+        }
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="stylesheet" href="/portal/static/portal.css">
+</head>
+<body{% block body_attr %}{% endblock %}>
+  <!-- Dynamic ambient background: the app's home-screen loop, heavily treated so it reads
+       as motion behind the UI, not as competing content. Falls back to a still poster
+       under prefers-reduced-motion (see portal.css / portal.js). -->
+  <div class="bg-stage" aria-hidden="true">
+    <video class="bg-video" autoplay muted loop playsinline preload="auto"
+           poster="/portal/static/vendor/media/home-poster.jpg" data-bg-video>
+      <source src="/portal/static/vendor/media/homescreen.mp4" type="video/mp4">
+    </video>
+    <div class="bg-scrim"></div>
+  </div>
+
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="/portal/patients">
+        {# Clean, frameless emblem — the reticle + medical cross + aperture motif
+           from the brandmark, drawn in the brand colour so it stays crisp at any
+           size (no squircle frame / photo halo). #}
+        <svg class="brand-emblem" viewBox="0 0 48 48" aria-hidden="true">
+          <circle cx="24" cy="24" r="16.5" fill="none" stroke="currentColor" stroke-width="2.4"/>
+          <path d="M24 3.5v6M24 38.5v6M3.5 24h6M38.5 24h6"
+                stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+          <path d="M24 12.5v23M12.5 24h23" stroke="currentColor" stroke-width="4.5"
+                stroke-linecap="round" opacity=".85"/>
+          <circle cx="24" cy="24" r="6" fill="var(--surface)"/>
+          <circle cx="24" cy="24" r="6" fill="none" stroke="currentColor" stroke-width="2.4"/>
+          <path d="M24 20.5l2.6 4.5h-5.2z" fill="currentColor"/>
+        </svg>
+        <span class="brand-text">Scan4Disease <em>Clinician Portal</em></span>
+      </a>
+      <nav class="header-nav">
+        <button class="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode"
+                data-theme-toggle>
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="4"/>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+          </svg>
+        </button>
+        {% if doctor %}
+        {% set who = (doctor.display_name if doctor.display_name and doctor.display_name.lower().startswith("dr")
+                      else ("Dr. " ~ doctor.display_name if doctor.display_name else doctor.email)) %}
+        <details class="menu-wrap account" data-menu>
+          <summary class="account-trigger" aria-label="Account menu">
+            <span class="avatar"><svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#user"/></svg></span>
+            <span class="who">{{ who }}</span>
+            <svg class="icon icon-sm chev" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#chevron-down"/></svg>
+          </summary>
+          <div class="menu" role="menu">
+            <p class="menu-head">Signed in as</p>
+            <div class="menu-id">
+              <span class="menu-id-name">{{ who }}</span>
+              <span class="menu-id-mail mono">{{ doctor.email }}</span>
+            </div>
+            <div class="menu-sep" role="separator"></div>
+            <form method="post" action="/portal/logout">
+              <button type="submit" class="menu-item" role="menuitem">
+                <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#log-out"/></svg>
+                <span class="menu-item-label">Sign out</span>
+              </button>
+            </form>
+          </div>
+        </details>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <p>
+        AI-assisted screening support only — <strong>not a medical diagnosis</strong>.
+        Patient data shown here was explicitly shared with you and may be withdrawn at any time.
+      </p>
+    </div>
+  </footer>
+
+  <script src="/portal/static/portal.js" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

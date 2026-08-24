@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../theme.dart';
 
 /// Structured symptom questionnaire.
 ///
@@ -43,14 +44,15 @@ class _SymptomsListState extends State<SymptomsList> {
   Widget build(BuildContext context) => Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Skin / Lesion Details',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 6),
-          const Text('Answer what you know. Anything left blank is treated as “not reported”.'),
+          const Text(
+            'Answer what you know. Anything left blank is treated as "not reported".',
+            style: TextStyle(color: Themes.inkSoft, fontSize: 13, height: 1.35),
+          ),
           const SizedBox(height: 14),
           _dropdown<String>(
             label: 'How long have you noticed it?',
             value: duration,
+            icon: Icons.access_time_rounded,
             items: const {
               'less_than_1_month': 'Less than a month',
               '1_to_3_months': '1–3 months',
@@ -64,70 +66,116 @@ class _SymptomsListState extends State<SymptomsList> {
           _dropdown<String>(
             label: 'Has its size changed?',
             value: sizeChange,
+            icon: Icons.straighten_rounded,
             items: const {
-              'growing': 'Growing',
+              'growing': 'Growing (larger)',
               'stable': 'Staying the same',
-              'shrinking': 'Shrinking',
+              'shrinking': 'Shrinking (smaller)',
               'unknown': 'Not sure',
             },
             onChanged: (v) => setState(() { sizeChange = v; _emit(); }),
           ),
           const SizedBox(height: 12),
           _dropdown<String>(
-            label: 'How much sun exposure has this area had?',
+            label: 'Sun exposure history on this area',
             value: sunExposure,
+            icon: Icons.wb_sunny_outlined,
             items: const {
-              'low': 'Low',
-              'moderate': 'Moderate',
-              'high': 'High',
+              'low': 'Low / mostly covered',
+              'moderate': 'Moderate / occasional',
+              'high': 'High / frequent or sunburns',
               'unknown': 'Not sure',
             },
             onChanged: (v) => setState(() { sunExposure = v; _emit(); }),
           ),
-          const SizedBox(height: 6),
-          _yesNo('Has it changed recently?', recentChange, (v) => setState(() { recentChange = v; _emit(); })),
-          _yesNo('Is it itchy?', itching, (v) => setState(() { itching = v; _emit(); })),
-          _yesNo('Is it painful?', pain, (v) => setState(() { pain = v; _emit(); })),
-          _yesNo('Has it bled on its own?', bleeding, (v) => setState(() { bleeding = v; _emit(); })),
-          _yesNo('Has its colour changed?', colorChange, (v) => setState(() { colorChange = v; _emit(); })),
-          _yesNo('Family history of skin cancer?', familyHistory, (v) => setState(() { familyHistory = v; _emit(); })),
+          const SizedBox(height: 16),
+          const Text(
+            'Specific symptoms & history',
+            style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w700, color: Themes.ink),
+          ),
+          const SizedBox(height: 8),
+          _toggle('Recent rapid change?', recentChange, (v) => setState(() { recentChange = v; _emit(); })),
+          _toggle('Is it itchy?', itching, (v) => setState(() { itching = v; _emit(); })),
+          _toggle('Is it painful or tender?', pain, (v) => setState(() { pain = v; _emit(); })),
+          _toggle('Has it bled spontaneously?', bleeding, (v) => setState(() { bleeding = v; _emit(); })),
+          _toggle('Has its colour changed?', colorChange, (v) => setState(() { colorChange = v; _emit(); })),
+          _toggle('Family history of skin cancer?', familyHistory, (v) => setState(() { familyHistory = v; _emit(); })),
         ],
       );
 
   Widget _dropdown<T>({
     required String label,
     required T? value,
+    required IconData icon,
     required Map<T, String> items,
     required ValueChanged<T?> onChanged,
   }) =>
       DropdownButtonFormField<T>(
         initialValue: value,
         isExpanded: true,
-        decoration: InputDecoration(labelText: label, border: const OutlineInputBorder()),
+        decoration: InputDecoration(
+          labelText: label,
+          prefixIcon: Icon(icon, color: Themes.brand, size: 20),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        ),
         items: [
           for (final e in items.entries)
-            DropdownMenuItem<T>(value: e.key, child: Text(e.value)),
+            DropdownMenuItem<T>(
+              value: e.key,
+              child: Text(e.value, style: const TextStyle(fontSize: 13.5)),
+            ),
         ],
         onChanged: onChanged,
       );
 
-  Widget _yesNo(String label, bool? value, ValueChanged<bool?> onChanged) => Card(
+  Widget _toggle(String label, bool? value, ValueChanged<bool?> onChanged) => Container(
         margin: const EdgeInsets.only(bottom: 8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          child: Row(children: [
-            Expanded(child: Text(label)),
-            DropdownButton<bool?>(
-              value: value,
-              hint: const Text('Select'),
-              underline: const SizedBox.shrink(),
-              items: const [
-                DropdownMenuItem<bool?>(value: true, child: Text('Yes')),
-                DropdownMenuItem<bool?>(value: false, child: Text('No')),
-              ],
-              onChanged: onChanged,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: Themes.canvas,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: Themes.border),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Themes.ink)),
             ),
-          ]),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _pill('No', value == false, () => onChanged(value == false ? null : false)),
+                const SizedBox(width: 6),
+                _pill('Yes', value == true, () => onChanged(value == true ? null : true)),
+              ],
+            ),
+          ],
+        ),
+      );
+
+  Widget _pill(String label, bool active, VoidCallback onTap) => InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(6),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            color: active ? (label == 'Yes' ? Themes.brand : Themes.inkSoft) : Colors.white,
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: active ? Colors.transparent : Themes.border,
+              width: 1,
+            ),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: active ? Colors.white : Themes.inkSoft,
+            ),
+          ),
         ),
       );
 }
+

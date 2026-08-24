@@ -85,10 +85,11 @@ class _UploadScreenState extends State<UploadScreen> {
         imagePath: _image!.path,
         symptoms: _questionnaire,
       );
-      // Persist to the backend (falls back to a local-only entry if offline).
-      await AppData.addReport(report);
+      // Persist to the backend (falls back to a local-only entry if offline). The saved
+      // copy carries the server id needed to share this screening with a doctor.
+      final saved = await AppData.addReport(report);
       if (!mounted) return;
-      Navigator.push(context, MaterialPageRoute(builder: (_) => DiagnosisResultsUI(diagnosisData: result)));
+      Navigator.push(context, MaterialPageRoute(builder: (_) => DiagnosisResultsUI(diagnosisData: result, report: saved)));
       // Clear the form now (behind the results page) so returning to the Screen
       // tab shows a fresh questionnaire instead of the answers just submitted.
       _resetForm();
@@ -108,26 +109,130 @@ class _UploadScreenState extends State<UploadScreen> {
 
   void _error(String m) => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(m), behavior: SnackBarBehavior.floating));
 
-  @override Widget build(BuildContext context) => ListView(padding: const EdgeInsets.fromLTRB(20, 10, 20, 30), children: [
-    Row(children: [
-      const Expanded(child: Text('New screening', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800))),
-      if (!_loading && (_image != null || _questionnaire.values.any((v) => v != null)))
-        TextButton.icon(onPressed: _resetForm, icon: const Icon(Icons.refresh_rounded, size: 18), label: const Text('Clear')),
-    ]),
-    const SizedBox(height: 5),
-    const Text('Use a clear, well-lit photo of the skin area you want to screen.', style: TextStyle(color: Themes.muted)),
-    const SizedBox(height: 18),
-    _imageCard(),
-    const SizedBox(height: 14),
-    Row(children: [Expanded(child: _button(Icons.camera_alt_rounded, 'Camera', () => _pick(ImageSource.camera))), const SizedBox(width: 10), Expanded(child: _button(Icons.photo_library_outlined, 'Gallery', () => _pick(ImageSource.gallery)))]),
-    const SizedBox(height: 22),
-    Card(child: Padding(padding: const EdgeInsets.all(17), child: SymptomsList(key: _symptomsKey, onSymptomsUpdated: (v) => setState(() => _questionnaire = v)))),
-    const SizedBox(height: 16),
-    SizedBox(height: 54, child: FilledButton.icon(onPressed: _loading ? null : _predict, icon: _loading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.auto_awesome_rounded), label: Text(_loading ? 'Analyzing image…' : 'Analyze image'))),
-    const SizedBox(height: 10),
-    const Text('AI-assisted screening only — not a medical diagnosis.', textAlign: TextAlign.center, style: TextStyle(fontSize: 12, color: Themes.muted)),
-  ]);
+  @override
+  Widget build(BuildContext context) => ListView(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+        children: [
+          Row(children: [
+            const Expanded(
+                child: Text('New screening',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Themes.ink, letterSpacing: -0.01, shadows: Themes.onMedia))),
+            if (!_loading && (_image != null || _questionnaire.values.any((v) => v != null)))
+              TextButton.icon(
+                  onPressed: _resetForm,
+                  icon: const Icon(Icons.refresh_rounded, size: 18),
+                  label: const Text('Reset')),
+          ]),
+          const SizedBox(height: 4),
+          const Text('Upload a clear, well-lit photo of the skin lesion or area you want to screen.',
+              style: TextStyle(color: Themes.ink, fontSize: 13.5, fontWeight: FontWeight.w600, shadows: Themes.onMedia)),
+          const SizedBox(height: 16),
+          _imageCard(),
+          const SizedBox(height: 12),
+          Row(children: [
+            Expanded(child: _button(Icons.camera_alt_rounded, 'Take photo', () => _pick(ImageSource.camera))),
+            const SizedBox(width: 10),
+            Expanded(child: _button(Icons.photo_library_outlined, 'From gallery', () => _pick(ImageSource.gallery))),
+          ]),
+          const SizedBox(height: 20),
+          Card(
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+              side: BorderSide(color: Colors.white.withValues(alpha: 0.85), width: 1.2),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      Icon(Icons.checklist_rounded, color: Themes.brand, size: 20),
+                      SizedBox(width: 8),
+                      Text('Clinical symptoms questionnaire',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Themes.ink)),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  SymptomsList(
+                    key: _symptomsKey,
+                    onSymptomsUpdated: (v) => setState(() => _questionnaire = v),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            height: 52,
+            child: FilledButton.icon(
+              onPressed: _loading ? null : _predict,
+              icon: _loading
+                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.analytics_outlined, size: 20),
+              label: Text(_loading ? 'Analyzing with AI model…' : 'Run screening analysis',
+                  style: const TextStyle(fontWeight: FontWeight.w700)),
+            ),
+          ),
+          const SizedBox(height: 12),
+          const Text('AI-assisted screening tool — not a medical diagnosis.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Themes.ink, shadows: Themes.onMedia)),
+        ],
+      );
 
-  Widget _imageCard() => Container(height: 260, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(22), border: Border.all(color: Themes.border)), clipBehavior: Clip.antiAlias, child: _image == null ? Column(mainAxisAlignment: MainAxisAlignment.center, children: [Container(padding: const EdgeInsets.all(18), decoration: BoxDecoration(color: Themes.primary.withOpacity(.1), shape: BoxShape.circle), child: const Icon(Icons.add_a_photo_rounded, size: 38, color: Themes.primary)), const SizedBox(height: 12), const Text('Add a skin photo', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800)), const SizedBox(height: 4), const Text('Camera or gallery', style: TextStyle(color: Themes.muted))]) : FutureBuilder(future: _image!.readAsBytes(), builder: (_, s) => s.hasData ? Stack(fit: StackFit.expand, children: [Image.memory(s.data!, fit: BoxFit.cover), Positioned(top: 12, right: 12, child: IconButton.filled(onPressed: () => setState(() => _image = null), icon: const Icon(Icons.close)))]) : const Center(child: CircularProgressIndicator())));
-  Widget _button(IconData icon, String text, VoidCallback onTap) => OutlinedButton.icon(onPressed: _loading ? null : onTap, icon: Icon(icon), label: Text(text), style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)));
+  Widget _imageCard() => Container(
+        height: 250,
+        decoration: Themes.liquidGlassDecoration(radius: 20),
+        clipBehavior: Clip.antiAlias,
+        child: _image == null
+            ? Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Themes.brandTint.withValues(alpha: 0.70),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.85), width: 1.2),
+                  ),
+                  child: const Icon(Icons.add_a_photo_rounded, size: 34, color: Themes.brand),
+                ),
+                const SizedBox(height: 12),
+                const Text('Add a lesion photo',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Themes.ink)),
+                const SizedBox(height: 4),
+                const Text('Take a photo or choose from gallery',
+                    style: TextStyle(color: Themes.inkSoft, fontSize: 12.5)),
+              ])
+            : FutureBuilder(
+                future: _image!.readAsBytes(),
+                builder: (_, s) => s.hasData
+                    ? Stack(fit: StackFit.expand, children: [
+                        Image.memory(s.data!, fit: BoxFit.cover),
+                        Positioned(
+                          top: 10,
+                          right: 10,
+                          child: IconButton.filled(
+                            style: IconButton.styleFrom(backgroundColor: Colors.black54),
+                            onPressed: () => setState(() => _image = null),
+                            icon: const Icon(Icons.close, color: Colors.white, size: 18),
+                          ),
+                        ),
+                      ])
+                    : const Center(child: CircularProgressIndicator()),
+              ),
+      );
+
+  Widget _button(IconData icon, String text, VoidCallback onTap) => OutlinedButton.icon(
+        onPressed: _loading ? null : onTap,
+        icon: Icon(icon, size: 18, color: Themes.brand),
+        label: Text(text, style: const TextStyle(fontWeight: FontWeight.w600)),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 13),
+          backgroundColor: Themes.glass,
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.85), width: 1.2),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+      );
 }
+

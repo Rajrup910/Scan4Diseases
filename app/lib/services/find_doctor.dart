@@ -67,10 +67,7 @@ class _FindDoctorCardState extends State<FindDoctorCard> {
   @override
   Widget build(BuildContext context) => Container(
         clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: Themes.border),
-        ),
+        decoration: Themes.liquidGlassDecoration(radius: 20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -93,51 +90,47 @@ class _FindDoctorCardState extends State<FindDoctorCard> {
         color: Colors.transparent,
         child: InkWell(
           onTap: _toggle,
-          child: Ink(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(colors: [Themes.primary, Themes.primaryDark]),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(11),
-                    decoration: BoxDecoration(
-                      color: Colors.white24,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Icon(Icons.location_on_outlined, color: Colors.white),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Themes.brandTint.withValues(alpha: 0.70),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.85)),
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Find a dermatologist near you',
-                          style: TextStyle(
-                              color: Colors.white, fontSize: 17, fontWeight: FontWeight.w800),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          widget.subtitle ??
-                              'Tap to see skin doctors and clinics close to you.',
-                          style: const TextStyle(
-                              color: Colors.white70, height: 1.35, fontSize: 13),
-                        ),
-                      ],
-                    ),
+                  child: const Icon(Icons.location_on_outlined, color: Themes.brand, size: 22),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Find a dermatologist near you',
+                        style: TextStyle(
+                            color: Themes.ink, fontSize: 15, fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        widget.subtitle ??
+                            'Tap to see skin doctors and clinics close to you.',
+                        style: const TextStyle(
+                            color: Themes.inkSoft, height: 1.35, fontSize: 12.5),
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  AnimatedRotation(
-                    turns: _expanded ? 0.5 : 0,
-                    duration: const Duration(milliseconds: 220),
-                    child: const Icon(Icons.keyboard_arrow_down_rounded,
-                        color: Colors.white, size: 26),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(width: 8),
+                AnimatedRotation(
+                  turns: _expanded ? 0.5 : 0,
+                  duration: const Duration(milliseconds: 220),
+                  child: const Icon(Icons.keyboard_arrow_down_rounded,
+                      color: Themes.brand, size: 24),
+                ),
+              ],
             ),
           ),
         ),
@@ -147,7 +140,10 @@ class _FindDoctorCardState extends State<FindDoctorCard> {
 
   Widget _dropdown() => Container(
         width: double.infinity,
-        color: Colors.white,
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.50),
+          border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.85))),
+        ),
         padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
         child: FutureBuilder<List<Clinic>>(
           future: _future,

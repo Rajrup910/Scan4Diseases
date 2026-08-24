@@ -70,8 +70,12 @@ class _NearbyDoctorsScreenState extends State<NearbyDoctorsScreen> {
 
   Widget _card(Clinic c) => Card(
         margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.85), width: 1.2),
+        ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(18),
           onTap: () => NearbyDoctors.directionsTo(c),
           child: Padding(
             padding: const EdgeInsets.all(15),
@@ -81,6 +85,7 @@ class _NearbyDoctorsScreenState extends State<NearbyDoctorsScreen> {
                 decoration: BoxDecoration(
                   color: (c.isDermatology ? Themes.primary : Themes.mint).withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.85)),
                 ),
                 child: Icon(c.isDermatology ? Icons.medical_services_outlined : Icons.local_hospital_outlined,
                     color: c.isDermatology ? Themes.primary : Themes.mint),

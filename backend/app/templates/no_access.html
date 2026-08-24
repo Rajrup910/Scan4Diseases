@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}No access{% endblock %}
+{% block content %}
+<div class="empty">
+  <h1>No access to this report</h1>
+  <p class="muted">
+    Either this report was not shared with you, the patient withdrew access, or it does not exist.
+  </p>
+  <p><a class="btn btn-primary" href="/portal/patients">Back to my patients</a></p>
+</div>
+{% endblock %}

@@ -1,0 +1,19 @@
+.venv
+.git
+.github
+.vscode
+.pytest_cache
+.ruff_cache
+app/
+data/
+upstream/
+Demo_images/
+# Exclude unused heavy training checkpoints (saves 2.5 GB of upload bandwidth)
+ml/checkpoints/convnext*
+ml/checkpoints/densenet*
+ml/checkpoints/efficientnet*
+ml/checkpoints/*last*
+ml/checkpoints/*HAM-only*
+ml/checkpoints/*PAD*
+ml/checkpoints/*combined*
+ml/checkpoints/*noface*

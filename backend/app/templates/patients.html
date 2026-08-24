@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% block title %}Worklist{% endblock %}
+{% block content %}
+<div class="page-head">
+  <h1>Worklist</h1>
+  <p class="muted">Patients who have granted you access. Only reports they choose to share appear.</p>
+</div>
+
+{% if total_reports %}
+<section class="dash" aria-label="Caseload overview">
+  <div class="stat-row">
+    <div class="stat">
+      <span class="stat-ic"><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#users"/></svg></span>
+      <span class="stat-n">{{ stats.patients }}</span>
+      <span class="stat-l">Patients</span>
+    </div>
+    <div class="stat">
+      <span class="stat-ic"><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#file-text"/></svg></span>
+      <span class="stat-n">{{ stats.reports }}</span>
+      <span class="stat-l">Shared reports</span>
+    </div>
+    <div class="stat {% if stats.attention %}stat-warn{% endif %}">
+      <span class="stat-ic"><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#alert-triangle"/></svg></span>
+      <span class="stat-n">{{ stats.attention }}</span>
+      <span class="stat-l">Need attention</span>
+    </div>
+    <div class="stat {% if stats.escalated %}stat-danger{% endif %}">
+      <span class="stat-ic"><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#shield"/></svg></span>
+      <span class="stat-n">{{ stats.escalated }}</span>
+      <span class="stat-l">Escalated</span>
+    </div>
+  </div>
+
+  <div class="dash-grid">
+    <!-- Triage distribution -->
+    <section class="card caseload">
+      <h2>Triage mix</h2>
+      <div class="caseload-body">
+        <div class="donut" role="img"
+             aria-label="Triage distribution: {{ triage_counts.urgent }} urgent, {{ triage_counts.soon }} soon, {{ triage_counts.routine }} routine.">
+          <svg viewBox="0 0 120 120">
+            <g transform="rotate(-90 60 60)">
+              <circle class="donut-track" cx="60" cy="60" r="52" pathLength="100"/>
+              {% for seg in donut_segments %}
+              <circle class="donut-seg seg-{{ seg.tone }}" cx="60" cy="60" r="52" pathLength="100"
+                      stroke-dasharray="{{ '%.2f'|format(seg.pct) }} {{ '%.2f'|format(100 - seg.pct) }}"
+                      stroke-dashoffset="{{ '%.2f'|format(-seg.offset) }}"/>
+              {% endfor %}
+            </g>
+          </svg>
+          <div class="donut-center">
+            <span class="donut-n">{{ total_reports }}</span>
+            <span class="donut-l">reports</span>
+          </div>
+        </div>
+        <ul class="legend">
+          <li><span class="dot seg-urgent"></span> Urgent <b>{{ triage_counts.urgent }}</b></li>
+          <li><span class="dot seg-soon"></span> Soon <b>{{ triage_counts.soon }}</b></li>
+          <li><span class="dot seg-routine"></span> Routine <b>{{ triage_counts.routine }}</b></li>
+        </ul>
+      </div>
+
+      <h3>Review status</h3>
+      {% set order = [("escalated","status-escalated","Escalated"),("new","status-new","New"),("under_review","status-under_review","Under review"),("reviewed","status-reviewed","Reviewed")] %}
+      <div class="statusbar" role="img" aria-label="Review status distribution">
+        {% for key, cls, label in order %}
+        {% set n = status_counts.get(key, 0) %}
+        {% if n %}<span class="statusbar-seg {{ cls }}" style="flex:{{ n }}" title="{{ label }}: {{ n }}"></span>{% endif %}
+        {% endfor %}
+      </div>
+      <ul class="statusbar-legend">
+        {% for key, cls, label in order %}
+        <li><span class="dot {{ cls }}"></span> {{ label }} <b>{{ status_counts.get(key, 0) }}</b></li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <!-- Needs attention -->
+    <section class="card">
+      <h2>Needs attention</h2>
+      {% if needs_attention %}
+      <ul class="worklist">
+        {% for item in needs_attention %}
+        <li>
+          <a class="worklist-row" href="/portal/reports/{{ item.report.id }}">
+            <span class="tone-dot seg-{{ item.tone }}" aria-hidden="true"></span>
+            <span class="worklist-main">
+              <span class="worklist-title">{{ item.report.condition }}</span>
+              <span class="worklist-sub">{{ item.patient.display_name or item.patient.email }}</span>
+            </span>
+            <span class="badge status-{{ item.report.status }}">{{ status_labels.get(item.report.status, item.report.status) }}</span>
+            <svg class="icon icon-sm worklist-go" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#chevron-right"/></svg>
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <div class="calm">
+        <svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#check-circle"/></svg>
+        <p>Nothing urgent is waiting. Everything shared has been triaged or reviewed.</p>
+      </div>
+      {% endif %}
+    </section>
+
+    <!-- Recent activity -->
+    <section class="card">
+      <h2>Recent activity</h2>
+      {% if recent %}
+      <ol class="timeline">
+        {% for report, patient in recent %}
+        {% set _t = (report.triage or "")|lower %}
+        <li>
+          <span class="tl-dot seg-{{ 'urgent' if 'urgent' in _t else ('soon' if 'prompt' in _t or 'soon' in _t else 'routine') }}" aria-hidden="true"></span>
+          <a class="tl-body" href="/portal/reports/{{ report.id }}">
+            <span class="tl-title">{{ report.condition }}</span>
+            <span class="tl-meta">{{ patient.display_name or patient.email }} · {{ report.created_at.strftime("%d %b %Y") }}</span>
+          </a>
+        </li>
+        {% endfor %}
+      </ol>
+      {% else %}
+      <p class="muted">No shared reports yet.</p>
+      {% endif %}
+    </section>
+  </div>
+</section>
+{% endif %}
+
+<h2 class="section-h">All patients</h2>
+{% if patients %}
+<div class="table-wrap">
+  <table class="data">
+    <thead>
+      <tr>
+        <th>Patient</th>
+        <th>Email</th>
+        <th class="num">Shared reports</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in patients %}
+      <tr>
+        <td>{{ row.user.display_name or "—" }}</td>
+        <td class="mono">{{ row.user.email }}</td>
+        <td class="num">
+          {% if row.count %}
+          <span class="pill">{{ row.count }}</span>
+          {% else %}
+          <span class="muted">none yet</span>
+          {% endif %}
+        </td>
+        <td class="row-action">
+          <a class="btn btn-small" href="/portal/patients/{{ row.user.id }}">
+            View reports
+            <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#arrow-right"/></svg>
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="empty">
+  <p>No patients have shared with you yet.</p>
+  <p class="muted">When a patient grants you access from their app, they will appear here.</p>
+</div>
+{% endif %}
+{% endblock %}

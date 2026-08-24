@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %}Report #{{ report.id }}{% endblock %}
+{% block content %}
+<nav class="crumbs" aria-label="Breadcrumb">
+  <a href="/portal/patients">My patients</a>
+  <span aria-hidden="true">/</span>
+  <a href="/portal/patients/{{ patient.id }}">{{ patient.display_name or patient.email }}</a>
+  <span aria-hidden="true">/</span>
+  <span>Report #{{ report.id }}</span>
+</nav>
+
+<div class="page-head detail-head" style="view-transition-name: report-{{ report.id }};">
+  <div>
+    <h1>{{ report.condition }}</h1>
+    <p class="muted">
+      Screened {{ report.created_at.strftime("%d %b %Y, %H:%M UTC") }}
+      {% if report.shared_at %}· shared {{ report.shared_at.strftime("%d %b %Y") }}{% endif %}
+    </p>
+  </div>
+
+  {# R6 frosted status dropdown. Built on <details> so it works with JS disabled; each
+     option is a real submit button, so the status POST is unchanged and the tests pass. #}
+  <form method="post" action="/portal/reports/{{ report.id }}/status" class="status-form">
+    <details class="menu-wrap" data-menu>
+      <summary class="menu-trigger" aria-label="Change review status">
+        <span class="badge status-{{ report.status }} badge-lg">{{ status_labels.get(report.status, report.status) }}</span>
+        <svg class="icon icon-sm chev" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#chevron-down"/></svg>
+      </summary>
+      <div class="menu" role="menu">
+        <p class="menu-head">Set review status</p>
+        {% for s in status_order %}
+        <button type="submit" name="status" value="{{ s }}" class="menu-item" role="menuitem"
+                {% if s == report.status %}aria-current="true"{% endif %}>
+          <span class="dot status-{{ s }}"></span>
+          <span class="menu-item-label">{{ status_labels[s] }}</span>
+          {% if s == report.status %}
+          <svg class="icon icon-sm menu-check" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#check-circle"/></svg>
+          {% endif %}
+        </button>
+        {% endfor %}
+      </div>
+    </details>
+  </form>
+</div>
+
+{% set _t = (report.triage or "")|lower %}
+{% set tone = 'urgent' if 'urgent' in _t else ('soon' if 'prompt' in _t or 'soon' in _t else 'routine') %}
+
+<!-- Row 1: the screening summary (wide) + imagery -->
+<div class="detail-primary">
+  <section class="card screening">
+    <div class="screening-head">
+      <h2><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#gauge"/></svg> Screening result</h2>
+      <span class="badge triage-{{ tone }} badge-lg">{{ report.triage }}</span>
+    </div>
+
+    <div class="screening-grid">
+      <div class="fact-block">
+        <span class="fact-k">Condition</span>
+        <span class="fact-v">{{ report.condition }}</span>
+      </div>
+      {% if report.predicted_class %}
+      <div class="fact-block">
+        <span class="fact-k">Model class</span>
+        <span class="fact-v mono">{{ report.predicted_class }}</span>
+      </div>
+      {% endif %}
+      <div class="fact-block fact-wide">
+        <span class="fact-k">Model confidence</span>
+        {% if report.confidence is not none %}
+        {% set pct = (report.confidence * 100)|round(1) %}
+        <div class="meter" role="img" aria-label="Model confidence {{ pct }} percent">
+          <div class="meter-track"><span class="meter-fill" style="width: {{ pct }}%"></span></div>
+          <span class="meter-val">{{ "%.1f%%"|format(report.confidence * 100) }}</span>
+        </div>
+        {% else %}
+        <span class="fact-v muted">Not reported</span>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if report.explanation %}
+    <h3>Explanation</h3>
+    <p class="prose">{{ report.explanation }}</p>
+    {% endif %}
+
+    <p class="screening-note">
+      <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#shield"/></svg>
+      AI screening support — this is not a diagnosis. Correlate with clinical examination.
+    </p>
+  </section>
+
+  <section class="card imagery">
+    <h2><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#image"/></svg> Imagery</h2>
+    {% if report.image_path or report.gradcam_path %}
+    <div class="shots{% if report.image_path and report.gradcam_path %} shots-pair{% endif %}">
+      {% if report.image_path %}
+      <figure class="shot">
+        <img src="/portal/reports/{{ report.id }}/image" alt="Shared lesion photograph">
+        <figcaption>Lesion photograph</figcaption>
+      </figure>
+      {% endif %}
+      {% if report.gradcam_path %}
+      <figure class="shot">
+        <img src="/portal/reports/{{ report.id }}/gradcam" alt="Grad-CAM attention overlay">
+        <figcaption>Grad-CAM — regions the model attended to</figcaption>
+      </figure>
+      {% endif %}
+    </div>
+    {% else %}
+    <div class="imagery-empty">
+      <svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#image"/></svg>
+      <p class="muted">No lesion photograph was shared with this report.</p>
+    </div>
+    {% endif %}
+  </section>
+</div>
+
+<!-- Row 2: questionnaire + notes, side by side -->
+<div class="detail-secondary">
+  <section class="card">
+    <h2><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#clipboard"/></svg> Questionnaire</h2>
+    {% if symptoms %}
+    <dl class="facts facts-2">
+      {% for key, value in symptoms.items() %}
+      <dt>{{ key|replace('_', ' ')|capitalize }}</dt>
+      <dd>
+        {% if value is boolean %}{{ "Yes" if value else "No" }}
+        {% elif value is iterable and value is not string %}{{ value|join(", ") }}
+        {% else %}{{ value }}{% endif %}
+      </dd>
+      {% endfor %}
+    </dl>
+    {% else %}
+    <p class="muted">No questionnaire was shared with this report.</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <h2><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#message"/></svg> Notes{% if notes %} <span class="pill">{{ notes|length }}</span>{% endif %}</h2>
+    {% if notes %}
+    <ul class="notes">
+      {% for n in notes %}
+      <li>
+        <p class="prose">{{ n.note }}</p>
+        <time class="muted">{{ n.created_at.strftime("%d %b %Y, %H:%M UTC") }}</time>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">No notes yet.</p>
+    {% endif %}
+
+    <form method="post" action="/portal/reports/{{ report.id }}/notes" class="stack note-form">
+      <label class="sr-only" for="note">Add a note</label>
+      <textarea name="note" id="note" rows="3" maxlength="5000"
+                placeholder="Add a clinical note (visible only to you)…" required></textarea>
+      <button class="btn btn-primary" type="submit">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#plus"/></svg>
+        Add note
+      </button>
+    </form>
+  </section>
+</div>
+
+<!-- Row 3: AI assistant — discuss this result with the safety-filtered model -->
+<section class="card ai-chat" data-ai-chat data-report-id="{{ report.id }}">
+  <div class="ai-chat-head">
+    <h2><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#message"/></svg> Ask about this result</h2>
+    <span class="badge status-under_review">AI assistant</span>
+  </div>
+  <p class="muted ai-chat-intro">
+    Ask the assistant to explain the screening, suggest what to check, or draft
+    patient-friendly wording. Informational support only — it restates the model’s
+    result and never overrides your clinical judgement.
+  </p>
+
+  <div class="ai-log" data-ai-log aria-live="polite">
+    <div class="ai-msg ai-msg-bot">
+      <div class="ai-bubble">Hi Dr. {{ (doctor.display_name or doctor.email).split()[-1] }} — ask me anything about the “{{ report.condition }}” screening ({{ report.triage }}). For example: “What does this triage level mean?” or “What should I check on exam?”</div>
+    </div>
+  </div>
+
+  <form class="ai-form" data-ai-form>
+    <input type="text" class="ai-input" data-ai-input autocomplete="off" required
+           placeholder="Ask about this screening…" maxlength="1000">
+    <button class="btn btn-primary ai-send" type="submit" data-ai-send>
+      <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#arrow-right"/></svg>
+      <span class="sr-only">Send</span>
+    </button>
+  </form>
+  <p class="ai-chat-foot muted">Responses are AI-generated screening support, not a diagnosis or a second opinion.</p>
+</section>
+{% endblock %}

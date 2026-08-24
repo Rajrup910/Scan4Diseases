@@ -12,14 +12,29 @@ import contextlib
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from backend.app import __version__
 from backend.app.config import get_settings
 from backend.app.db.session import init_db
-from backend.app.routes import auth, chat, health, media, predict, reports
+from backend.app.routes import (
+    auth,
+    chat,
+    doctor,
+    health,
+    media,
+    patient_sharing,
+    portal,
+    predict,
+    reports,
+)
+from backend.app.routes.portal import PortalAuthRequired
+from backend.app.services.image_vault import ImageVault
 from backend.app.services.inference import InferenceService
 from backend.app.services.lesion_gate import LesionGate
 from backend.app.services.lesion_router import LesionRouter
@@ -81,6 +96,17 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     store = TemporaryStore(settings.storage_path, settings.storage_ttl_minutes)
     store.purge_expired()
 
+    # Encrypted store for images a patient shares with a doctor. Unconfigured (no key) is a
+    # valid startup state -- /predict and metadata-only sharing still work; only an attempt
+    # to upload or serve a shared image then fails loudly.
+    image_vault = ImageVault(settings.shared_image_path, settings.image_encryption_key)
+    if not image_vault.configured:
+        logger.warning(
+            "IMAGE_ENCRYPTION_KEY not set - patients cannot share report images. Generate "
+            'one: python -c "from cryptography.fernet import Fernet; '
+            'print(Fernet.generate_key().decode())"'
+        )
+
     # OOD detector. None when disabled or the fitted artifact is absent; the predict
     # route treats None as "gate off" and proceeds without rejecting on distribution.
     ood = MahalanobisOOD.load(settings.ood_stats_file) if settings.ood_enabled else None
@@ -127,6 +153,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.inference = inference
     app.state.llm = llm
     app.state.store = store
+    app.state.image_vault = image_vault
     app.state.ood = ood
     app.state.lesion_gate = gate
     app.state.lesion_router = lesion_router
@@ -181,12 +208,25 @@ def create_app() -> FastAPI:
 
     register_exception_handlers(app)
 
+    # A portal page reached without a valid doctor session redirects to the login form,
+    # rather than returning the JSON 401/403 the mobile API uses -- the caller is a browser.
+    @app.exception_handler(PortalAuthRequired)
+    async def _portal_auth_required(_request: Request, _exc: PortalAuthRequired):
+        return RedirectResponse("/portal/login", status_code=303)
+
+    # Static assets for the server-rendered portal (local stylesheet only; no CDN).
+    static_dir = Path(__file__).resolve().parent / "static"
+    app.mount("/portal/static", StaticFiles(directory=str(static_dir)), name="portal-static")
+
     app.include_router(health.router)
     app.include_router(auth.router)
     app.include_router(reports.router)
     app.include_router(predict.router)
     app.include_router(chat.router)
     app.include_router(media.router)
+    app.include_router(patient_sharing.router)
+    app.include_router(doctor.router)
+    app.include_router(portal.router)
 
     @app.get("/", include_in_schema=False)
     async def root() -> dict[str, str]:
