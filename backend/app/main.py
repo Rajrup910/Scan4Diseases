@@ -23,6 +23,7 @@ from backend.app import __version__
 from backend.app.config import get_settings
 from backend.app.db.session import init_db
 from backend.app.routes import (
+    admin,
     auth,
     chat,
     doctor,
@@ -227,6 +228,7 @@ def create_app() -> FastAPI:
     app.include_router(patient_sharing.router)
     app.include_router(doctor.router)
     app.include_router(portal.router)
+    app.include_router(admin.router)
 
     @app.get("/", include_in_schema=False)
     async def root() -> dict[str, str]:

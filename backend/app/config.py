@@ -118,6 +118,11 @@ class Settings(BaseSettings):
     llm_max_tokens: int = 700
     llm_temperature: float = Field(default=0.3, ge=0.0, le=2.0)
 
+    # --- admin ---
+    # Used by POST /admin/promote-doctor to guard one-time cloud DB seeding.
+    # Set ADMIN_SECRET in Render env vars before calling the endpoint; clear it after.
+    admin_secret: str = ""
+
     @field_validator("model_arch")
     @classmethod
     def _known_arch(cls, value: str) -> str:
