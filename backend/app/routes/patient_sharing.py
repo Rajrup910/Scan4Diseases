@@ -209,13 +209,17 @@ def unshare_report(
     vault.remove(old_gradcam)
 
 
-async def _validated_image(upload: UploadFile, settings: Settings) -> Image.Image:
+async def _validated_image(upload: UploadFile, settings: Settings, *, required: bool = True) -> Image.Image | None:
     """Read an uploaded file and run it through the same validation `/predict` uses
     (size, format, dimensions, EXIF-orientation fix, RGB). Raises a client-safe 422."""
     try:
         raw = await upload.read()
     finally:
         await upload.close()
+    if not raw:
+        if required:
+            raise AppError("empty_image", "Uploaded image file is empty.", HTTP_422_UNPROCESSABLE)
+        return None
     try:
         return decode_image(raw, settings.max_upload_bytes)
     except ImageValidationError as exc:
@@ -248,30 +252,23 @@ async def upload_shared_image(
     settings: Settings = Depends(get_app_settings),
 ) -> SharedImageOut:
     """Attach an encrypted image (and optionally its Grad-CAM overlay) to one of the
-    patient's own reports, and mark the report shared.
-
-    This is the ONLY path by which a lesion image is persisted (Option B): `/predict` never
-    writes it, and a report saved without sharing holds only metadata. The bytes are
-    encrypted before they touch disk; the report stores blob references, never a servable
-    path. Uploading again replaces the previous blobs. Requires `IMAGE_ENCRYPTION_KEY` to be
-    configured, else a 503 -- image sharing fails loudly, never silently in plaintext.
-    """
+    patient's own reports, and mark the report shared."""
     report = _own_report_or_404(db, report_id, user)
 
-    image_data, image_type = _encode(await _validated_image(image, settings), as_png=False)
+    decoded_main = await _validated_image(image, settings, required=True)
+    assert decoded_main is not None
+    image_data, image_type = _encode(decoded_main, as_png=False)
+
     gradcam_name: str | None = None
     if gradcam is not None:
-        gradcam_data, gradcam_type = _encode(
-            await _validated_image(gradcam, settings), as_png=True
-        )
+        decoded_gc = await _validated_image(gradcam, settings, required=False)
+        if decoded_gc is not None:
+            gradcam_data, gradcam_type = _encode(decoded_gc, as_png=True)
+            gradcam_name = vault.store(gradcam_data, gradcam_type)
+            report.gradcam_path = gradcam_name
 
-    # Encrypt-and-write only after both uploads validate, so a bad overlay can't leave a
-    # half-shared report with an orphaned image blob.
     old_image, old_gradcam = report.image_path, report.gradcam_path
     report.image_path = vault.store(image_data, image_type)
-    if gradcam is not None:
-        gradcam_name = vault.store(gradcam_data, gradcam_type)
-        report.gradcam_path = gradcam_name
     if report.shared_at is None:
         report.shared_at = _utcnow()
     db.commit()

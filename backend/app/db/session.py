@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, event
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from backend.app.config import get_settings
@@ -28,14 +28,22 @@ def _build_engine():
     settings = get_settings()
     db_file = settings.database_file
     db_file.parent.mkdir(parents=True, exist_ok=True)
-    # check_same_thread=False: FastAPI's threadpool may hand a session to a
-    # different thread than the one that created it. Sessions are still used by
-    # one request at a time, so this is safe.
-    return create_engine(
+    is_sqlite = settings.database_url.startswith("sqlite")
+    connect_args = {"check_same_thread": False, "timeout": 30.0} if is_sqlite else {}
+    eng = create_engine(
         settings.database_url,
-        connect_args={"check_same_thread": False},
+        connect_args=connect_args,
+        pool_pre_ping=True,
         future=True,
     )
+    if is_sqlite:
+        @event.listens_for(eng, "connect")
+        def set_sqlite_pragma(dbapi_connection, connection_record):
+            cursor = dbapi_connection.cursor()
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.execute("PRAGMA synchronous=NORMAL")
+            cursor.close()
+    return eng
 
 
 engine = _build_engine()
