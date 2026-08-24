@@ -607,8 +607,8 @@
                 pwd.value = "";
                 pwd.focus();
               }
-            }, 500);
-          }, 2100);
+            }, 550);
+          }, 2900);
           return;
         }
 
@@ -626,7 +626,7 @@
         setTimeout(function () {
           var target = (result.data && result.data.redirect) ? result.data.redirect : "/portal/patients";
           window.location.href = target;
-        }, 2100);
+        }, 2900);
       })
       .catch(function () {
         // Fallback standard submit

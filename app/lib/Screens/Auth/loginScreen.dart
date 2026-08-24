@@ -323,7 +323,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-/// Full-screen Expanding Waves with Escalation (Increasing darkness) & De-escalation (Decreasing darkness)
+/// Full-screen Expanding Waves with Logo Dismantling & Breathing Transparency Escalation/De-escalation
 class _LoginAuthEscalationVeil extends StatefulWidget {
   final bool active;
   final bool isError;
@@ -353,10 +353,10 @@ class _LoginAuthEscalationVeilState extends State<_LoginAuthEscalationVeil>
     super.initState();
     _c = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2100),
+      duration: const Duration(milliseconds: 2900),
     )
       ..addListener(() {
-        if (!widget.isError && !_peaked && _c.value >= 0.72) {
+        if (!widget.isError && !_peaked && _c.value >= 0.86) {
           _peaked = true;
           widget.onPeak?.call();
         }
@@ -386,18 +386,29 @@ class _LoginAuthEscalationVeilState extends State<_LoginAuthEscalationVeil>
     super.dispose();
   }
 
+  /// Multi-stage breathing transparency envelope:
+  /// - 0.00 -> 0.45: Escalation (opacity 0 -> 1.0, multi-shade waves bloom from dismantled logo)
+  /// - 0.45 -> 0.62: Full Abyss Peak (opaque 1.0 immersion)
+  /// - 0.62 -> 0.76: Breathing Dip (opacity dips to 0.74, increasing transparency to show glowing rings)
+  /// - 0.76 -> 0.86: Secondary Deep Pulse (opacity rises back to 0.94)
+  /// - 0.86 -> 1.00: Final De-escalation (opacity dissolves to 0.0, cleanly revealing home screen)
   double _veil(double t) {
-    const peak = 1.0;
-    if (t <= 0.35) {
-      return Curves.easeOutCubic.transform((t / 0.35).clamp(0.0, 1.0)) * peak;
+    if (t <= 0.45) {
+      return Curves.easeOutCubic.transform((t / 0.45).clamp(0.0, 1.0));
     }
-    if (t <= 0.70) {
-      return peak;
+    if (t <= 0.62) {
+      return 1.0;
     }
-    return peak *
-        (1.0 -
-            Curves.easeInOutCubic
-                .transform(((t - 0.70) / 0.30).clamp(0.0, 1.0)));
+    if (t <= 0.76) {
+      final p = (t - 0.62) / 0.14;
+      return 1.0 - 0.26 * Curves.easeInOutCubic.transform(p.clamp(0.0, 1.0));
+    }
+    if (t <= 0.86) {
+      final p = (t - 0.76) / 0.10;
+      return 0.74 + 0.20 * Curves.easeInOutCubic.transform(p.clamp(0.0, 1.0));
+    }
+    final p = (t - 0.86) / 0.14;
+    return (1.0 - Curves.easeOutCubic.transform(p.clamp(0.0, 1.0))) * 0.94;
   }
 
   @override
@@ -408,11 +419,19 @@ class _LoginAuthEscalationVeilState extends State<_LoginAuthEscalationVeil>
       child: AnimatedBuilder(
         animation: _c,
         builder: (_, __) {
-          final opacity = _veil(_c.value).clamp(0.0, 1.0);
+          final t = _c.value;
+          final opacity = _veil(t).clamp(0.0, 1.0);
           if (opacity <= 0.001) return const SizedBox.shrink();
 
           final isErr = widget.isError;
-          final signScale = 0.5 + 0.5 * Curves.easeOutBack.transform((_c.value / 0.45).clamp(0.0, 1.0));
+          final signScale = 0.5 + 0.5 * Curves.easeOutBack.transform(((t - 0.20) / 0.35).clamp(0.0, 1.0));
+
+          // Dismantling parameters
+          final dismantleProgress = (t / 0.38).clamp(0.0, 1.0);
+          final ringDismantleScale = 1.0 + 3.0 * Curves.easeOutCubic.transform(dismantleProgress);
+          final ringDismantleAlpha = (1.0 - dismantleProgress).clamp(0.0, 1.0);
+          final crossDismantleScale = 1.0 + 2.4 * Curves.easeOutCubic.transform(dismantleProgress);
+          final crossDismantleRotation = 0.65 * Curves.easeOutCubic.transform(dismantleProgress);
 
           return Opacity(
             opacity: opacity,
@@ -428,62 +447,112 @@ class _LoginAuthEscalationVeilState extends State<_LoginAuthEscalationVeil>
                 ),
                 CustomPaint(
                   painter: ExpandingOrbsPainter(
-                    progress: _c.value,
+                    progress: t,
                     opacity: opacity,
                     isError: isErr,
                   ),
                   child: const SizedBox.expand(),
                 ),
-                // Central Glowing Sign (Checkmark for success, Cross for failure)
-                Center(
-                  child: Transform.scale(
-                    scale: signScale,
-                    child: Container(
-                      width: 92,
-                      height: 92,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: isErr
-                              ? const [
-                                  Color(0xFFEF4444),
-                                  Color(0xFFB3261E),
-                                  Color(0xFF7F1D1D),
-                                ]
-                              : const [
-                                  Color(0xFF15B79E),
-                                  Color(0xFF12695A),
-                                  Color(0xFF0D4F44),
-                                ],
-                        ),
-                        border: Border.all(
-                          color: isErr
-                              ? const Color(0xFFF87171)
-                              : const Color(0xFF6FE0CD),
-                          width: 2.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: isErr
-                                ? const Color(0xFFEF4444).withValues(alpha: 0.70)
-                                : const Color(0xFF15B79E).withValues(alpha: 0.70),
-                            blurRadius: 38,
-                            spreadRadius: 4,
+
+                // Center Dismantling Logo Fragment Eruption
+                if (dismantleProgress < 0.98)
+                  Center(
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Dismantling expanding outer ring
+                        Transform.scale(
+                          scale: ringDismantleScale,
+                          child: Container(
+                            width: 76,
+                            height: 76,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: (isErr ? const Color(0xFFEF4444) : Themes.mint)
+                                    .withValues(alpha: 0.85 * ringDismantleAlpha),
+                                width: 3.5,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: (isErr ? const Color(0xFFEF4444) : Themes.brand)
+                                      .withValues(alpha: 0.70 * ringDismantleAlpha),
+                                  blurRadius: 28,
+                                  spreadRadius: 3,
+                                ),
+                              ],
+                            ),
                           ),
-                        ],
-                      ),
-                      child: Center(
-                        child: Icon(
-                          isErr ? Icons.close_rounded : Icons.check_rounded,
-                          color: Colors.white,
-                          size: 52,
+                        ),
+
+                        // Dismantling crossbars breaking apart
+                        Transform.scale(
+                          scale: crossDismantleScale,
+                          child: Transform.rotate(
+                            angle: crossDismantleRotation,
+                            child: Icon(
+                              Icons.all_inclusive_rounded,
+                              size: 48,
+                              color: (isErr ? const Color(0xFFFCA5A5) : const Color(0xFF6FE0CD))
+                                  .withValues(alpha: 0.85 * ringDismantleAlpha),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // Central Glowing Sign (Checkmark for success, Cross for failure)
+                if (t >= 0.20)
+                  Center(
+                    child: Transform.scale(
+                      scale: signScale,
+                      child: Container(
+                        width: 96,
+                        height: 96,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: isErr
+                                ? const [
+                                    Color(0xFFEF4444),
+                                    Color(0xFFB3261E),
+                                    Color(0xFF7F1D1D),
+                                  ]
+                                : const [
+                                    Color(0xFF15B79E),
+                                    Color(0xFF12695A),
+                                    Color(0xFF0D4F44),
+                                  ],
+                          ),
+                          border: Border.all(
+                            color: isErr
+                                ? const Color(0xFFF87171)
+                                : const Color(0xFF6FE0CD),
+                            width: 2.8,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: isErr
+                                  ? const Color(0xFFEF4444).withValues(alpha: 0.75)
+                                  : const Color(0xFF15B79E).withValues(alpha: 0.75),
+                              blurRadius: 40,
+                              spreadRadius: 4,
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Icon(
+                            isErr ? Icons.close_rounded : Icons.check_rounded,
+                            color: Colors.white,
+                            size: 54,
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
               ],
             ),
           );
