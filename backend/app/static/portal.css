@@ -1768,69 +1768,120 @@ table.data tbody tr:hover { background: var(--surface-3); }
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 72px;
-  height: 72px;
+  width: 80px;
+  height: 80px;
 }
 .login-emblem-wrap .login-emblem {
   position: relative;
-  z-index: 2;
+  z-index: 1;
   width: 100%;
   height: 100%;
   color: var(--brand);
   filter: drop-shadow(0 2px 8px var(--brand-glow));
+  transition: opacity 0.35s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.login-card.is-auth-success .login-emblem,
+.login-card.is-auth-error .login-emblem {
+  opacity: 0.12;
+  transform: scale(0.88);
 }
 .login-auth-halo {
   position: absolute;
-  inset: -16px;
+  inset: -10px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1;
+  z-index: 3;
   pointer-events: none;
   opacity: 0;
-  transform: scale(0.65);
-  filter: blur(6px);
-  transition: opacity 0.35s var(--ease-out), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), filter 0.35s var(--ease-out);
+  transform: scale(0.5);
+  transition: opacity 0.3s ease, transform 0.45s cubic-bezier(0.16, 1.3, 0.3, 1);
+}
+.halo-disc {
+  width: 82px;
+  height: 82px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  will-change: transform;
 }
 .login-auth-symbol {
-  width: 52px;
-  height: 52px;
+  width: 50px;
+  height: 50px;
   display: none;
 }
-/* Success State: Glossy blurry emerald glow & tick in the background of the logo */
+/* Success State: Vibrant medical emerald disc + glowing white checkmark tick */
 .login-card.is-auth-success .login-auth-halo {
-  opacity: 0.95;
-  transform: scale(1.25);
-  filter: blur(3px);
-  background: radial-gradient(circle, color-mix(in srgb, var(--brand) 70%, transparent) 0%, color-mix(in srgb, var(--brand-strong) 40%, transparent) 55%, transparent 75%);
-  box-shadow: 0 0 45px var(--brand-glow), inset 0 0 20px color-mix(in srgb, var(--mint) 60%, transparent);
-  color: var(--mint);
+  opacity: 1;
+  transform: scale(1.08);
+}
+.login-card.is-auth-success .halo-disc {
+  background: linear-gradient(135deg, #10B981 0%, #059669 55%, #064E3B 100%);
+  border: 2.5px solid #6EE7B7;
+  box-shadow: 0 0 38px rgba(16, 185, 129, 0.85), 0 8px 24px rgba(0, 0, 0, 0.4);
+  animation: disc-pop 0.45s cubic-bezier(0.16, 1.3, 0.3, 1) forwards;
 }
 .login-card.is-auth-success .icon-tick {
   display: block;
-  animation: tick-pop 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
-/* Error State: Glossy blurry ruby glow & cross in the background of the logo */
+.login-card.is-auth-success .tick-path {
+  stroke-dasharray: 32;
+  stroke-dashoffset: 32;
+  stroke: #ffffff;
+  stroke-width: 3.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.4));
+  animation: tick-draw 0.45s cubic-bezier(0.2, 0.8, 0.25, 1) 0.12s forwards;
+}
+
+/* Error State: Vibrant medical ruby crimson disc + glowing white cross */
 .login-card.is-auth-error .login-auth-halo {
-  opacity: 0.95;
-  transform: scale(1.25);
-  filter: blur(3px);
-  background: radial-gradient(circle, rgba(239, 68, 68, 0.55) 0%, rgba(185, 28, 28, 0.30) 55%, transparent 75%);
-  box-shadow: 0 0 45px rgba(239, 68, 68, 0.45), inset 0 0 20px rgba(248, 113, 113, 0.5);
-  color: #f87171;
+  opacity: 1;
+  transform: scale(1.08);
+}
+.login-card.is-auth-error .halo-disc {
+  background: linear-gradient(135deg, #EF4444 0%, #DC2626 55%, #7F1D1D 100%);
+  border: 2.5px solid #FCA5A5;
+  box-shadow: 0 0 38px rgba(239, 68, 68, 0.85), 0 8px 24px rgba(0, 0, 0, 0.4);
+  animation: disc-pop 0.45s cubic-bezier(0.16, 1.3, 0.3, 1) forwards;
 }
 .login-card.is-auth-error .icon-cross {
   display: block;
-  animation: cross-pop 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
-@keyframes tick-pop {
-  0% { transform: scale(0.6); opacity: 0; }
+.login-card.is-auth-error .cross-path-1 {
+  stroke-dasharray: 32;
+  stroke-dashoffset: 32;
+  stroke: #ffffff;
+  stroke-width: 3.6;
+  stroke-linecap: round;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.4));
+  animation: cross-draw 0.35s cubic-bezier(0.2, 0.8, 0.25, 1) 0.10s forwards;
+}
+.login-card.is-auth-error .cross-path-2 {
+  stroke-dasharray: 32;
+  stroke-dashoffset: 32;
+  stroke: #ffffff;
+  stroke-width: 3.6;
+  stroke-linecap: round;
+  filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.4));
+  animation: cross-draw 0.35s cubic-bezier(0.2, 0.8, 0.25, 1) 0.22s forwards;
+}
+
+@keyframes disc-pop {
+  0% { transform: scale(0.5); opacity: 0; }
+  70% { transform: scale(1.12); opacity: 1; }
   100% { transform: scale(1); opacity: 1; }
 }
-@keyframes cross-pop {
-  0% { transform: scale(0.6) rotate(-15deg); opacity: 0; }
-  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+@keyframes tick-draw {
+  0% { stroke-dashoffset: 32; }
+  100% { stroke-dashoffset: 0; }
+}
+@keyframes cross-draw {
+  0% { stroke-dashoffset: 32; }
+  100% { stroke-dashoffset: 0; }
 }
 
 @keyframes emblem-shake {

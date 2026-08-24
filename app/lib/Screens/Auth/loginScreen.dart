@@ -183,7 +183,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Brand mark — with glowing ambient emerald/ruby tick/cross depth flourish in background
+                    // Brand mark — with glowing ambient emerald/ruby tick/cross depth flourish
                     Padding(
                       padding: const EdgeInsets.only(bottom: 16),
                       child: Center(
@@ -194,7 +194,13 @@ class _LoginScreenState extends State<LoginScreen> {
                             alignment: Alignment.center,
                             clipBehavior: Clip.none,
                             children: [
-                              // Background glossy blurry tick / cross depth effect behind the emblem
+                              // Logo Mark (dims slightly when tick/cross is active so feedback is 100% crisp & unobstructed)
+                              AnimatedOpacity(
+                                opacity: (_showSuccessVeil || _showFailureVeil) ? 0.10 : 1.0,
+                                duration: const Duration(milliseconds: 250),
+                                child: const AppLogoMark(size: 76, glow: true),
+                              ),
+                              // Vivid glossy tick / cross flourish
                               _LogoAuthHalo(
                                 active: _showSuccessVeil || _showFailureVeil,
                                 isError: _showFailureVeil,
@@ -216,7 +222,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                   }
                                 },
                               ),
-                              const AppLogoMark(size: 76, glow: true),
                             ],
                           ),
                         ),
@@ -333,9 +338,9 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-/// Ambient depth flourish in the background of the logo for login feedback:
-/// - Blurry, glossy emerald aura with checkmark tick radiating in background for success
-/// - Blurry, glossy ruby aura with access denied cross radiating in background for failure
+/// Ambient depth flourish for login feedback:
+/// - Crisp, glossy emerald disc with glowing white checkmark tick for success
+/// - Crisp, glossy ruby disc with glowing white access denied cross for failure
 class _LogoAuthHalo extends StatefulWidget {
   final bool active;
   final bool isError;
@@ -363,10 +368,10 @@ class _LogoAuthHaloState extends State<_LogoAuthHalo>
     super.initState();
     _c = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 950),
+      duration: const Duration(milliseconds: 1250),
     )
       ..addListener(() {
-        if (!widget.isError && !_peaked && _c.value >= 0.45) {
+        if (!widget.isError && !_peaked && _c.value >= 0.88) {
           _peaked = true;
           widget.onPeak?.call();
         }
@@ -405,17 +410,17 @@ class _LogoAuthHaloState extends State<_LogoAuthHalo>
       animation: _c,
       builder: (context, _) {
         final t = _c.value;
-        // Smooth bell curve opacity
+        // Hold visible for generous duration (0.20 -> 0.88), then gentle fade
         final double opacity;
-        if (t <= 0.3) {
-          opacity = (t / 0.3).clamp(0.0, 1.0);
-        } else if (t <= 0.7) {
+        if (t <= 0.20) {
+          opacity = (t / 0.20).clamp(0.0, 1.0);
+        } else if (t <= 0.88) {
           opacity = 1.0;
         } else {
-          opacity = (1.0 - (t - 0.7) / 0.3).clamp(0.0, 1.0);
+          opacity = (1.0 - (t - 0.88) / 0.12).clamp(0.0, 1.0);
         }
 
-        final scale = 0.75 + 0.55 * Curves.easeOutBack.transform(t.clamp(0.0, 1.0));
+        final scale = 0.5 + 0.55 * Curves.easeOutBack.transform((t / 0.40).clamp(0.0, 1.0));
 
         if (opacity <= 0.01) return const SizedBox.shrink();
 
@@ -424,56 +429,57 @@ class _LogoAuthHaloState extends State<_LogoAuthHalo>
             child: Transform.scale(
               scale: scale,
               child: Opacity(
-                opacity: opacity * 0.92,
+                opacity: opacity,
                 child: Container(
-                  width: 110,
-                  height: 110,
+                  width: 88,
+                  height: 88,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    gradient: RadialGradient(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                       colors: isErr
-                          ? [
-                              const Color(0xFFEF4444).withValues(alpha: 0.75),
-                              const Color(0xFFB91C1C).withValues(alpha: 0.40),
-                              const Color(0xFF7F1D1D).withValues(alpha: 0.15),
-                              Colors.transparent,
+                          ? const [
+                              Color(0xFFEF4444),
+                              Color(0xFFDC2626),
+                              Color(0xFF7F1D1D),
                             ]
-                          : [
-                              const Color(0xFF2DD4BF).withValues(alpha: 0.80),
-                              const Color(0xFF15B79E).withValues(alpha: 0.45),
-                              const Color(0xFF0F766E).withValues(alpha: 0.18),
-                              Colors.transparent,
+                          : const [
+                              Color(0xFF10B981),
+                              Color(0xFF059669),
+                              Color(0xFF064E3B),
                             ],
-                      stops: const [0.0, 0.45, 0.75, 1.0],
+                    ),
+                    border: Border.all(
+                      color: isErr ? const Color(0xFFFCA5A5) : const Color(0xFF6EE7B7),
+                      width: 2.6,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: (isErr ? const Color(0xFFEF4444) : Themes.brand)
-                            .withValues(alpha: 0.50),
-                        blurRadius: 28,
-                        spreadRadius: 2,
+                        color: (isErr ? const Color(0xFFEF4444) : const Color(0xFF10B981))
+                            .withValues(alpha: 0.85),
+                        blurRadius: 36,
+                        spreadRadius: 3,
+                      ),
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.35),
+                        blurRadius: 14,
+                        offset: const Offset(0, 6),
                       ),
                     ],
                   ),
-                  child: ClipOval(
-                    child: BackdropFilter(
-                      filter: ui.ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-                      child: Center(
-                        child: Icon(
-                          isErr ? Icons.close_rounded : Icons.check_rounded,
-                          size: 48,
-                          color: isErr
-                              ? const Color(0xFFFCA5A5)
-                              : const Color(0xFFE6FFFA),
-                          shadows: [
-                            Shadow(
-                              color: (isErr ? const Color(0xFFEF4444) : Themes.mint)
-                                  .withValues(alpha: 0.8),
-                              blurRadius: 12,
-                            ),
-                          ],
+                  child: Center(
+                    child: Icon(
+                      isErr ? Icons.close_rounded : Icons.check_rounded,
+                      size: 52,
+                      color: Colors.white,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withValues(alpha: 0.45),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ),

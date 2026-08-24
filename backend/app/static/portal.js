@@ -614,7 +614,7 @@
         setTimeout(function () {
           var target = (result.data && result.data.redirect) ? result.data.redirect : "/portal/patients";
           window.location.href = target;
-        }, 450);
+        }, 1150);
       })
       .catch(function () {
         // Fallback standard submit
