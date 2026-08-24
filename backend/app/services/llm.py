@@ -138,7 +138,10 @@ class LLMService:
         self._client = httpx.AsyncClient(
             base_url=self.settings.llm_base_url.rstrip("/"),
             timeout=self.settings.llm_timeout_seconds,
-            headers={"Authorization": f"Bearer {self.settings.llm_api_key}"},
+            headers={
+                "Authorization": f"Bearer {self.settings.llm_api_key}",
+                "User-Agent": "Scan4Disease/1.0",
+            },
         )
 
     async def shutdown(self) -> None:
