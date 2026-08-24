@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -69,17 +71,32 @@ class AuthService {
     String? displayName,
     bool deferUserUpdate = false,
   }) async {
-    final res = await http.post(
-      _uri('/auth/register'),
-      headers: const {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': email.trim(),
-        'password': password,
-        if (displayName != null && displayName.trim().isNotEmpty)
-          'display_name': displayName.trim(),
-      }),
-    );
-    return await _consumeAuth(res, deferUserUpdate: deferUserUpdate);
+    final cleanEmail = email.trim().toLowerCase();
+    final cleanPassword = password.trim();
+    final cleanName = displayName?.trim();
+
+    try {
+      final res = await http.post(
+        _uri('/auth/register'),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'email': cleanEmail,
+          'password': cleanPassword,
+          if (cleanName != null && cleanName.isNotEmpty)
+            'display_name': cleanName,
+        }),
+      ).timeout(const Duration(seconds: 30));
+      return await _consumeAuth(res, deferUserUpdate: deferUserUpdate);
+    } on SocketException catch (_) {
+      throw AuthException('Cannot reach cloud server. Please check your internet connection.');
+    } on TimeoutException catch (_) {
+      throw AuthException('Server is connecting. Please try again in a moment.');
+    } on HandshakeException catch (_) {
+      throw AuthException('Secure SSL connection failed. Please check your device date/time.');
+    } catch (e) {
+      if (e is AuthException) rethrow;
+      throw AuthException(e.toString().replaceAll('Exception: ', '').trim());
+    }
   }
 
   Future<AuthUser> login({
@@ -87,12 +104,26 @@ class AuthService {
     required String password,
     bool deferUserUpdate = false,
   }) async {
-    final res = await http.post(
-      _uri('/auth/login'),
-      headers: const {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email.trim(), 'password': password}),
-    );
-    return await _consumeAuth(res, deferUserUpdate: deferUserUpdate);
+    final cleanEmail = email.trim().toLowerCase();
+    final cleanPassword = password.trim();
+
+    try {
+      final res = await http.post(
+        _uri('/auth/login'),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': cleanEmail, 'password': cleanPassword}),
+      ).timeout(const Duration(seconds: 30));
+      return await _consumeAuth(res, deferUserUpdate: deferUserUpdate);
+    } on SocketException catch (_) {
+      throw AuthException('Cannot reach cloud server. Please check your internet connection.');
+    } on TimeoutException catch (_) {
+      throw AuthException('Server is waking up. Please try again in a few seconds.');
+    } on HandshakeException catch (_) {
+      throw AuthException('Secure SSL connection failed. Please check your device date/time.');
+    } catch (e) {
+      if (e is AuthException) rethrow;
+      throw AuthException(e.toString().replaceAll('Exception: ', '').trim());
+    }
   }
 
   void activateUser(AuthUser authUser) {
@@ -129,7 +160,7 @@ class AuthService {
   }
 
   Future<AuthUser> _fetchMe() async {
-    final res = await http.get(_uri('/auth/me'), headers: authHeaders);
+    final res = await http.get(_uri('/auth/me'), headers: authHeaders).timeout(const Duration(seconds: 25));
     if (res.statusCode != 200) {
       throw AuthException('Session expired.');
     }
@@ -137,7 +168,7 @@ class AuthService {
   }
 
   String _messageOf(Map<String, dynamic> body, int status) {
-    final msg = body['message'];
+    final msg = body['message'] ?? body['detail'] ?? body['error'];
     if (msg is String && msg.isNotEmpty) return msg;
     return 'Something went wrong (error $status). Please try again.';
   }

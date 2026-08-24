@@ -47,17 +47,21 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final auth = AuthService.instance;
       AuthUser authUser;
+      final emailInput = _email.text.trim().toLowerCase();
+      final passwordInput = _password.text.trim();
+      final nameInput = _name.text.trim();
+
       if (_register) {
         authUser = await auth.register(
-          email: _email.text,
-          password: _password.text,
-          displayName: _name.text,
+          email: emailInput,
+          password: passwordInput,
+          displayName: nameInput,
           deferUserUpdate: true,
         );
       } else {
         authUser = await auth.login(
-          email: _email.text,
-          password: _password.text,
+          email: emailInput,
+          password: passwordInput,
           deferUserUpdate: true,
         );
       }
@@ -246,6 +250,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextFormField(
                         controller: _name,
                         textInputAction: TextInputAction.next,
+                        autocorrect: false,
                         decoration: const InputDecoration(
                           labelText: 'Full name (optional)',
                           prefixIcon: Icon(Icons.person_outline, color: Themes.brand),
@@ -258,6 +263,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
                       autofillHints: const [AutofillHints.email],
+                      autocorrect: false,
+                      enableSuggestions: false,
                       decoration: const InputDecoration(
                         labelText: 'Email address',
                         prefixIcon: Icon(Icons.mail_outline, color: Themes.brand),
@@ -276,6 +283,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       controller: _password,
                       obscureText: _obscure,
                       textInputAction: TextInputAction.done,
+                      autocorrect: false,
+                      enableSuggestions: false,
                       onFieldSubmitted: (_) => _loading ? null : _submit(),
                       decoration: InputDecoration(
                         labelText: 'Password',
@@ -286,7 +295,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       validator: (v) {
-                        final value = v ?? '';
+                        final value = (v ?? '').trim();
                         if (value.isEmpty) return 'Please enter your password.';
                         if (_register && value.length < 8) {
                           return 'Use at least 8 characters.';
