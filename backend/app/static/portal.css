@@ -1763,11 +1763,74 @@ table.data tbody tr:hover { background: var(--surface-3); }
   text-align: center;
   gap: var(--s-3);
 }
-.login-emblem {
+.login-emblem-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 72px;
   height: 72px;
+}
+.login-emblem-wrap .login-emblem {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
   color: var(--brand);
   filter: drop-shadow(0 2px 8px var(--brand-glow));
+}
+.login-auth-halo {
+  position: absolute;
+  inset: -16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.65);
+  filter: blur(6px);
+  transition: opacity 0.35s var(--ease-out), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), filter 0.35s var(--ease-out);
+}
+.login-auth-symbol {
+  width: 52px;
+  height: 52px;
+  display: none;
+}
+/* Success State: Glossy blurry emerald glow & tick in the background of the logo */
+.login-card.is-auth-success .login-auth-halo {
+  opacity: 0.95;
+  transform: scale(1.25);
+  filter: blur(3px);
+  background: radial-gradient(circle, color-mix(in srgb, var(--brand) 70%, transparent) 0%, color-mix(in srgb, var(--brand-strong) 40%, transparent) 55%, transparent 75%);
+  box-shadow: 0 0 45px var(--brand-glow), inset 0 0 20px color-mix(in srgb, var(--mint) 60%, transparent);
+  color: var(--mint);
+}
+.login-card.is-auth-success .icon-tick {
+  display: block;
+  animation: tick-pop 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+/* Error State: Glossy blurry ruby glow & cross in the background of the logo */
+.login-card.is-auth-error .login-auth-halo {
+  opacity: 0.95;
+  transform: scale(1.25);
+  filter: blur(3px);
+  background: radial-gradient(circle, rgba(239, 68, 68, 0.55) 0%, rgba(185, 28, 28, 0.30) 55%, transparent 75%);
+  box-shadow: 0 0 45px rgba(239, 68, 68, 0.45), inset 0 0 20px rgba(248, 113, 113, 0.5);
+  color: #f87171;
+}
+.login-card.is-auth-error .icon-cross {
+  display: block;
+  animation: cross-pop 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+@keyframes tick-pop {
+  0% { transform: scale(0.6); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+@keyframes cross-pop {
+  0% { transform: scale(0.6) rotate(-15deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
 }
 .login-brand-word {
   font-family: var(--font-display);

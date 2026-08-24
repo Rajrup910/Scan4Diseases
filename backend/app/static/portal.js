@@ -574,64 +574,50 @@
         });
       })
       .then(function (result) {
+        var card = document.querySelector(".login-card");
         if (!result.ok) {
-          // Authentication failed: trigger the same circular animation in RED for 2200ms
+          // Authentication failed: render subtle glossy ruby cross in background of logo
           delete loginForm.dataset.going;
           var msg = (result.data && result.data.error) ? result.data.error : "Email or password is incorrect.";
           
-          var errOver = createOrbsContainer(true);
-          document.body.appendChild(errOver);
-          requestAnimationFrame(function () {
-            requestAnimationFrame(function () {
-              document.body.classList.add("is-transitioning");
-              errOver.classList.add("is-active");
-            });
-          });
-
-          setTimeout(function () {
-            errOver.classList.add("is-fading-out");
+          if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalBtnText;
+          }
+          if (card) {
+            card.classList.remove("is-auth-success");
+            card.classList.add("is-auth-error");
             setTimeout(function () {
-              errOver.remove();
-              document.body.classList.remove("is-transitioning");
-              if (btn) {
-                btn.disabled = false;
-                btn.innerHTML = originalBtnText;
-              }
-              var errEl = document.createElement("p");
-              errEl.className = "alert alert-error alert-shake";
-              errEl.setAttribute("role", "alert");
-              errEl.textContent = msg;
-              loginForm.parentNode.insertBefore(errEl, loginForm);
-              var pwd = loginForm.querySelector("input[name='password']");
-              if (pwd) {
-                pwd.value = "";
-                pwd.focus();
-              }
-            }, 350);
-          }, 1300);
+              card.classList.remove("is-auth-error");
+            }, 1800);
+          }
+
+          var errEl = document.createElement("p");
+          errEl.className = "alert alert-error alert-shake";
+          errEl.setAttribute("role", "alert");
+          errEl.textContent = msg;
+          loginForm.parentNode.insertBefore(errEl, loginForm);
+          var pwd = loginForm.querySelector("input[name='password']");
+          if (pwd) {
+            pwd.value = "";
+            pwd.focus();
+          }
           return;
         }
 
-        // Authentication succeeded: trigger lush takeover with green circles, particles, and verified sign
-        try { sessionStorage.setItem("s4d_login_wash", "1"); } catch (err) {}
-        var over = createOrbsContainer(false);
-        document.body.appendChild(over);
-        requestAnimationFrame(function () {
-          requestAnimationFrame(function () {
-            document.body.classList.add("is-transitioning");
-            over.classList.add("is-active");
-          });
-        });
+        // Authentication succeeded: render sleek blurry glossy emerald tick in the background of the logo
+        if (card) {
+          card.classList.remove("is-auth-error");
+          card.classList.add("is-auth-success");
+        }
 
-        // Lasts 1300ms so the blooming circles, glowing checkmark sign, and particle sparks
-        // feel sleek, snappy, and flow smoothly into the clinician homepage
         setTimeout(function () {
           var target = (result.data && result.data.redirect) ? result.data.redirect : "/portal/patients";
           window.location.href = target;
-        }, 1300);
+        }, 450);
       })
       .catch(function () {
-        // Network or execution fallback
+        // Fallback standard submit
         loginForm.submit();
       });
     });

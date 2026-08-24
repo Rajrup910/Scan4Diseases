@@ -183,10 +183,44 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Brand mark — glowing electric teal emblem (twin of the web mark).
-                    const Padding(
-                      padding: EdgeInsets.only(bottom: 16),
-                      child: Center(child: AppLogoMark(size: 76, glow: true)),
+                    // Brand mark — with glowing ambient emerald/ruby tick/cross depth flourish in background
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Center(
+                        child: SizedBox(
+                          width: 110,
+                          height: 110,
+                          child: Stack(
+                            alignment: Alignment.center,
+                            clipBehavior: Clip.none,
+                            children: [
+                              // Background glossy blurry tick / cross depth effect behind the emblem
+                              _LogoAuthHalo(
+                                active: _showSuccessVeil || _showFailureVeil,
+                                isError: _showFailureVeil,
+                                onPeak: () {
+                                  if (_showSuccessVeil && _authenticatedUser != null) {
+                                    AuthService.instance.activateUser(_authenticatedUser!);
+                                  }
+                                },
+                                onDismissed: () {
+                                  if (mounted && _showFailureVeil) {
+                                    setState(() => _showFailureVeil = false);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(_failureErrorMessage),
+                                        behavior: SnackBarBehavior.floating,
+                                        backgroundColor: Themes.danger,
+                                      ),
+                                    );
+                                  }
+                                },
+                              ),
+                              const AppLogoMark(size: 76, glow: true),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -291,30 +325,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
-          Positioned.fill(
-            child: _LoginAuthVeil(
-              active: _showSuccessVeil || _showFailureVeil,
-              isError: _showFailureVeil,
-              errorMessage: _failureErrorMessage,
-              onPeak: () {
-                if (_showSuccessVeil && _authenticatedUser != null) {
-                  AuthService.instance.activateUser(_authenticatedUser!);
-                }
-              },
-              onDismissed: () {
-                if (mounted && _showFailureVeil) {
-                  setState(() => _showFailureVeil = false);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(_failureErrorMessage),
-                      behavior: SnackBarBehavior.floating,
-                      backgroundColor: Themes.danger,
-                    ),
-                  );
-                }
-              },
-            ),
-          ),
         ],
       ),
     ),
@@ -323,29 +333,27 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-/// Full-screen circular orbs flourish for login:
-/// - Green / Jade palette with verified checkmark for successful authentication
-/// - Red / Crimson / Ruby palette with access denied cross for unsuccessful authentication
-class _LoginAuthVeil extends StatefulWidget {
+/// Ambient depth flourish in the background of the logo for login feedback:
+/// - Blurry, glossy emerald aura with checkmark tick radiating in background for success
+/// - Blurry, glossy ruby aura with access denied cross radiating in background for failure
+class _LogoAuthHalo extends StatefulWidget {
   final bool active;
   final bool isError;
-  final String? errorMessage;
   final VoidCallback? onPeak;
   final VoidCallback? onDismissed;
 
-  const _LoginAuthVeil({
+  const _LogoAuthHalo({
     required this.active,
     this.isError = false,
-    this.errorMessage,
     this.onPeak,
     this.onDismissed,
   });
 
   @override
-  State<_LoginAuthVeil> createState() => _LoginAuthVeilState();
+  State<_LogoAuthHalo> createState() => _LogoAuthHaloState();
 }
 
-class _LoginAuthVeilState extends State<_LoginAuthVeil>
+class _LogoAuthHaloState extends State<_LogoAuthHalo>
     with SingleTickerProviderStateMixin {
   late final AnimationController _c;
   bool _peaked = false;
@@ -355,10 +363,10 @@ class _LoginAuthVeilState extends State<_LoginAuthVeil>
     super.initState();
     _c = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1300),
+      duration: const Duration(milliseconds: 950),
     )
       ..addListener(() {
-        if (!widget.isError && !_peaked && _c.value >= 0.40) {
+        if (!widget.isError && !_peaked && _c.value >= 0.45) {
           _peaked = true;
           widget.onPeak?.call();
         }
@@ -372,7 +380,7 @@ class _LoginAuthVeilState extends State<_LoginAuthVeil>
   }
 
   @override
-  void didUpdateWidget(covariant _LoginAuthVeil old) {
+  void didUpdateWidget(covariant _LogoAuthHalo old) {
     super.didUpdateWidget(old);
     if (widget.active && !old.active) {
       _peaked = false;
@@ -388,105 +396,92 @@ class _LoginAuthVeilState extends State<_LoginAuthVeil>
     super.dispose();
   }
 
-  double _veil(double t) {
-    const peak = 1.0;
-    if (t <= 0.24) {
-      return Curves.easeOutCubic.transform((t / 0.24).clamp(0.0, 1.0)) * peak;
-    }
-    if (t <= 0.65) {
-      return peak;
-    }
-    return peak *
-        (1.0 -
-            Curves.easeInOutCubic
-                .transform(((t - 0.65) / 0.35).clamp(0.0, 1.0)));
-  }
-
   @override
   Widget build(BuildContext context) {
     if (!widget.active && _c.value == 0) return const SizedBox.shrink();
-    return IgnorePointer(
-      ignoring: !widget.active,
-      child: AnimatedBuilder(
-        animation: _c,
-        builder: (_, __) {
-          final opacity = _veil(_c.value).clamp(0.0, 1.0);
-          if (opacity <= 0.001) return const SizedBox.shrink();
+    final isErr = widget.isError;
 
-          final isErr = widget.isError;
+    return AnimatedBuilder(
+      animation: _c,
+      builder: (context, _) {
+        final t = _c.value;
+        // Smooth bell curve opacity
+        final double opacity;
+        if (t <= 0.3) {
+          opacity = (t / 0.3).clamp(0.0, 1.0);
+        } else if (t <= 0.7) {
+          opacity = 1.0;
+        } else {
+          opacity = (1.0 - (t - 0.7) / 0.3).clamp(0.0, 1.0);
+        }
 
-          return Opacity(
-            opacity: opacity,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                BackdropFilter(
-                  filter: ui.ImageFilter.blur(
-                    sigmaX: 24 * opacity,
-                    sigmaY: 24 * opacity,
-                  ),
-                  child: const SizedBox.expand(),
-                ),
-                CustomPaint(
-                  painter: ExpandingOrbsPainter(
-                    progress: _c.value,
-                    opacity: opacity,
-                    isError: isErr,
-                  ),
-                  child: const SizedBox.expand(),
-                ),
-                // Central sign (Checkmark for success, Cross for failure)
-                Center(
-                  child: Container(
-                    width: 88,
-                    height: 88,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: isErr
-                            ? const [
-                                Color(0xFFEF4444),
-                                Color(0xFFB3261E),
-                                Color(0xFF7F1D1D),
-                              ]
-                            : const [
-                                Color(0xFF15B79E),
-                                Color(0xFF12695A),
-                                Color(0xFF0D4F44),
-                              ],
+        final scale = 0.75 + 0.55 * Curves.easeOutBack.transform(t.clamp(0.0, 1.0));
+
+        if (opacity <= 0.01) return const SizedBox.shrink();
+
+        return Positioned.fill(
+          child: Center(
+            child: Transform.scale(
+              scale: scale,
+              child: Opacity(
+                opacity: opacity * 0.92,
+                child: Container(
+                  width: 110,
+                  height: 110,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: isErr
+                          ? [
+                              const Color(0xFFEF4444).withValues(alpha: 0.75),
+                              const Color(0xFFB91C1C).withValues(alpha: 0.40),
+                              const Color(0xFF7F1D1D).withValues(alpha: 0.15),
+                              Colors.transparent,
+                            ]
+                          : [
+                              const Color(0xFF2DD4BF).withValues(alpha: 0.80),
+                              const Color(0xFF15B79E).withValues(alpha: 0.45),
+                              const Color(0xFF0F766E).withValues(alpha: 0.18),
+                              Colors.transparent,
+                            ],
+                      stops: const [0.0, 0.45, 0.75, 1.0],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (isErr ? const Color(0xFFEF4444) : Themes.brand)
+                            .withValues(alpha: 0.50),
+                        blurRadius: 28,
+                        spreadRadius: 2,
                       ),
-                      border: Border.all(
-                        color: isErr
-                            ? const Color(0xFFF87171)
-                            : const Color(0xFF6FE0CD),
-                        width: 2.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: BackdropFilter(
+                      filter: ui.ImageFilter.blur(sigmaX: 4, sigmaY: 4),
+                      child: Center(
+                        child: Icon(
+                          isErr ? Icons.close_rounded : Icons.check_rounded,
+                          size: 48,
                           color: isErr
-                              ? const Color(0xFFEF4444).withValues(alpha: 0.65)
-                              : const Color(0xFF15B79E).withValues(alpha: 0.65),
-                          blurRadius: 36,
-                          spreadRadius: 4,
+                              ? const Color(0xFFFCA5A5)
+                              : const Color(0xFFE6FFFA),
+                          shadows: [
+                            Shadow(
+                              color: (isErr ? const Color(0xFFEF4444) : Themes.mint)
+                                  .withValues(alpha: 0.8),
+                              blurRadius: 12,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Icon(
-                        isErr ? Icons.close_rounded : Icons.check_rounded,
-                        color: Colors.white,
-                        size: 50,
                       ),
                     ),
                   ),
                 ),
-              ],
+              ),
             ),
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }
