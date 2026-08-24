@@ -36,7 +36,12 @@ class AuthService {
   static final AuthService instance = AuthService._();
 
   static const _kTokenKey = 'auth_token';
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: true,
+      resetOnError: true,
+    ),
+  );
 
   /// Null when signed out. Screens listen to this to gate the UI.
   final ValueNotifier<AuthUser?> user = ValueNotifier<AuthUser?>(null);
@@ -168,8 +173,13 @@ class AuthService {
   }
 
   String _messageOf(Map<String, dynamic> body, int status) {
-    final msg = body['message'] ?? body['detail'] ?? body['error'];
-    if (msg is String && msg.isNotEmpty) return msg;
+    final detail = body['detail'];
+    if (detail is String && detail.trim().isNotEmpty) return detail.trim();
+    final msg = body['message'] ?? body['error'];
+    if (msg is String && msg.trim().isNotEmpty) return msg.trim();
+    if (status == 401) return 'Email or password is incorrect.';
+    if (status == 409) return 'An account with this email already exists.';
+    if (status == 422) return 'Invalid email or password format.';
     return 'Something went wrong (error $status). Please try again.';
   }
 }

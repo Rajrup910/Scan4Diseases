@@ -11,7 +11,12 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class SelfExamReminder {
   SelfExamReminder._();
 
-  static const _storage = FlutterSecureStorage();
+  static const _storage = FlutterSecureStorage(
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: true,
+      resetOnError: true,
+    ),
+  );
   static const _enabledKey = 'self_exam_reminder_enabled';
   static const _dueKey = 'self_exam_next_due';
 

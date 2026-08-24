@@ -22,7 +22,12 @@ class LanguageService {
   static const Map<String, String> supported = {'en': 'English', 'hi': 'हिन्दी'};
   static const String _fallback = 'en';
 
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: true,
+      resetOnError: true,
+    ),
+  );
 
   /// The active language code. Defaults to English until [load] restores a saved choice.
   final ValueNotifier<String> code = ValueNotifier<String>(_fallback);

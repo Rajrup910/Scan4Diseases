@@ -15,7 +15,12 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 class ApiConfig {
   ApiConfig._();
 
-  static const _storage = FlutterSecureStorage();
+  static const _storage = FlutterSecureStorage(
+    aOptions: AndroidOptions(
+      encryptedSharedPreferences: true,
+      resetOnError: true,
+    ),
+  );
   static const _storageKey = 'api_base_url';
 
   /// Explicit compile-time override.
@@ -34,9 +39,9 @@ class ApiConfig {
   /// off. For a pure-Wi-Fi setup (no cable), override this at runtime via the in-app
   /// "Server settings" with the laptop's current LAN IP, e.g. http://192.168.1.7:8000.
   static String get _platformDefault {
-    if (kIsWeb) return 'http://127.0.0.1:8000';
-    if (defaultTargetPlatform == TargetPlatform.android) return 'http://127.0.0.1:8000';
-    return 'http://127.0.0.1:8000';
+    if (kIsWeb) return 'https://scan4diseases.onrender.com';
+    if (defaultTargetPlatform == TargetPlatform.android) return 'https://scan4diseases.onrender.com';
+    return 'https://scan4diseases.onrender.com';
   }
 
   /// Read the persisted override once, before the first frame (called from `main`).
