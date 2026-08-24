@@ -47,7 +47,8 @@
 {% set tone = 'urgent' if 'urgent' in _t else ('soon' if 'prompt' in _t or 'soon' in _t else 'routine') %}
 
 <!-- Row 1: the screening summary (wide) + imagery -->
-<div class="detail-primary">
+<!-- Row 1: 3-column equal-height layout (Screening Result | Lesion Photograph | Grad-CAM Heatmap) -->
+<div class="detail-primary detail-triplet">
   <section class="card screening">
     <div class="screening-head">
       <h2><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#gauge"/></svg> Screening result</h2>
@@ -80,8 +81,8 @@
     </div>
 
     {% if report.explanation %}
-    <h3>Explanation</h3>
-    <p class="prose">{{ report.explanation }}</p>
+    <h3>Clinical AI explanation</h3>
+    <div class="prose formatted-markdown" data-markdown>{{ report.explanation }}</div>
     {% endif %}
 
     <p class="screening-note">
@@ -90,27 +91,44 @@
     </p>
   </section>
 
-  <section class="card imagery">
-    <h2><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#image"/></svg> Imagery</h2>
-    {% if report.image_path or report.gradcam_path %}
-    <div class="shots{% if report.image_path and report.gradcam_path %} shots-pair{% endif %}">
-      {% if report.image_path %}
-      <figure class="shot">
-        <img src="/portal/reports/{{ report.id }}/image" alt="Shared lesion photograph">
-        <figcaption>Lesion photograph</figcaption>
+  <!-- Panel 1: Lesion Photograph -->
+  <section class="card imagery-panel">
+    <div class="panel-head">
+      <h2><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#image"/></svg> Lesion photograph</h2>
+      <span class="badge badge-subtle">Raw upload</span>
+    </div>
+    {% if report.image_path %}
+    <div class="imagery-display">
+      <figure class="shot-full">
+        <img src="/portal/reports/{{ report.id }}/image" alt="Shared lesion photograph" loading="lazy">
+        <figcaption>Patient lesion capture (AES-128 encrypted)</figcaption>
       </figure>
-      {% endif %}
-      {% if report.gradcam_path %}
-      <figure class="shot">
-        <img src="/portal/reports/{{ report.id }}/gradcam" alt="Grad-CAM attention overlay">
-        <figcaption>Grad-CAM — regions the model attended to</figcaption>
-      </figure>
-      {% endif %}
     </div>
     {% else %}
-    <div class="imagery-empty">
+    <div class="imagery-empty-panel">
       <svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#image"/></svg>
-      <p class="muted">No lesion photograph was shared with this report.</p>
+      <p class="muted">No raw photograph was shared with this report.</p>
+    </div>
+    {% endif %}
+  </section>
+
+  <!-- Panel 2: Grad-CAM Heatmap -->
+  <section class="card imagery-panel">
+    <div class="panel-head">
+      <h2><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#sparkles"/></svg> Grad-CAM attention</h2>
+      <span class="badge badge-subtle">AI Heatmap</span>
+    </div>
+    {% if report.gradcam_path %}
+    <div class="imagery-display">
+      <figure class="shot-full">
+        <img src="/portal/reports/{{ report.id }}/gradcam" alt="Grad-CAM attention overlay" loading="lazy">
+        <figcaption>Attention map for {{ report.condition }}</figcaption>
+      </figure>
+    </div>
+    {% else %}
+    <div class="imagery-empty-panel">
+      <svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#sparkles"/></svg>
+      <p class="muted">No Grad-CAM overlay is attached to this report.</p>
     </div>
     {% endif %}
   </section>

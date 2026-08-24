@@ -203,6 +203,156 @@
     wrapWords(el);
   });
 
+  /* --- 7a. Markdown parser (tables, lists, headers, bold, italics) --- */
+  function renderMarkdown(md) {
+    if (!md) return "";
+    var lines = md.replace(/\r\n/g, "\n").split("\n");
+    var html = [];
+    var inTable = false;
+    var tableRows = [];
+    var inList = false;
+    var listType = "";
+    var para = [];
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function formatInline(str) {
+      var s = escapeHtml(str);
+      s = s.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+      s = s.replace(/__(.+?)__/g, "<strong>$1</strong>");
+      s = s.replace(/\*([^\*]+?)\*/g, "<em>$1</em>");
+      s = s.replace(/_([^_]+?)_/g, "<em>$1</em>");
+      s = s.replace(/`([^`]+?)`/g, "<code>$1</code>");
+      return s;
+    }
+
+    function flushPara() {
+      if (para.length > 0) {
+        html.push("<p>" + para.map(formatInline).join("<br>") + "</p>");
+        para = [];
+      }
+    }
+
+    function flushList() {
+      if (inList) {
+        html.push("</" + listType + ">");
+        inList = false;
+        listType = "";
+      }
+    }
+
+    function flushTable() {
+      if (inTable && tableRows.length > 0) {
+        var tHtml = '<div class="table-responsive-wrapper"><table>';
+        tableRows.forEach(function (row, idx) {
+          if (idx === 0) {
+            tHtml += "<thead><tr>";
+            row.forEach(function (cell) {
+              tHtml += "<th>" + formatInline(cell) + "</th>";
+            });
+            tHtml += "</tr></thead><tbody>";
+          } else {
+            tHtml += "<tr>";
+            row.forEach(function (cell) {
+              tHtml += "<td>" + formatInline(cell) + "</td>";
+            });
+            tHtml += "</tr>";
+          }
+        });
+        tHtml += "</tbody></table></div>";
+        html.push(tHtml);
+        inTable = false;
+        tableRows = [];
+      }
+    }
+
+    for (var i = 0; i < lines.length; i++) {
+      var raw = lines[i];
+      var trimmed = raw.trim();
+
+      if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
+        flushPara();
+        flushList();
+        if (/^\|(\s*[-:]+[-|\s:]*)\|$/.test(trimmed)) {
+          continue;
+        }
+        var cells = trimmed
+          .slice(1, -1)
+          .split("|")
+          .map(function (c) { return c.trim(); });
+        tableRows.push(cells);
+        inTable = true;
+        continue;
+      } else if (inTable) {
+        flushTable();
+      }
+
+      var hMatch = trimmed.match(/^(#{1,6})\s+(.*)$/);
+      if (hMatch) {
+        flushPara();
+        flushList();
+        var level = hMatch[1].length;
+        var tag = level <= 2 ? "h3" : "h4";
+        html.push("<" + tag + ">" + formatInline(hMatch[2]) + "</" + tag + ">");
+        continue;
+      }
+
+      var ulMatch = trimmed.match(/^[-*]\s+(.*)$/);
+      if (ulMatch) {
+        flushPara();
+        if (!inList || listType !== "ul") {
+          flushList();
+          html.push("<ul>");
+          inList = true;
+          listType = "ul";
+        }
+        html.push("<li>" + formatInline(ulMatch[1]) + "</li>");
+        continue;
+      }
+
+      var olMatch = trimmed.match(/^(\d+)\.\s+(.*)$/);
+      if (olMatch) {
+        flushPara();
+        if (!inList || listType !== "ol") {
+          flushList();
+          html.push("<ol>");
+          inList = true;
+          listType = "ol";
+        }
+        html.push("<li>" + formatInline(olMatch[2]) + "</li>");
+        continue;
+      }
+
+      if (inList) {
+        flushList();
+      }
+
+      if (trimmed === "") {
+        flushPara();
+      } else {
+        para.push(trimmed);
+      }
+    }
+
+    flushPara();
+    flushList();
+    flushTable();
+
+    return html.join("\n");
+  }
+
+  // Format any server-rendered data-markdown blocks on page load
+  document.querySelectorAll("[data-markdown]").forEach(function (el) {
+    el.innerHTML = renderMarkdown(el.textContent.trim());
+  });
+
   /* --- 7b. report AI assistant chat ------------------------------------------------ */
   // Talks to POST /portal/reports/{id}/chat (JSON). Keeps a short local history and
   // renders user/assistant bubbles; degrades to a readable error if the model is offline.
@@ -222,7 +372,11 @@
       wrap.className = "ai-msg " + (role === "user" ? "ai-msg-user" : "ai-msg-bot");
       var b = document.createElement("div");
       b.className = "ai-bubble" + (isError ? " is-error" : "");
-      b.textContent = text;
+      if (role === "bot" && !isError) {
+        b.innerHTML = renderMarkdown(text);
+      } else {
+        b.textContent = text;
+      }
       wrap.appendChild(b);
       log.appendChild(wrap);
       scroll();

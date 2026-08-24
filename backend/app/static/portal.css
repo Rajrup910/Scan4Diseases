@@ -1107,6 +1107,205 @@ table.data tbody tr:hover { background: var(--surface-3); }
 .ai-send { flex: none; padding: .5rem .8rem; align-self: stretch; }
 .ai-chat-foot { margin: var(--s-2) 0 0; font-size: .78rem; }
 
+/* ============================================================ 6b. REPORT DETAIL TRIPLET LAYOUT */
+.detail-triplet {
+  display: grid;
+  grid-template-columns: 1.15fr 0.92fr 0.92fr;
+  gap: var(--s-4);
+  align-items: stretch;
+  margin-bottom: var(--s-4);
+}
+@media (max-width: 1080px) {
+  .detail-triplet {
+    grid-template-columns: 1fr;
+  }
+}
+.card.screening {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.card.imagery-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: var(--s-4);
+}
+.imagery-panel .panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  margin-bottom: var(--s-3);
+}
+.imagery-panel .panel-head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+.badge-subtle {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 600;
+}
+.imagery-display {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--r-2);
+  overflow: hidden;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  box-shadow: inset 0 1px 0 var(--glass-gloss);
+  min-height: 260px;
+}
+.imagery-display .shot-full {
+  margin: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.imagery-display .shot-full img {
+  width: 100%;
+  flex: 1;
+  min-height: 220px;
+  max-height: 380px;
+  object-fit: cover;
+  display: block;
+  transition: transform var(--dur-2) var(--ease-out);
+}
+.imagery-display:hover .shot-full img {
+  transform: scale(1.025);
+}
+.imagery-display .shot-full figcaption {
+  padding: 10px 14px;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  background: var(--glass-fill-strong);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-weight: 500;
+}
+.imagery-empty-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-6) var(--s-4);
+  text-align: center;
+  border-radius: var(--r-2);
+  background: var(--surface-2);
+  border: 1px dashed var(--border);
+}
+.imagery-empty-panel .icon {
+  width: 32px;
+  height: 32px;
+  color: var(--ink-faint);
+  margin-bottom: var(--s-2);
+}
+
+/* ============================================================ MARKDOWN & GFM TABLE FORMATTING */
+.formatted-markdown,
+.ai-bubble {
+  color: var(--ink);
+  line-height: 1.55;
+}
+.formatted-markdown p,
+.ai-bubble p {
+  margin: 0 0 0.75rem;
+}
+.formatted-markdown p:last-child,
+.ai-bubble p:last-child {
+  margin-bottom: 0;
+}
+.formatted-markdown h3,
+.ai-bubble h3 {
+  font-size: 1.05rem;
+  font-weight: 750;
+  margin: 1.1rem 0 0.5rem;
+  color: var(--brand-strong);
+  letter-spacing: -0.01em;
+}
+.formatted-markdown h4,
+.ai-bubble h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0.9rem 0 0.4rem;
+  color: var(--ink);
+}
+.formatted-markdown strong,
+.ai-bubble strong {
+  font-weight: 700;
+  color: var(--brand-strong);
+}
+.formatted-markdown ul,
+.ai-bubble ul,
+.formatted-markdown ol,
+.ai-bubble ol {
+  margin: 0.4rem 0 0.8rem 1.4rem;
+  padding: 0;
+}
+.formatted-markdown li,
+.ai-bubble li {
+  margin-bottom: 0.35rem;
+}
+.formatted-markdown table,
+.ai-bubble table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 0.85rem 0 1rem;
+  border-radius: var(--r-2);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--glass-sheen), var(--glass-fill);
+  box-shadow: var(--shadow-1), inset 0 1px 0 var(--glass-gloss);
+  font-size: 0.84rem;
+}
+.formatted-markdown th,
+.ai-bubble th {
+  padding: 9px 12px;
+  background: var(--surface-3);
+  color: var(--brand-strong);
+  font-weight: 700;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  letter-spacing: 0.02em;
+}
+.formatted-markdown td,
+.ai-bubble td {
+  padding: 8px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+  color: var(--ink);
+  vertical-align: top;
+}
+.formatted-markdown tr:last-child td,
+.ai-bubble tr:last-child td {
+  border-bottom: none;
+}
+.formatted-markdown tr:nth-child(even) td,
+.ai-bubble tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--brand) 3%, transparent);
+}
+.table-responsive-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  margin: 0.6rem 0;
+  border-radius: var(--r-2);
+}
+
 /* ============================================================ 7. DASHBOARD (Zone B) */
 .dash { margin-bottom: var(--s-6); }
 .section-h { margin: var(--s-6) 0 var(--s-4); font-size: 1rem; color: var(--ink-soft); }
