@@ -52,11 +52,16 @@ class _ShareSheetState extends State<_ShareSheet> {
   void _retry() =>
       setState(() => _doctors = SharingService.instance.listDoctors());
 
-  Future<void> _submit() async {
+  Future<void> _submit(List<DoctorDirectoryEntry> doctors) async {
     final doctorId = _selectedId;
     final imagePath = widget.report.imagePath;
     final reportId = widget.report.id;
     if (doctorId == null || imagePath == null || reportId == null) return;
+
+    final selectedDoctor = doctors.firstWhere(
+      (d) => d.id == doctorId,
+      orElse: () => DoctorDirectoryEntry(id: doctorId, email: 'Doctor'),
+    );
 
     setState(() => _submitting = true);
     try {
@@ -68,11 +73,15 @@ class _ShareSheetState extends State<_ShareSheet> {
       );
       if (!mounted) return;
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Themes.mint,
-        content: Text('Shared. Your doctor can now review this screening.'),
-      ));
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        builder: (_) => ShareSuccessDialog(
+          doctorName: selectedDoctor.label,
+          condition: widget.report.condition,
+          hasGradcam: (widget.gradcamUrl ?? '').isNotEmpty,
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _submitting = false);
@@ -147,16 +156,24 @@ class _ShareSheetState extends State<_ShareSheet> {
           SizedBox(
             height: 52,
             width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: (_selectedId == null || _submitting) ? null : _submit,
-              icon: _submitting
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    )
-                  : const Icon(Icons.send_rounded),
-              label: Text(_submitting ? 'Sharing…' : 'Share this screening'),
+            child: FutureBuilder<List<DoctorDirectoryEntry>>(
+              future: _doctors,
+              builder: (context, snap) {
+                final doctors = snap.data ?? const [];
+                return FilledButton.icon(
+                  onPressed: (_selectedId == null || _submitting || doctors.isEmpty)
+                      ? null
+                      : () => _submit(doctors),
+                  icon: _submitting
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Icon(Icons.send_rounded),
+                  label: Text(_submitting ? 'Sharing…' : 'Share this screening'),
+                );
+              },
             ),
           ),
           const SizedBox(height: 8),
@@ -173,10 +190,10 @@ class _ShareSheetState extends State<_ShareSheet> {
   Widget _doctorTile(DoctorDirectoryEntry d) {
     final selected = d.id == _selectedId;
     return InkWell(
-      borderRadius: BorderRadius.circular(16),
       onTap: _submitting ? null : () => setState(() => _selectedId = d.id),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: selected ? Themes.primary.withValues(alpha: 0.06) : Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -235,4 +252,246 @@ class _ShareSheetState extends State<_ShareSheet> {
           ),
         ]),
       );
+}
+
+/// Rich animated success dialog presented to the patient when clinical report sharing succeeds.
+class ShareSuccessDialog extends StatefulWidget {
+  const ShareSuccessDialog({
+    super.key,
+    required this.doctorName,
+    required this.condition,
+    required this.hasGradcam,
+  });
+
+  final String doctorName;
+  final String condition;
+  final bool hasGradcam;
+
+  @override
+  State<ShareSuccessDialog> createState() => _ShareSuccessDialogState();
+}
+
+class _ShareSuccessDialogState extends State<ShareSuccessDialog>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _scaleAnimation;
+  late final Animation<double> _glowAnimation;
+  late final Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    );
+
+    _scaleAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.0, 0.65, curve: Curves.elasticOut),
+    );
+
+    _glowAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.2, 0.8, curve: Curves.easeInOut),
+      ),
+    );
+
+    _fadeAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.4, 1.0, curve: Curves.easeOut),
+    );
+
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+      backgroundColor: Colors.white,
+      elevation: 16,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Animated Pulse & Checkmark Badge
+            AnimatedBuilder(
+              animation: _controller,
+              builder: (context, child) {
+                return Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Outer glow wave
+                    Container(
+                      width: 96 + (16 * _glowAnimation.value),
+                      height: 96 + (16 * _glowAnimation.value),
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Themes.primary.withValues(
+                          alpha: 0.12 * (1.0 - _glowAnimation.value * 0.5),
+                        ),
+                      ),
+                    ),
+                    // Inner emerald core
+                    ScaleTransition(
+                      scale: _scaleAnimation,
+                      child: Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [Color(0xFF106E5A), Color(0xFF0B4639)],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Themes.primary.withValues(alpha: 0.35),
+                              blurRadius: 18,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.check_rounded,
+                          color: Colors.white,
+                          size: 44,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+
+            // Headline
+            const Text(
+              'Report Shared Successfully!',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 21,
+                fontWeight: FontWeight.w800,
+                color: Themes.ink,
+                letterSpacing: -0.3,
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Doctor acknowledgment text
+            RichText(
+              textAlign: TextAlign.center,
+              text: TextSpan(
+                style: const TextStyle(fontSize: 14, color: Themes.inkSoft, height: 1.4),
+                children: [
+                  const TextSpan(text: 'Your screening for '),
+                  TextSpan(
+                    text: widget.condition,
+                    style: const TextStyle(fontWeight: FontWeight.w700, color: Themes.ink),
+                  ),
+                  const TextSpan(text: ' has been delivered to '),
+                  TextSpan(
+                    text: widget.doctorName,
+                    style: const TextStyle(fontWeight: FontWeight.w700, color: Themes.primary),
+                  ),
+                  const TextSpan(text: ' for clinical evaluation.'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Deliverables Check Card
+            FadeTransition(
+              opacity: _fadeAnimation,
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: Themes.brandTint.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: Themes.border),
+                ),
+                child: Column(
+                  children: [
+                    _deliverableRow(
+                      icon: Icons.lock_outline_rounded,
+                      text: 'Lesion Photograph (AES-Encrypted)',
+                    ),
+                    const SizedBox(height: 10),
+                    _deliverableRow(
+                      icon: Icons.layers_outlined,
+                      text: widget.hasGradcam
+                          ? 'Grad-CAM Attention Heatmap Attached'
+                          : 'Clinical AI Assessment Linked',
+                    ),
+                    const SizedBox(height: 10),
+                    _deliverableRow(
+                      icon: Icons.verified_user_outlined,
+                      text: 'Available Live in Clinician Portal',
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Action Button
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: FilledButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: FilledButton.styleFrom(
+                  backgroundColor: Themes.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  elevation: 2,
+                ),
+                child: const Text(
+                  'Done',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _deliverableRow({required IconData icon, required String text}) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(4),
+          decoration: BoxDecoration(
+            color: Themes.mint.withValues(alpha: 0.15),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.check_circle_rounded, color: Themes.mint, size: 16),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: Themes.ink,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
 }

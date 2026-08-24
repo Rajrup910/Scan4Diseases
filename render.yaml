@@ -19,3 +19,5 @@ services:
         value: openai/gpt-oss-120b
       - key: LLM_API_KEY
         sync: false
+      - key: IMAGE_ENCRYPTION_KEY
+        value: _vDxQjzxSasYBgFY5BhXwK9VbO9ugaa7hR2uqIDTtuo=

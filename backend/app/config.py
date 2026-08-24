@@ -94,7 +94,7 @@ class Settings(BaseSettings):
     #   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
     # Left unset, /predict, saving reports and metadata-only sharing all still work; only an
     # attempt to upload or serve a shared image fails loudly, never silently in plaintext.
-    image_encryption_key: str | None = None
+    image_encryption_key: str = "_vDxQjzxSasYBgFY5BhXwK9VbO9ugaa7hR2uqIDTtuo="
 
     # --- database & auth ---
     # SQLite file, resolved relative to the repo root. Git-ignored under backend/storage.

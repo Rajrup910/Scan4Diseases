@@ -94,7 +94,8 @@ class SharingService {
   Future<Uint8List?> _fetchGradcam(String? gradcamUrl) async {
     if (gradcamUrl == null || gradcamUrl.isEmpty) return null;
     try {
-      final res = await http.get(Uri.parse(gradcamUrl)).timeout(const Duration(seconds: 30));
+      final fullUrl = ApiConfig.resolve(gradcamUrl);
+      final res = await http.get(Uri.parse(fullUrl)).timeout(const Duration(seconds: 30));
       if (res.statusCode == 200 && res.bodyBytes.isNotEmpty) return res.bodyBytes;
     } catch (_) {/* overlay is optional; never block the share on it */}
     return null;

@@ -188,6 +188,7 @@ def seed_default_data(db: Session) -> None:
                 explanation="Well-defined, symmetric pigmented lesion with uniform color network.",
                 symptoms={"duration_weeks": 52, "stable": True, "itching": False},
                 created_at=r1_date,
+                shared_at=r1_date,
             )
         )
         r2_date = now - timedelta(days=14)
@@ -202,9 +203,31 @@ def seed_default_data(db: Session) -> None:
                 explanation="Pearly nodule with fine telangiectasia observed.",
                 symptoms={"duration_weeks": 16, "itching": False, "bleeding": True},
                 created_at=r2_date,
+                shared_at=r2_date,
             )
         )
         db.flush()
+
+    # Ensure DoctorPatient link exists for raj@gmail.com
+    raj_link = db.scalar(
+        select(DoctorPatient).where(
+            DoctorPatient.doctor_id == doctor.id,
+            DoctorPatient.patient_id == patient_raj.id,
+        )
+    )
+    if raj_link is None:
+        db.add(
+            DoctorPatient(
+                doctor_id=doctor.id,
+                patient_id=patient_raj.id,
+                status=LINK_ACTIVE,
+                consented_at=now,
+            )
+        )
+    else:
+        raj_link.status = LINK_ACTIVE
+        raj_link.consented_at = raj_link.consented_at or now
+    db.flush()
 
     # 3. Seed demo patients & worklist reports for Doctor Portal
     for name, email, reports in DEMO_PATIENTS:
