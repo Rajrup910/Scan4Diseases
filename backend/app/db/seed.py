@@ -230,7 +230,7 @@ def seed_default_data(db: Session) -> None:
                         DoctorNote(
                             report_id=r.id,
                             doctor_id=doctor.id,
-                            body=spec["note"],
+                            note=spec["note"],
                             created_at=r_date,
                         )
                     )
