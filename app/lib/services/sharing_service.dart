@@ -101,22 +101,46 @@ class SharingService {
     return null;
   }
 
-  /// The whole patient action: give [doctorId] access, then upload [imagePath] for
-  /// [reportId] (which also shares it). If [gradcamUrl] is given, the overlay is fetched and
-  /// uploaded too. After this, the doctor sees the report — and its heatmap — in the portal.
+  /// Mark one of the patient's own reports as shared on the server (POST /patient/reports/{id}/share).
+  /// Used for previous screenings or metadata-only shares where no fresh local image is uploaded.
+  Future<void> markReportShared(int reportId) async {
+    final res = await http.post(_uri('/patient/reports/$reportId/share'), headers: _auth);
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      throw SharingException(_messageOf(res));
+    }
+  }
+
+  /// The whole patient action: grant [doctorId] access, and ensure [reportId] is shared.
+  /// If a valid local [imagePath] is given, encrypts and uploads the photo + Grad-CAM.
+  /// If no local image is present (such as for previous screenings), marks the report shared
+  /// directly so the doctor sees the screening in their clinician portal.
   Future<void> shareReportWithDoctor({
     required int doctorId,
     required int reportId,
-    required String imagePath,
+    String? imagePath,
     String? gradcamUrl,
   }) async {
     await grantConsent(doctorId);
-    final gradcamBytes = await _fetchGradcam(gradcamUrl);
-    await uploadReportImage(
-      reportId: reportId,
-      imagePath: imagePath,
-      gradcamBytes: gradcamBytes,
-    );
+
+    bool uploadedImage = false;
+    if (imagePath != null && imagePath.isNotEmpty) {
+      try {
+        final gradcamBytes = await _fetchGradcam(gradcamUrl);
+        await uploadReportImage(
+          reportId: reportId,
+          imagePath: imagePath,
+          gradcamBytes: gradcamBytes,
+        );
+        uploadedImage = true;
+      } catch (e) {
+        // If image file was deleted locally from temp cache, fallback to metadata share
+        uploadedImage = false;
+      }
+    }
+
+    if (!uploadedImage) {
+      await markReportShared(reportId);
+    }
   }
 
   String _messageOf(http.Response res) {

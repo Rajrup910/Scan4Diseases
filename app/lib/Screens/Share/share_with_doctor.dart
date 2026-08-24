@@ -54,9 +54,7 @@ class _ShareSheetState extends State<_ShareSheet> {
 
   Future<void> _submit(List<DoctorDirectoryEntry> doctors) async {
     final doctorId = _selectedId;
-    final imagePath = widget.report.imagePath;
-    final reportId = widget.report.id;
-    if (doctorId == null || imagePath == null || reportId == null) return;
+    if (doctorId == null) return;
 
     final selectedDoctor = doctors.firstWhere(
       (d) => d.id == doctorId,
@@ -65,10 +63,21 @@ class _ShareSheetState extends State<_ShareSheet> {
 
     setState(() => _submitting = true);
     try {
+      var report = widget.report;
+      var reportId = report.id;
+      // If report has no server ID yet, persist it to the server first
+      if (reportId == null) {
+        final saved = await AppData.addReport(report);
+        reportId = saved.id;
+      }
+      if (reportId == null) {
+        throw SharingException('Unable to resolve report ID on server. Please check your connection.');
+      }
+
       await SharingService.instance.shareReportWithDoctor(
         doctorId: doctorId,
         reportId: reportId,
-        imagePath: imagePath,
+        imagePath: report.imagePath,
         gradcamUrl: widget.gradcamUrl,
       );
       if (!mounted) return;
@@ -79,7 +88,7 @@ class _ShareSheetState extends State<_ShareSheet> {
         builder: (_) => ShareSuccessDialog(
           doctorName: selectedDoctor.label,
           condition: widget.report.condition,
-          hasGradcam: (widget.gradcamUrl ?? '').isNotEmpty,
+          hasGradcam: (widget.gradcamUrl ?? '').isNotEmpty || report.imagePath != null,
         ),
       );
     } catch (e) {
