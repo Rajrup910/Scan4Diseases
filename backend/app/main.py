@@ -21,7 +21,8 @@ from fastapi.staticfiles import StaticFiles
 
 from backend.app import __version__
 from backend.app.config import get_settings
-from backend.app.db.session import init_db
+from backend.app.db.seed import seed_default_data
+from backend.app.db.session import SessionLocal, init_db
 from backend.app.routes import (
     admin,
     auth,
@@ -87,6 +88,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     # Create the users/reports tables if they do not exist yet.
     init_db()
+    with SessionLocal() as db_session:
+        seed_default_data(db_session)
 
     inference = InferenceService(settings)
     inference.load()
