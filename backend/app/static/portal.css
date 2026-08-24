@@ -1107,16 +1107,16 @@ table.data tbody tr:hover { background: var(--surface-3); }
 .ai-send { flex: none; padding: .5rem .8rem; align-self: stretch; }
 .ai-chat-foot { margin: var(--s-2) 0 0; font-size: .78rem; }
 
-/* ============================================================ 6b. REPORT DETAIL TRIPLET LAYOUT */
-.detail-triplet {
+/* ============================================================ 6b. REPORT DETAIL 2-COLUMN SPLIT LAYOUT */
+.detail-split-layout {
   display: grid;
-  grid-template-columns: 1.15fr 0.92fr 0.92fr;
+  grid-template-columns: 1.32fr 1fr;
   gap: var(--s-4);
   align-items: stretch;
   margin-bottom: var(--s-4);
 }
-@media (max-width: 1080px) {
-  .detail-triplet {
+@media (max-width: 980px) {
+  .detail-split-layout {
     grid-template-columns: 1fr;
   }
 }
@@ -1125,28 +1125,35 @@ table.data tbody tr:hover { background: var(--surface-3); }
   flex-direction: column;
   height: 100%;
 }
-.card.imagery-panel {
+.imagery-column-stack {
   display: flex;
   flex-direction: column;
+  gap: var(--s-3);
   height: 100%;
-  padding: var(--s-4);
+}
+.imagery-column-stack .imagery-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: var(--s-3) var(--s-4);
+  min-height: 220px;
 }
 .imagery-panel .panel-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--s-2);
-  margin-bottom: var(--s-3);
+  margin-bottom: var(--s-2);
 }
 .imagery-panel .panel-head h2 {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: 0.98rem;
   display: flex;
   align-items: center;
   gap: var(--s-2);
 }
 .badge-subtle {
-  font-size: 0.72rem;
+  font-size: 0.70rem;
   padding: 2px 8px;
   border-radius: var(--r-pill);
   background: var(--surface-2);
@@ -1165,7 +1172,7 @@ table.data tbody tr:hover { background: var(--surface-3); }
   background: var(--surface-2);
   border: 1px solid var(--border);
   box-shadow: inset 0 1px 0 var(--glass-gloss);
-  min-height: 260px;
+  min-height: 140px;
 }
 .imagery-display .shot-full {
   margin: 0;
@@ -1177,8 +1184,8 @@ table.data tbody tr:hover { background: var(--surface-3); }
 .imagery-display .shot-full img {
   width: 100%;
   flex: 1;
-  min-height: 220px;
-  max-height: 380px;
+  min-height: 130px;
+  max-height: 210px;
   object-fit: cover;
   display: block;
   transition: transform var(--dur-2) var(--ease-out);
@@ -1187,8 +1194,8 @@ table.data tbody tr:hover { background: var(--surface-3); }
   transform: scale(1.025);
 }
 .imagery-display .shot-full figcaption {
-  padding: 10px 14px;
-  font-size: 0.78rem;
+  padding: 6px 12px;
+  font-size: 0.75rem;
   color: var(--ink-soft);
   background: var(--glass-fill-strong);
   backdrop-filter: var(--glass-blur);
@@ -1203,20 +1210,26 @@ table.data tbody tr:hover { background: var(--surface-3); }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--s-6) var(--s-4);
+  padding: var(--s-4);
   text-align: center;
   border-radius: var(--r-2);
   background: var(--surface-2);
   border: 1px dashed var(--border);
 }
 .imagery-empty-panel .icon {
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   color: var(--ink-faint);
   margin-bottom: var(--s-2);
 }
 
 /* ============================================================ MARKDOWN & GFM TABLE FORMATTING */
+.subtle-divider {
+  border: 0;
+  height: 1px;
+  background: color-mix(in srgb, var(--border) 70%, transparent);
+  margin: 0.8rem 0;
+}
 .formatted-markdown,
 .ai-bubble {
   color: var(--ink);

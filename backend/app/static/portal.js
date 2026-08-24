@@ -294,6 +294,14 @@
         flushTable();
       }
 
+      // Handle horizontal rule lines (---, --, ***, ___) by omitting clutter
+      if (/^[-*_]{2,}$/.test(trimmed)) {
+        flushPara();
+        flushList();
+        continue;
+      }
+
+      // Check Heading: #, ##, ###
       var hMatch = trimmed.match(/^(#{1,6})\s+(.*)$/);
       if (hMatch) {
         flushPara();
@@ -301,6 +309,15 @@
         var level = hMatch[1].length;
         var tag = level <= 2 ? "h3" : "h4";
         html.push("<" + tag + ">" + formatInline(hMatch[2]) + "</" + tag + ">");
+        continue;
+      }
+
+      // Check standalone bold headers: **Header Text**
+      if (trimmed.startsWith("**") && trimmed.endsWith("**") && !trimmed.slice(2, -2).includes("**")) {
+        flushPara();
+        flushList();
+        var headerText = trimmed.slice(2, -2).trim();
+        html.push("<h4>" + formatInline(headerText) + "</h4>");
         continue;
       }
 

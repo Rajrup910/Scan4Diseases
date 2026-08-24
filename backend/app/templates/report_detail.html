@@ -46,9 +46,8 @@
 {% set _t = (report.triage or "")|lower %}
 {% set tone = 'urgent' if 'urgent' in _t else ('soon' if 'prompt' in _t or 'soon' in _t else 'routine') %}
 
-<!-- Row 1: the screening summary (wide) + imagery -->
-<!-- Row 1: 3-column equal-height layout (Screening Result | Lesion Photograph | Grad-CAM Heatmap) -->
-<div class="detail-primary detail-triplet">
+<!-- Row 1: 2-column layout (Screening Result on Left | Stacked Imagery on Right: Top=Lesion, Bottom=Grad-CAM) -->
+<div class="detail-primary detail-split-layout">
   <section class="card screening">
     <div class="screening-head">
       <h2><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#gauge"/></svg> Screening result</h2>
@@ -91,47 +90,50 @@
     </p>
   </section>
 
-  <!-- Panel 1: Lesion Photograph -->
-  <section class="card imagery-panel">
-    <div class="panel-head">
-      <h2><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#image"/></svg> Lesion photograph</h2>
-      <span class="badge badge-subtle">Raw upload</span>
-    </div>
-    {% if report.image_path %}
-    <div class="imagery-display">
-      <figure class="shot-full">
-        <img src="/portal/reports/{{ report.id }}/image" alt="Shared lesion photograph" loading="lazy">
-        <figcaption>Patient lesion capture (AES-128 encrypted)</figcaption>
-      </figure>
-    </div>
-    {% else %}
-    <div class="imagery-empty-panel">
-      <svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#image"/></svg>
-      <p class="muted">No raw photograph was shared with this report.</p>
-    </div>
-    {% endif %}
-  </section>
+  <!-- Right: Stacked Imagery Column (Top: Lesion photo, Bottom: Grad-CAM) -->
+  <div class="imagery-column-stack">
+    <!-- Top Panel: Lesion Photograph -->
+    <section class="card imagery-panel imagery-top-panel">
+      <div class="panel-head">
+        <h2><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#image"/></svg> Lesion photograph</h2>
+        <span class="badge badge-subtle">Raw photo</span>
+      </div>
+      {% if report.image_path %}
+      <div class="imagery-display">
+        <figure class="shot-full">
+          <img src="/portal/reports/{{ report.id }}/image" alt="Shared lesion photograph" loading="lazy">
+          <figcaption>Lesion photograph (AES encrypted)</figcaption>
+        </figure>
+      </div>
+      {% else %}
+      <div class="imagery-empty-panel">
+        <svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#image"/></svg>
+        <p class="muted">No raw photograph was shared with this report.</p>
+      </div>
+      {% endif %}
+    </section>
 
-  <!-- Panel 2: Grad-CAM Heatmap -->
-  <section class="card imagery-panel">
-    <div class="panel-head">
-      <h2><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#sparkles"/></svg> Grad-CAM attention</h2>
-      <span class="badge badge-subtle">AI Heatmap</span>
-    </div>
-    {% if report.gradcam_path %}
-    <div class="imagery-display">
-      <figure class="shot-full">
-        <img src="/portal/reports/{{ report.id }}/gradcam" alt="Grad-CAM attention overlay" loading="lazy">
-        <figcaption>Attention map for {{ report.condition }}</figcaption>
-      </figure>
-    </div>
-    {% else %}
-    <div class="imagery-empty-panel">
-      <svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#sparkles"/></svg>
-      <p class="muted">No Grad-CAM overlay is attached to this report.</p>
-    </div>
-    {% endif %}
-  </section>
+    <!-- Bottom Panel: Grad-CAM Heatmap -->
+    <section class="card imagery-panel imagery-bottom-panel">
+      <div class="panel-head">
+        <h2><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#sparkles"/></svg> Grad-CAM attention</h2>
+        <span class="badge badge-subtle">AI Heatmap</span>
+      </div>
+      {% if report.gradcam_path %}
+      <div class="imagery-display">
+        <figure class="shot-full">
+          <img src="/portal/reports/{{ report.id }}/gradcam" alt="Grad-CAM attention overlay" loading="lazy">
+          <figcaption>Attention overlay — regions model attended to</figcaption>
+        </figure>
+      </div>
+      {% else %}
+      <div class="imagery-empty-panel">
+        <svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#sparkles"/></svg>
+        <p class="muted">No Grad-CAM overlay is attached to this report.</p>
+      </div>
+      {% endif %}
+    </section>
+  </div>
 </div>
 
 <!-- Row 2: questionnaire + notes, side by side -->

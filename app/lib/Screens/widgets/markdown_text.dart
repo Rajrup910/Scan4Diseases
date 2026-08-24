@@ -24,6 +24,8 @@ class MarkdownText extends StatelessWidget {
   static final _bullet = RegExp(r'^\s*[-*]\s+(.*)$');
   static final _numbered = RegExp(r'^\s*(\d+)\.\s+(.*)$');
   static final _tableSep = RegExp(r'^\s*\|?\s*[-:]+\s*\|[-|\s:]*\|$');
+  static final _hr = RegExp(r'^\s*[-*_]{2,}\s*$');
+  static final _standaloneBold = RegExp(r'^\*\*(.+?)\*\*$');
 
   @override
   Widget build(BuildContext context) {
@@ -83,9 +85,16 @@ class MarkdownText extends StatelessWidget {
         continue;
       }
 
+      // Check horizontal rule divider lines (---, --, ***, ___) -> omit clutter
+      if (_hr.hasMatch(line)) {
+        flushPara();
+        continue;
+      }
+
       final h = _heading.firstMatch(line);
       final b = _bullet.firstMatch(line);
       final n = _numbered.firstMatch(line);
+      final boldHead = _standaloneBold.firstMatch(line);
 
       if (h != null) {
         flushPara();
@@ -100,6 +109,20 @@ class MarkdownText extends StatelessWidget {
               fontWeight: FontWeight.w800,
               color: Themes.brand,
               letterSpacing: -0.2,
+            ),
+          ),
+        ));
+      } else if (boldHead != null) {
+        flushPara();
+        blocks.add(Padding(
+          padding: EdgeInsets.only(top: blocks.isEmpty ? 2 : 10, bottom: 4),
+          child: _renderInline(
+            boldHead.group(1)!,
+            baseStyle.copyWith(
+              fontSize: 14.5,
+              fontWeight: FontWeight.w800,
+              color: Themes.brand,
+              letterSpacing: -0.1,
             ),
           ),
         ));
