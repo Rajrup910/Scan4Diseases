@@ -85,6 +85,11 @@ def decode_image(data: bytes, max_bytes: int) -> Image.Image:
     # a portrait photo arrives sideways and the model sees a rotated lesion.
     image = ImageOps.exif_transpose(image)
 
+    # Protect cloud memory on free-tier containers: cap max dimension to 1024px
+    # while preserving full aspect ratio and crisp lesion details.
+    if max(image.size) > 1024:
+        image.thumbnail((1024, 1024), Image.Resampling.LANCZOS)
+
     if min(image.size) < MIN_DIMENSION:
         raise ImageValidationError(
             "image_too_small",

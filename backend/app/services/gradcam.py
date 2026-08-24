@@ -103,8 +103,9 @@ def overlay_heatmap(image: Image.Image, cam: np.ndarray, alpha: float = 0.45) ->
     # OpenCV colormaps output BGR; convert so the saved PNG is not colour-swapped.
     heatmap = cv2.cvtColor(cv2.applyColorMap(scaled, cv2.COLORMAP_JET), cv2.COLOR_BGR2RGB)
 
-    blended = (1 - alpha) * base.astype(np.float32) + alpha * heatmap.astype(np.float32)
-    return Image.fromarray(np.clip(blended, 0, 255).astype(np.uint8))
+    # Fast and memory-efficient in-place blending without float32 arrays
+    blended = cv2.addWeighted(base, 1.0 - alpha, heatmap, alpha, 0.0)
+    return Image.fromarray(blended)
 
 
 def cam_statistics(cam: np.ndarray, border_fraction: float = 0.15) -> dict[str, Any]:

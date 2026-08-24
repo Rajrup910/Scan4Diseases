@@ -91,6 +91,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     with SessionLocal() as db_session:
         seed_default_data(db_session)
 
+    import torch
+    torch.set_num_threads(1)
+
     inference = InferenceService(settings)
     inference.load()
 
