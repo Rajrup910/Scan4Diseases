@@ -2006,43 +2006,38 @@ body.is-transitioning .flow-takeover,
   top: 50%;
   left: 50%;
   border-radius: 50%;
-  transform: translate(-50%, -50%) scale(0.06);
-  pointer-events: none;
-  will-change: transform, opacity;
-}
-
-.flow-takeover .orb-1 {
+  tran.flow-takeover .orb-1 {
   width: 140vmax;
   height: 140vmax;
-  background: radial-gradient(circle, #15B79E 0%, #12695A 45%, #0D4F44 75%, transparent 100%);
-  animation: orb-bloom 1300ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  background: radial-gradient(circle, #A7F3D0 0%, #34D399 35%, #10B981 70%, transparent 100%);
+  animation: orb-escalation-cycle 2100ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .flow-takeover .orb-2 {
-  width: 160vmax;
-  height: 160vmax;
+  width: 175vmax;
+  height: 175vmax;
   margin-top: -3vh;
   margin-left: -5vw;
-  background: radial-gradient(circle, #3EA893 0%, #15B79E 40%, #12695A 70%, transparent 100%);
-  animation: orb-bloom 1350ms cubic-bezier(0.22, 1, 0.36, 1) 50ms forwards;
+  background: radial-gradient(circle, #10B981 0%, #14B8A6 45%, #0D9488 75%, transparent 100%);
+  animation: orb-escalation-cycle 2100ms cubic-bezier(0.22, 1, 0.36, 1) 80ms forwards;
 }
 
 .flow-takeover .orb-3 {
-  width: 180vmax;
-  height: 180vmax;
+  width: 215vmax;
+  height: 215vmax;
   margin-top: 4vh;
   margin-left: 6vw;
-  background: radial-gradient(circle, #6FE0CD 0%, #0F5D4F 40%, #08332C 75%, transparent 100%);
-  animation: orb-bloom 1400ms cubic-bezier(0.22, 1, 0.36, 1) 100ms forwards;
+  background: radial-gradient(circle, #059669 0%, #0F766E 45%, #047857 75%, transparent 100%);
+  animation: orb-escalation-cycle 2100ms cubic-bezier(0.22, 1, 0.36, 1) 160ms forwards;
 }
 
 .flow-takeover .orb-4 {
-  width: 210vmax;
-  height: 210vmax;
+  width: 260vmax;
+  height: 260vmax;
   margin-top: -5vh;
   margin-left: 4vw;
-  background: radial-gradient(circle, #2F8A78 0%, #12695A 50%, #0D4F44 80%, transparent 100%);
-  animation: orb-bloom 1450ms cubic-bezier(0.22, 1, 0.36, 1) 140ms forwards;
+  background: radial-gradient(circle, #064E3B 0%, #134E4A 50%, #022C22 80%, transparent 100%);
+  animation: orb-escalation-cycle 2100ms cubic-bezier(0.22, 1, 0.36, 1) 240ms forwards;
 }
 
 .flow-takeover .orb-ring {
@@ -2058,23 +2053,23 @@ body.is-transitioning .flow-takeover,
 }
 
 .flow-takeover .ring-1 {
-  width: 120vmax;
-  height: 120vmax;
-  animation: ring-expand 1300ms cubic-bezier(0.22, 1, 0.36, 1) 60ms forwards;
+  width: 130vmax;
+  height: 130vmax;
+  animation: ring-expand 2000ms cubic-bezier(0.22, 1, 0.36, 1) 80ms forwards;
 }
 
 .flow-takeover .ring-2 {
-  width: 150vmax;
-  height: 150vmax;
+  width: 170vmax;
+  height: 170vmax;
   border-color: rgba(62, 168, 147, 0.55);
-  animation: ring-expand 1350ms cubic-bezier(0.22, 1, 0.36, 1) 120ms forwards;
+  animation: ring-expand 2050ms cubic-bezier(0.22, 1, 0.36, 1) 160ms forwards;
 }
 
 .flow-takeover .ring-3 {
-  width: 180vmax;
-  height: 180vmax;
+  width: 210vmax;
+  height: 210vmax;
   border-color: rgba(18, 105, 90, 0.45);
-  animation: ring-expand 1400ms cubic-bezier(0.22, 1, 0.36, 1) 180ms forwards;
+  animation: ring-expand 2100ms cubic-bezier(0.22, 1, 0.36, 1) 240ms forwards;
 }
 
 /* Floating particle sparks */
@@ -2089,18 +2084,18 @@ body.is-transitioning .flow-takeover,
   left: 50%;
   border-radius: 50%;
   background: #6FE0CD;
-  box-shadow: 0 0 12px #15B79E;
+  box-shadow: 0 0 14px #15B79E;
   opacity: 0;
   will-change: transform, opacity;
 }
-.orb-particles .p-1 { width: 8px; height: 8px; animation: particle-fly-1 1.8s cubic-bezier(0.22, 1, 0.36, 1) 300ms forwards; }
-.orb-particles .p-2 { width: 6px; height: 6px; animation: particle-fly-2 1.9s cubic-bezier(0.22, 1, 0.36, 1) 350ms forwards; }
-.orb-particles .p-3 { width: 10px; height: 10px; animation: particle-fly-3 2.0s cubic-bezier(0.22, 1, 0.36, 1) 400ms forwards; }
-.orb-particles .p-4 { width: 7px; height: 7px; animation: particle-fly-4 1.8s cubic-bezier(0.22, 1, 0.36, 1) 450ms forwards; }
+.orb-particles .p-1 { width: 8px; height: 8px; animation: particle-fly-1 2.0s cubic-bezier(0.22, 1, 0.36, 1) 300ms forwards; }
+.orb-particles .p-2 { width: 6px; height: 6px; animation: particle-fly-2 2.0s cubic-bezier(0.22, 1, 0.36, 1) 350ms forwards; }
+.orb-particles .p-3 { width: 10px; height: 10px; animation: particle-fly-3 2.1s cubic-bezier(0.22, 1, 0.36, 1) 400ms forwards; }
+.orb-particles .p-4 { width: 7px; height: 7px; animation: particle-fly-4 2.0s cubic-bezier(0.22, 1, 0.36, 1) 450ms forwards; }
 .orb-particles .p-5 { width: 8px; height: 8px; animation: particle-fly-5 2.1s cubic-bezier(0.22, 1, 0.36, 1) 320ms forwards; }
-.orb-particles .p-6 { width: 6px; height: 6px; animation: particle-fly-6 1.9s cubic-bezier(0.22, 1, 0.36, 1) 380ms forwards; }
-.orb-particles .p-7 { width: 9px; height: 9px; animation: particle-fly-7 2.0s cubic-bezier(0.22, 1, 0.36, 1) 420ms forwards; }
-.orb-particles .p-8 { width: 7px; height: 7px; animation: particle-fly-8 1.8s cubic-bezier(0.22, 1, 0.36, 1) 480ms forwards; }
+.orb-particles .p-6 { width: 6px; height: 6px; animation: particle-fly-6 2.0s cubic-bezier(0.22, 1, 0.36, 1) 380ms forwards; }
+.orb-particles .p-7 { width: 9px; height: 9px; animation: particle-fly-7 2.1s cubic-bezier(0.22, 1, 0.36, 1) 420ms forwards; }
+.orb-particles .p-8 { width: 7px; height: 7px; animation: particle-fly-8 2.0s cubic-bezier(0.22, 1, 0.36, 1) 480ms forwards; }
 
 @keyframes particle-fly-1 { 0% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; } 100% { transform: translate(calc(-50% + 160px), calc(-50% - 130px)) scale(1.1); opacity: 0; } }
 @keyframes particle-fly-2 { 0% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; } 100% { transform: translate(calc(-50% - 170px), calc(-50% - 110px)) scale(1.2); opacity: 0; } }
@@ -2120,41 +2115,41 @@ body.is-transitioning .flow-takeover,
   align-items: center;
   text-align: center;
   gap: 1.15rem;
-  animation: sign-enter 450ms cubic-bezier(0.34, 1.3, 0.5, 1) 100ms both;
+  animation: sign-enter 600ms cubic-bezier(0.34, 1.3, 0.5, 1) 120ms both;
 }
 
 .success-emblem-wrap {
   position: relative;
-  width: 96px;
-  height: 96px;
+  width: 104px;
+  height: 104px;
   display: grid;
   place-items: center;
 }
 
 .success-halo {
   position: absolute;
-  inset: -16px;
+  inset: -20px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(111, 224, 205, 0.6) 0%, rgba(21, 183, 158, 0.25) 55%, transparent 75%);
-  filter: blur(14px);
+  background: radial-gradient(circle, rgba(111, 224, 205, 0.75) 0%, rgba(21, 183, 158, 0.35) 55%, transparent 75%);
+  filter: blur(16px);
   animation: halo-pulse 2s ease-in-out infinite;
 }
 
 .success-disc {
   position: relative;
-  width: 84px;
-  height: 84px;
+  width: 90px;
+  height: 90px;
   border-radius: 50%;
   background: linear-gradient(135deg, #15B79E 0%, #12695A 50%, #0D4F44 100%);
-  box-shadow: 0 0 32px rgba(21, 183, 158, 0.65), 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 2px 4px rgba(255, 255, 255, 0.35);
-  border: 2px solid rgba(111, 224, 205, 0.85);
+  box-shadow: 0 0 36px rgba(21, 183, 158, 0.75), 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+  border: 2.5px solid rgba(111, 224, 205, 0.9);
   display: grid;
   place-items: center;
 }
 
 .success-check-svg {
-  width: 52px;
-  height: 52px;
+  width: 56px;
+  height: 56px;
 }
 
 .success-check-circle {
@@ -2164,19 +2159,19 @@ body.is-transitioning .flow-takeover,
 
 .success-check-tick {
   stroke: #ffffff;
-  stroke-width: 4.5;
+  stroke-width: 4.8;
   stroke-linecap: round;
   stroke-linejoin: round;
   stroke-dasharray: 42;
   stroke-dashoffset: 42;
-  animation: check-draw 350ms cubic-bezier(0.2, 0.8, 0.25, 1) 220ms forwards;
+  animation: check-draw 450ms cubic-bezier(0.2, 0.8, 0.25, 1) 250ms forwards;
 }
 
 .success-pulse-ring {
   position: absolute;
-  inset: -6px;
+  inset: -8px;
   border-radius: 50%;
-  border: 2px solid rgba(111, 224, 205, 0.7);
+  border: 2px solid rgba(111, 224, 205, 0.75);
   animation: ring-pulse 1.8s cubic-bezier(0.22, 1, 0.36, 1) 450ms infinite;
 }
 
@@ -2189,7 +2184,7 @@ body.is-transitioning .flow-takeover,
 
 .success-title {
   font-family: var(--font-display);
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   font-weight: 750;
   color: #ffffff;
   letter-spacing: 0.16em;
@@ -2198,7 +2193,7 @@ body.is-transitioning .flow-takeover,
 }
 
 .success-sub {
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   color: #a3e6d8;
   font-weight: 500;
   letter-spacing: 0.02em;
@@ -2208,7 +2203,7 @@ body.is-transitioning .flow-takeover,
 @keyframes sign-enter {
   0% {
     opacity: 0;
-    transform: scale(0.65) translateY(16px);
+    transform: scale(0.6) translateY(20px);
   }
   100% {
     opacity: 1;
@@ -2231,30 +2226,41 @@ body.is-transitioning .flow-takeover,
   100% { transform: scale(1.45); opacity: 0; }
 }
 
-@keyframes orb-bloom {
+@keyframes orb-escalation-cycle {
   0% {
-    transform: translate(-50%, -50%) scale(0.06);
+    transform: translate(-50%, -50%) scale(0.04);
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.9;
+  }
+  52% {
+    /* Full escalation peak: darkest rich shades flood the screen */
+    transform: translate(-50%, -50%) scale(1.45);
+    opacity: 1;
+  }
+  75% {
+    /* De-escalation start: shades soften and begin receding */
+    transform: translate(-50%, -50%) scale(1.58);
     opacity: 0.85;
   }
-  50% {
-    opacity: 1;
-  }
   100% {
-    transform: translate(-50%, -50%) scale(1.18);
-    opacity: 1;
+    /* De-escalation complete: softly washes out */
+    transform: translate(-50%, -50%) scale(1.7);
+    opacity: 0.35;
   }
 }
 
 @keyframes ring-expand {
   0% {
     transform: translate(-50%, -50%) scale(0.06);
-    opacity: 0.9;
+    opacity: 0.95;
   }
   50% {
-    opacity: 0.65;
+    opacity: 0.75;
   }
   100% {
-    transform: translate(-50%, -50%) scale(1.25);
+    transform: translate(-50%, -50%) scale(1.35);
     opacity: 0;
   }
 }
@@ -2285,24 +2291,24 @@ body.is-transitioning .flow-takeover,
 
 .flow-takeover.is-fading-out {
   opacity: 0 !important;
-  transition: opacity 450ms cubic-bezier(0.2, 0.8, 0.25, 1) !important;
+  transition: opacity 550ms cubic-bezier(0.2, 0.8, 0.25, 1) !important;
 }
 
-/* Unsuccessful Login Takeover — Red / Crimson / Ruby Palette */
+/* Unsuccessful Login Takeover — Red / Rose / Ruby / Crimson / Wine Palette */
 .flow-takeover.is-error {
   background: #250606;
 }
 .flow-takeover.is-error .orb-1 {
-  background: radial-gradient(circle, #EF4444 0%, #B3261E 45%, #7F1D1D 75%, transparent 100%);
+  background: radial-gradient(circle, #FDA4AF 0%, #F87171 35%, #EF4444 70%, transparent 100%);
 }
 .flow-takeover.is-error .orb-2 {
-  background: radial-gradient(circle, #F87171 0%, #DC2626 40%, #991B1B 70%, transparent 100%);
+  background: radial-gradient(circle, #EF4444 0%, #E11D48 45%, #DC2626 75%, transparent 100%);
 }
 .flow-takeover.is-error .orb-3 {
-  background: radial-gradient(circle, #FCA5A5 0%, #B91C1C 40%, #450A0A 75%, transparent 100%);
+  background: radial-gradient(circle, #B91C1C 0%, #991B1B 45%, #BE123C 75%, transparent 100%);
 }
 .flow-takeover.is-error .orb-4 {
-  background: radial-gradient(circle, #EF4444 0%, #991B1B 50%, #500724 80%, transparent 100%);
+  background: radial-gradient(circle, #7F1D1D 0%, #4C0519 50%, #450A0A 80%, transparent 100%);
 }
 .flow-takeover.is-error .orb-ring {
   border-color: rgba(248, 113, 113, 0.65);
@@ -2316,34 +2322,30 @@ body.is-transitioning .flow-takeover,
 }
 .flow-takeover.is-error .orb-particles .particle {
   background: #FCA5A5;
-  box-shadow: 0 0 12px #EF4444;
+  box-shadow: 0 0 14px #EF4444;
 }
 .flow-takeover.is-error .success-halo {
-  background: radial-gradient(circle, rgba(248, 113, 113, 0.6) 0%, rgba(220, 38, 38, 0.25) 55%, transparent 75%);
+  background: radial-gradient(circle, rgba(248, 113, 113, 0.75) 0%, rgba(220, 38, 38, 0.35) 55%, transparent 75%);
 }
 .flow-takeover.is-error .success-disc {
   background: linear-gradient(135deg, #EF4444 0%, #B3261E 50%, #7F1D1D 100%);
-  box-shadow: 0 0 32px rgba(239, 68, 68, 0.7), 0 8px 24px rgba(0, 0, 0, 0.4), inset 0 2px 4px rgba(255, 255, 255, 0.35);
-  border-color: rgba(248, 113, 113, 0.85);
+  border-color: rgba(248, 113, 113, 0.9);
+  box-shadow: 0 0 36px rgba(239, 68, 68, 0.75), 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+}
+.flow-takeover.is-error .failure-cross-line-1,
+.flow-takeover.is-error .failure-cross-line-2 {
+  stroke: #ffffff;
+  stroke-width: 4.8;
+  stroke-linecap: round;
+  stroke-dasharray: 36;
+  stroke-dashoffset: 36;
+  animation: check-draw 450ms cubic-bezier(0.2, 0.8, 0.25, 1) 250ms forwards;
+}
+.flow-takeover.is-error .success-sub {
+  color: #fca5a5;
 }
 .flow-takeover.is-error .success-pulse-ring {
   border-color: rgba(248, 113, 113, 0.75);
-}
-.flow-takeover.is-error .success-sub {
-  color: #FECACA;
-}
-.flow-takeover .failure-cross-line-1,
-.flow-takeover .failure-cross-line-2 {
-  stroke: #ffffff;
-  stroke-width: 4.5;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-dasharray: 28;
-  stroke-dashoffset: 28;
-  animation: check-draw 300ms cubic-bezier(0.2, 0.8, 0.25, 1) 220ms forwards;
-}
-.flow-takeover .failure-cross-line-2 {
-  animation-delay: 340ms;
 }
 
 .flow-takeover.flow-takeover-reveal {

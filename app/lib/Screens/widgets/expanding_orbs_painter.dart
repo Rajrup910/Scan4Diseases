@@ -22,95 +22,87 @@ class ExpandingOrbsPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final maxRadius = size.longestSide * 1.55;
 
-    // Solid base background that fades in ensuring full opaque cover at peak
-    final baseColor = isError ? const Color(0xFF250606) : const Color(0xFF08332C);
+    // Base background with increasing darkness on escalation and soft wash on de-escalation
+    final baseColor = isError ? const Color(0xFF250606) : const Color(0xFF022C22);
     final basePaint = Paint()
       ..color = baseColor.withValues(alpha: (opacity * 0.98).clamp(0.0, 1.0));
     canvas.drawRect(Offset.zero & size, basePaint);
 
     final orbs = isError
         ? [
+            // Shade 1: Soft Rose / Coral (Lightest)
             OrbSpec(
               centerOffset: const Offset(0, 0),
               delay: 0.0,
               speed: 1.0,
-              colorStart: const Color(0xFFEF4444), // Vibrant crimson
-              colorMid: const Color(0xFFB3261E),   // Deep clinical red
-              colorEnd: const Color(0xFF7F1D1D),   // Dark ruby
+              colorStart: const Color(0xFFFDA4AF),
+              colorMid: const Color(0xFFF87171),
+              colorEnd: const Color(0xFFEF4444),
             ),
+            // Shade 2: Vivid Ruby / Scarlet (Medium)
             OrbSpec(
-              centerOffset: Offset(-size.width * 0.08, -size.height * 0.06),
-              delay: 0.05,
-              speed: 1.15,
-              colorStart: const Color(0xFFF87171), // Luminous rose
-              colorMid: const Color(0xFFDC2626),   // Red
-              colorEnd: const Color(0xFF991B1B),   // Dark crimson
-            ),
-            OrbSpec(
-              centerOffset: Offset(size.width * 0.10, size.height * 0.07),
-              delay: 0.10,
-              speed: 1.3,
-              colorStart: const Color(0xFFFCA5A5), // Coral highlight
-              colorMid: const Color(0xFFB91C1C),   // Pure red
-              colorEnd: const Color(0xFF450A0A),   // Deep maroon
-            ),
-            OrbSpec(
-              centerOffset: Offset(-size.width * 0.06, size.height * 0.08),
-              delay: 0.16,
-              speed: 1.45,
+              centerOffset: Offset(-size.width * 0.07, -size.height * 0.05),
+              delay: 0.06,
+              speed: 1.2,
               colorStart: const Color(0xFFEF4444),
-              colorMid: const Color(0xFF991B1B),
-              colorEnd: const Color(0xFF500724),
+              colorMid: const Color(0xFFE11D48),
+              colorEnd: const Color(0xFFDC2626),
             ),
+            // Shade 3: Deep Crimson / Burgundy (Dark)
             OrbSpec(
-              centerOffset: Offset(size.width * 0.05, -size.height * 0.09),
-              delay: 0.22,
-              speed: 1.6,
-              colorStart: const Color(0xFFDC2626),
-              colorMid: const Color(0xFFEF4444),
-              colorEnd: const Color(0xFF250606),
+              centerOffset: Offset(size.width * 0.09, size.height * 0.06),
+              delay: 0.12,
+              speed: 1.4,
+              colorStart: const Color(0xFFB91C1C),
+              colorMid: const Color(0xFF991B1B),
+              colorEnd: const Color(0xFF7F1D1D),
+            ),
+            // Shade 4: Dark Wine / Maroon Abyss (Darkest covering screen)
+            OrbSpec(
+              centerOffset: Offset(-size.width * 0.05, size.height * 0.07),
+              delay: 0.18,
+              speed: 1.65,
+              colorStart: const Color(0xFF7F1D1D),
+              colorMid: const Color(0xFF4C0519),
+              colorEnd: const Color(0xFF450A0A),
             ),
           ]
         : [
+            // Shade 1: Light Mint / Cyan / Spring (Lightest)
             OrbSpec(
               centerOffset: const Offset(0, 0),
               delay: 0.0,
               speed: 1.0,
-              colorStart: const Color(0xFF15B79E), // Vibrant mint emerald
-              colorMid: const Color(0xFF12695A),   // Clinical jade
-              colorEnd: const Color(0xFF0D4F44),   // Deep teal
+              colorStart: const Color(0xFFA7F3D0),
+              colorMid: const Color(0xFF6EE7B7),
+              colorEnd: const Color(0xFF2DD4BF),
             ),
+            // Shade 2: Electric Emerald / Teal (Medium)
             OrbSpec(
-              centerOffset: Offset(-size.width * 0.08, -size.height * 0.06),
-              delay: 0.05,
-              speed: 1.15,
-              colorStart: const Color(0xFF3EA893), // Luminous mint
-              colorMid: const Color(0xFF15B79E),   // Emerald
-              colorEnd: const Color(0xFF12695A),   // Jade
+              centerOffset: Offset(-size.width * 0.07, -size.height * 0.05),
+              delay: 0.06,
+              speed: 1.2,
+              colorStart: const Color(0xFF10B981),
+              colorMid: const Color(0xFF14B8A6),
+              colorEnd: const Color(0xFF0D9488),
             ),
+            // Shade 3: Deep Jade / Forest (Dark)
             OrbSpec(
-              centerOffset: Offset(size.width * 0.10, size.height * 0.07),
-              delay: 0.10,
-              speed: 1.3,
-              colorStart: const Color(0xFF6FE0CD), // Bright aqua/emerald
-              colorMid: const Color(0xFF0F5D4F),   // Dark jade
-              colorEnd: const Color(0xFF08332C),   // Deep pine
+              centerOffset: Offset(size.width * 0.09, size.height * 0.06),
+              delay: 0.12,
+              speed: 1.4,
+              colorStart: const Color(0xFF059669),
+              colorMid: const Color(0xFF0F766E),
+              colorEnd: const Color(0xFF047857),
             ),
+            // Shade 4: Ultra Deep Emerald Abyss (Darkest covering screen)
             OrbSpec(
-              centerOffset: Offset(-size.width * 0.06, size.height * 0.08),
-              delay: 0.16,
-              speed: 1.45,
-              colorStart: const Color(0xFF2F8A78),
-              colorMid: const Color(0xFF12695A),
-              colorEnd: const Color(0xFF0D4F44),
-            ),
-            OrbSpec(
-              centerOffset: Offset(size.width * 0.05, -size.height * 0.09),
-              delay: 0.22,
-              speed: 1.6,
-              colorStart: const Color(0xFF15B79E),
-              colorMid: const Color(0xFF3EA893),
-              colorEnd: const Color(0xFF08332C),
+              centerOffset: Offset(-size.width * 0.05, size.height * 0.07),
+              delay: 0.18,
+              speed: 1.65,
+              colorStart: const Color(0xFF064E3B),
+              colorMid: const Color(0xFF134E4A),
+              colorEnd: const Color(0xFF022C22),
             ),
           ];
 

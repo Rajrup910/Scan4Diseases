@@ -183,44 +183,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Brand mark — with glowing ambient emerald/ruby tick/cross depth flourish in background
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Center(
-                        child: SizedBox(
-                          width: 110,
-                          height: 110,
-                          child: Stack(
-                            alignment: Alignment.center,
-                            clipBehavior: Clip.none,
-                            children: [
-                              // Background glossy blurry tick / cross depth effect behind the emblem
-                              _LogoAuthHalo(
-                                active: _showSuccessVeil || _showFailureVeil,
-                                isError: _showFailureVeil,
-                                onPeak: () {
-                                  if (_showSuccessVeil && _authenticatedUser != null) {
-                                    AuthService.instance.activateUser(_authenticatedUser!);
-                                  }
-                                },
-                                onDismissed: () {
-                                  if (mounted && _showFailureVeil) {
-                                    setState(() => _showFailureVeil = false);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(_failureErrorMessage),
-                                        behavior: SnackBarBehavior.floating,
-                                        backgroundColor: Themes.danger,
-                                      ),
-                                    );
-                                  }
-                                },
-                              ),
-                              const AppLogoMark(size: 76, glow: true),
-                            ],
-                          ),
-                        ),
-                      ),
+                    // Brand mark — glowing electric teal emblem (twin of the web mark).
+                    const Padding(
+                      padding: EdgeInsets.only(bottom: 16),
+                      child: Center(child: AppLogoMark(size: 76, glow: true)),
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -325,6 +291,30 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           ),
+          Positioned.fill(
+            child: _LoginAuthEscalationVeil(
+              active: _showSuccessVeil || _showFailureVeil,
+              isError: _showFailureVeil,
+              errorMessage: _failureErrorMessage,
+              onPeak: () {
+                if (_showSuccessVeil && _authenticatedUser != null) {
+                  AuthService.instance.activateUser(_authenticatedUser!);
+                }
+              },
+              onDismissed: () {
+                if (mounted && _showFailureVeil) {
+                  setState(() => _showFailureVeil = false);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(_failureErrorMessage),
+                      behavior: SnackBarBehavior.floating,
+                      backgroundColor: Themes.danger,
+                    ),
+                  );
+                }
+              },
+            ),
+          ),
         ],
       ),
     ),
@@ -333,27 +323,27 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 }
 
-/// Ambient depth flourish in the background of the logo for login feedback:
-/// - Blurry, glossy emerald aura with checkmark tick radiating in background for success
-/// - Blurry, glossy ruby aura with access denied cross radiating in background for failure
-class _LogoAuthHalo extends StatefulWidget {
+/// Full-screen Expanding Waves with Escalation (Increasing darkness) & De-escalation (Decreasing darkness)
+class _LoginAuthEscalationVeil extends StatefulWidget {
   final bool active;
   final bool isError;
+  final String? errorMessage;
   final VoidCallback? onPeak;
   final VoidCallback? onDismissed;
 
-  const _LogoAuthHalo({
+  const _LoginAuthEscalationVeil({
     required this.active,
     this.isError = false,
+    this.errorMessage,
     this.onPeak,
     this.onDismissed,
   });
 
   @override
-  State<_LogoAuthHalo> createState() => _LogoAuthHaloState();
+  State<_LoginAuthEscalationVeil> createState() => _LoginAuthEscalationVeilState();
 }
 
-class _LogoAuthHaloState extends State<_LogoAuthHalo>
+class _LoginAuthEscalationVeilState extends State<_LoginAuthEscalationVeil>
     with SingleTickerProviderStateMixin {
   late final AnimationController _c;
   bool _peaked = false;
@@ -363,10 +353,10 @@ class _LogoAuthHaloState extends State<_LogoAuthHalo>
     super.initState();
     _c = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1250),
+      duration: const Duration(milliseconds: 2100),
     )
       ..addListener(() {
-        if (!widget.isError && !_peaked && _c.value >= 0.70) {
+        if (!widget.isError && !_peaked && _c.value >= 0.72) {
           _peaked = true;
           widget.onPeak?.call();
         }
@@ -380,7 +370,7 @@ class _LogoAuthHaloState extends State<_LogoAuthHalo>
   }
 
   @override
-  void didUpdateWidget(covariant _LogoAuthHalo old) {
+  void didUpdateWidget(covariant _LoginAuthEscalationVeil old) {
     super.didUpdateWidget(old);
     if (widget.active && !old.active) {
       _peaked = false;
@@ -396,166 +386,109 @@ class _LogoAuthHaloState extends State<_LogoAuthHalo>
     super.dispose();
   }
 
+  double _veil(double t) {
+    const peak = 1.0;
+    if (t <= 0.35) {
+      return Curves.easeOutCubic.transform((t / 0.35).clamp(0.0, 1.0)) * peak;
+    }
+    if (t <= 0.70) {
+      return peak;
+    }
+    return peak *
+        (1.0 -
+            Curves.easeInOutCubic
+                .transform(((t - 0.70) / 0.30).clamp(0.0, 1.0)));
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!widget.active && _c.value == 0) return const SizedBox.shrink();
-    final isErr = widget.isError;
+    return IgnorePointer(
+      ignoring: !widget.active,
+      child: AnimatedBuilder(
+        animation: _c,
+        builder: (_, __) {
+          final opacity = _veil(_c.value).clamp(0.0, 1.0);
+          if (opacity <= 0.001) return const SizedBox.shrink();
 
-    return AnimatedBuilder(
-      animation: _c,
-      builder: (context, _) {
-        final t = _c.value;
-        if (t <= 0.001) return const SizedBox.shrink();
+          final isErr = widget.isError;
+          final signScale = 0.5 + 0.5 * Curves.easeOutBack.transform((_c.value / 0.45).clamp(0.0, 1.0));
 
-        // Smooth multi-stage opacity envelope
-        final double opacity;
-        if (t <= 0.30) {
-          opacity = (t / 0.30).clamp(0.0, 1.0);
-        } else if (t <= 0.75) {
-          opacity = 1.0;
-        } else {
-          opacity = (1.0 - (t - 0.75) / 0.25).clamp(0.0, 1.0);
-        }
-
-        // Wave scale factors
-        final scale1 = 0.4 + 0.75 * Curves.easeOutBack.transform(t.clamp(0.0, 1.0));
-        final scale2 = 0.3 + 0.95 * Curves.easeOutCubic.transform(t.clamp(0.0, 1.0));
-        final scale3 = 0.2 + 1.15 * Curves.easeOutCubic.transform(t.clamp(0.0, 1.0));
-        final symbolScale = 0.3 + 0.85 * Curves.easeOutBack.transform(t.clamp(0.0, 1.0));
-
-        final brandGreen = const Color(0xFF2DD4BF);
-        final brandRuby = const Color(0xFFEF4444);
-        final activeColor = isErr ? brandRuby : brandGreen;
-
-        return Positioned.fill(
-          child: Center(
-            child: Opacity(
-              opacity: opacity,
-              child: Stack(
-                alignment: Alignment.center,
-                clipBehavior: Clip.none,
-                children: [
-                  // Outer Shockwave Wave 3
-                  Transform.scale(
-                    scale: scale3,
-                    child: Container(
-                      width: 260,
-                      height: 260,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: activeColor.withValues(alpha: 0.35 * opacity),
-                          width: 1.5,
-                        ),
-                        gradient: RadialGradient(
-                          colors: [
-                            activeColor.withValues(alpha: 0.12 * opacity),
-                            Colors.transparent,
-                          ],
-                          stops: const [0.0, 1.0],
-                        ),
-                      ),
-                    ),
+          return Opacity(
+            opacity: opacity,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                BackdropFilter(
+                  filter: ui.ImageFilter.blur(
+                    sigmaX: 24 * opacity,
+                    sigmaY: 24 * opacity,
                   ),
-
-                  // Middle Shockwave Wave 2
-                  Transform.scale(
-                    scale: scale2,
-                    child: Container(
-                      width: 190,
-                      height: 190,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: activeColor.withValues(alpha: 0.60 * opacity),
-                          width: 2.0,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: activeColor.withValues(alpha: 0.35 * opacity),
-                            blurRadius: 24,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                        gradient: RadialGradient(
-                          colors: [
-                            (isErr ? const Color(0xFFB91C1C) : const Color(0xFF0F766E))
-                                .withValues(alpha: 0.30 * opacity),
-                            Colors.transparent,
-                          ],
-                          stops: const [0.0, 0.8],
-                        ),
-                      ),
-                    ),
+                  child: const SizedBox.expand(),
+                ),
+                CustomPaint(
+                  painter: ExpandingOrbsPainter(
+                    progress: _c.value,
+                    opacity: opacity,
+                    isError: isErr,
                   ),
-
-                  // Inner Core Glowing Disk Wave 1
-                  Transform.scale(
-                    scale: scale1,
+                  child: const SizedBox.expand(),
+                ),
+                // Central Glowing Sign (Checkmark for success, Cross for failure)
+                Center(
+                  child: Transform.scale(
+                    scale: signScale,
                     child: Container(
-                      width: 130,
-                      height: 130,
+                      width: 92,
+                      height: 92,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        gradient: RadialGradient(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                           colors: isErr
-                              ? [
-                                  const Color(0xFFEF4444).withValues(alpha: 0.85),
-                                  const Color(0xFFB91C1C).withValues(alpha: 0.50),
-                                  const Color(0xFF7F1D1D).withValues(alpha: 0.20),
-                                  Colors.transparent,
+                              ? const [
+                                  Color(0xFFEF4444),
+                                  Color(0xFFB3261E),
+                                  Color(0xFF7F1D1D),
                                 ]
-                              : [
-                                  const Color(0xFF2DD4BF).withValues(alpha: 0.90),
-                                  const Color(0xFF15B79E).withValues(alpha: 0.55),
-                                  const Color(0xFF0F766E).withValues(alpha: 0.25),
-                                  Colors.transparent,
+                              : const [
+                                  Color(0xFF15B79E),
+                                  Color(0xFF12695A),
+                                  Color(0xFF0D4F44),
                                 ],
-                          stops: const [0.0, 0.45, 0.75, 1.0],
+                        ),
+                        border: Border.all(
+                          color: isErr
+                              ? const Color(0xFFF87171)
+                              : const Color(0xFF6FE0CD),
+                          width: 2.5,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: activeColor.withValues(alpha: 0.65),
-                            blurRadius: 36,
+                            color: isErr
+                                ? const Color(0xFFEF4444).withValues(alpha: 0.70)
+                                : const Color(0xFF15B79E).withValues(alpha: 0.70),
+                            blurRadius: 38,
                             spreadRadius: 4,
                           ),
                         ],
                       ),
-                      child: ClipOval(
-                        child: BackdropFilter(
-                          filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
-                          child: const SizedBox.expand(),
+                      child: Center(
+                        child: Icon(
+                          isErr ? Icons.close_rounded : Icons.check_rounded,
+                          color: Colors.white,
+                          size: 52,
                         ),
                       ),
                     ),
                   ),
-
-                  // Central Glowing Tick / Cross Symbol
-                  Transform.scale(
-                    scale: symbolScale,
-                    child: Icon(
-                      isErr ? Icons.close_rounded : Icons.check_rounded,
-                      size: 58,
-                      color: isErr ? const Color(0xFFFCA5A5) : const Color(0xFFFFFFFF),
-                      shadows: [
-                        Shadow(
-                          color: activeColor.withValues(alpha: 0.95),
-                          blurRadius: 18,
-                        ),
-                        Shadow(
-                          color: Colors.black.withValues(alpha: 0.45),
-                          blurRadius: 6,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 }
