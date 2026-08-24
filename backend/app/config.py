@@ -117,6 +117,8 @@ class Settings(BaseSettings):
     llm_timeout_seconds: float = 30.0
     llm_max_tokens: int = 700
     llm_temperature: float = Field(default=0.3, ge=0.0, le=2.0)
+    llm_rate_limit_rpm: int = Field(default=10, ge=1)
+    llm_rate_limit_max_concurrent: int = Field(default=3, ge=1)
 
     # --- admin ---
     # Used by POST /admin/promote-doctor to guard one-time cloud DB seeding.

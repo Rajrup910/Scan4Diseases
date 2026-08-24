@@ -392,12 +392,14 @@
       function setExpanded(on) {
         if (on) {
           root.classList.add("is-expanded");
+          document.body.classList.add("has-expanded-chat");
           if (iconExpand) iconExpand.style.display = "none";
           if (iconCollapse) iconCollapse.style.display = "";
           if (label) label.textContent = "Restore";
           expandBtn.title = "Restore chat workspace";
         } else {
           root.classList.remove("is-expanded");
+          document.body.classList.remove("has-expanded-chat");
           if (iconExpand) iconExpand.style.display = "";
           if (iconCollapse) iconCollapse.style.display = "none";
           if (label) label.textContent = "Expand";
@@ -405,6 +407,7 @@
         }
         scroll();
       }
+
 
       expandBtn.addEventListener("click", function () {
         setExpanded(!root.classList.contains("is-expanded"));

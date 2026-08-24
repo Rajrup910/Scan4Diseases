@@ -21,3 +21,7 @@ services:
         sync: false
       - key: IMAGE_ENCRYPTION_KEY
         value: _vDxQjzxSasYBgFY5BhXwK9VbO9ugaa7hR2uqIDTtuo=
+      - key: LLM_RATE_LIMIT_RPM
+        value: "10"
+      - key: LLM_RATE_LIMIT_MAX_CONCURRENT
+        value: "3"

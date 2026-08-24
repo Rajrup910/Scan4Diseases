@@ -19,7 +19,7 @@ import json
 import logging
 import uuid
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile, status
 from pydantic import ValidationError
 
 from backend.app.config import Settings
@@ -167,6 +167,7 @@ async def predict(
     ood: MahalanobisOOD | None = Depends(get_ood),
     lesion_gate: LesionGate | None = Depends(get_lesion_gate),
     lesion_router: LesionRouter | None = Depends(get_lesion_router),
+    raw_request: Request = None,
 ) -> PredictionResponse:
     request_id = uuid.uuid4().hex[:16]
     answers = parse_questionnaire(questionnaire)
@@ -321,6 +322,7 @@ async def predict(
     explanation = None
     explanation_available = False
     if include_explanation:
+        client_ip = raw_request.client.host if (raw_request and raw_request.client) else "127.0.0.1"
         llm_result = await llm.explain(
             predicted_name=predicted.short_name(language),
             predicted_code=predicted.code,
@@ -333,6 +335,7 @@ async def predict(
             symptoms=answers.summary_for_llm(),
             gradcam_focus=result.gradcam_focus,
             language=language,
+            client_key=client_ip,
         )
         explanation_available = llm_result.available
         explanation = llm_result.text if llm_result.available else None

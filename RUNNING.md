@@ -53,10 +53,20 @@ Leave it running. It prints:
 - Health → http://localhost:8000/health
 - A LAN URL for the phone (Wi-Fi option, see below)
 
-**Portal login (demo doctor):**
+**Demo Logins for Presentation & Testing:**
 
-- email: `dr.rao@example.com`
-- password: `demopassword`
+- **Clinician Web Portal** (`http://localhost:8000/portal/login`):
+  - **Doctor 1:** `dr.rao@example.com` / `Str0ngPass!` (Dr. A. Rao — Reg: MH-12345)
+  - **Doctor 2:** `dr.mehta@example.com` / `Str0ngPass!` (Dr. Sunita Mehta — Reg: KA-67890)
+  - **Doctor 3:** `dr.kapoor@example.com` / `Str0ngPass!` (Dr. Vikram Kapoor — Reg: DL-98765)
+  - **Doctor 4:** `dr.nambiar@example.com` / `Str0ngPass!` (Dr. Priya Nambiar — Reg: KL-45678)
+  - **Doctor 5:** `dr.deshmukh@example.com` / `Str0ngPass!` (Dr. Rajesh Deshmukh — Reg: MH-54321)
+  - **Doctor 6:** `dr.sen@example.com` / `Str0ngPass!` (Dr. Ananya Sen — Reg: WB-34567)
+- **Patient Mobile App / API** (`http://localhost:8000/auth/login`):
+  - **Patient 1:** `raj@gmail.com` / `12345678` (Raj)
+  - **Patient 2:** `ananya@gmail.com` / `12345678` (Ananya Verma)
+  - **Other Demo Patients:** `priya@example.com`, `sam@example.com`, `jordan@example.com` / `12345678`
+
 
 Useful flags: `-Port 8080` (if 8000 is busy), `-NoReload`.
 
@@ -165,4 +175,5 @@ powershell -ExecutionPolicy Bypass -File scripts\connect_phone.ps1
 cd app; flutter pub get; flutter run
 ```
 
-Portal: **http://localhost:8000/portal/login** — `dr.rao@example.com` / `demopassword`
+Portal: **http://localhost:8000/portal/login** — `dr.rao@example.com` / `Str0ngPass!` or `dr.mehta@example.com` / `Str0ngPass!`
+Patient App: `raj@gmail.com` / `12345678` or `ananya@gmail.com` / `12345678`

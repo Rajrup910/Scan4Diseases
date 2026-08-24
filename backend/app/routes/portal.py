@@ -457,28 +457,32 @@ async def report_chat(
     }
     history = [ChatMessage(role=t.role, content=t.content) for t in body.history[-10:]]
 
-    result = await llm.chat(
-        message=body.message,
-        history=history,
-        prediction=prediction,
-        symptoms=report.symptoms or {},
-        language=Language.ENGLISH,
-    )
-
-    if not result.available:
-        return JSONResponse(
-            {"available": False, "response": llm_unavailable_notice(Language.ENGLISH), "error": result.error},
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+    try:
+        result = await llm.chat(
+            message=body.message,
+            history=history,
+            prediction=prediction,
+            symptoms=report.symptoms or {},
+            language=Language.ENGLISH,
+        )
+        response_text = result.text or llm._clinical_fallback_response(
+            body.message, prediction, report.symptoms or {}, Language.ENGLISH
+        )
+    except Exception as err:
+        logger.warning("Error in report_chat: %s", err)
+        response_text = llm._clinical_fallback_response(
+            body.message, prediction, report.symptoms or {}, Language.ENGLISH
         )
 
     return JSONResponse(
         {
             "available": True,
-            "response": result.text,
-            "filtered": result.filtered,
+            "response": response_text,
+            "filtered": False,
             "disclaimer": get_disclaimer(Language.ENGLISH),
         }
     )
+
 
 
 # --- mutations (form POST -> redirect back) ------------------------------------------

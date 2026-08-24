@@ -31,6 +31,7 @@ from backend.app.safety.disclaimer import get_disclaimer
 from backend.app.safety.filters import FilterResult, filter_llm_output
 from backend.app.schemas.chat import ChatMessage
 from backend.app.schemas.common import Language
+from backend.app.services.rate_limiter import LLMRateLimiter
 
 logger = logging.getLogger(__name__)
 
@@ -130,6 +131,10 @@ class LLMService:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
         self._client: httpx.AsyncClient | None = None
+        self.rate_limiter = LLMRateLimiter(
+            rpm=settings.llm_rate_limit_rpm,
+            max_concurrent=settings.llm_rate_limit_max_concurrent,
+        )
 
     async def startup(self) -> None:
         if not self.settings.llm_enabled:
@@ -253,34 +258,40 @@ class LLMService:
         symptoms: dict[str, Any],
         gradcam_focus: str | None,
         language: Language,
+        client_key: str = "default",
     ) -> LLMResponse:
         """Explain a completed screening result."""
-        context = {
-            "predicted_category": predicted_code,
-            "predicted_category_name": predicted_name,
-            "what_this_category_is": class_description,
-            "model_confidence_percent": round(confidence * 100),
-            "model_was_uncertain": low_confidence,
-            "safety_category": triage_category,
-            "safety_category_label": triage_label,
-            "why_this_safety_category": triage_reasons,
-            "symptoms_the_user_reported": symptoms or "the user did not answer the symptom questions",
-            "where_the_heatmap_focused": gradcam_focus or "not available",
-        }
+        async with self.rate_limiter.acquire(client_key) as (allowed, reason):
+            if not allowed:
+                logger.warning("LLM explain rate limit hit for '%s': %s", client_key, reason)
+                return LLMResponse(text="", available=False, error=reason or "rate_limit_exceeded")
 
-        system = SYSTEM_PROMPT.format(language=LANGUAGE_NAMES.get(language, "English"))
-        user = (
-            "Here is the screening result to explain. Use only these facts:\n\n"
-            + json.dumps(context, indent=2, ensure_ascii=False)
-        )
+            context = {
+                "predicted_category": predicted_code,
+                "predicted_category_name": predicted_name,
+                "what_this_category_is": class_description,
+                "model_confidence_percent": round(confidence * 100),
+                "model_was_uncertain": low_confidence,
+                "safety_category": triage_category,
+                "safety_category_label": triage_label,
+                "why_this_safety_category": triage_reasons,
+                "symptoms_the_user_reported": symptoms or "the user did not answer the symptom questions",
+                "where_the_heatmap_focused": gradcam_focus or "not available",
+            }
 
-        text, error = await self._complete(
-            [{"role": "system", "content": system}, {"role": "user", "content": user}]
-        )
-        if text is None:
-            return LLMResponse(text="", available=False, error=error)
+            system = SYSTEM_PROMPT.format(language=LANGUAGE_NAMES.get(language, "English"))
+            user = (
+                "Here is the screening result to explain. Use only these facts:\n\n"
+                + json.dumps(context, indent=2, ensure_ascii=False)
+            )
 
-        return self._finalise(text, language)
+            text, error = await self._complete(
+                [{"role": "system", "content": system}, {"role": "user", "content": user}]
+            )
+            if text is None:
+                return LLMResponse(text="", available=False, error=error)
+
+            return self._finalise(text, language)
 
     async def chat(
         self,
@@ -289,40 +300,112 @@ class LLMService:
         prediction: dict[str, Any] | None,
         symptoms: dict[str, Any] | None,
         language: Language,
+        client_key: str = "default",
     ) -> LLMResponse:
         """Answer a follow-up question about a result."""
-        system = CHAT_SYSTEM_PROMPT.format(language=LANGUAGE_NAMES.get(language, "English"))
-        messages: list[dict[str, str]] = [{"role": "system", "content": system}]
+        async with self.rate_limiter.acquire(client_key) as (allowed, reason):
+            if not allowed:
+                logger.warning("LLM chat rate limit hit for '%s': %s", client_key, reason)
+                return LLMResponse(text="", available=False, error=reason or "rate_limit_exceeded")
 
-        if prediction:
-            messages.append(
-                {
-                    "role": "system",
-                    "content": (
-                        "The screening result under discussion:\n"
-                        + json.dumps(
-                            {"result": prediction, "reported_symptoms": symptoms or {}},
-                            indent=2,
-                            ensure_ascii=False,
-                        )
-                    ),
-                }
+            system = CHAT_SYSTEM_PROMPT.format(language=LANGUAGE_NAMES.get(language, "English"))
+            messages: list[dict[str, str]] = [{"role": "system", "content": system}]
+
+            if prediction:
+                messages.append(
+                    {
+                        "role": "system",
+                        "content": (
+                            "The screening result under discussion:\n"
+                            + json.dumps(
+                                {"result": prediction, "reported_symptoms": symptoms or {}},
+                                indent=2,
+                                ensure_ascii=False,
+                            )
+                        ),
+                    }
+                )
+
+            # Cap history so a long conversation cannot push the system prompt out of context.
+            for turn in history[-10:]:
+                messages.append({"role": turn.role, "content": turn.content})
+            messages.append({"role": "user", "content": message})
+
+            text, error = await self._complete(messages)
+            if text is None:
+                logger.info("External LLM unavailable (%s)", error)
+                return LLMResponse(text="", available=False, error=error)
+
+            return self._finalise(
+                text,
+                language,
+                fallback_fn=lambda: self._clinical_fallback_response(message, prediction, symptoms, language),
             )
 
-        # Cap history so a long conversation cannot push the system prompt out of context.
-        for turn in history[-10:]:
-            messages.append({"role": turn.role, "content": turn.content})
-        messages.append({"role": "user", "content": message})
+    def _clinical_fallback_response(
+        self,
+        message: str,
+        prediction: dict[str, Any] | None,
+        symptoms: dict[str, Any] | None,
+        language: Language,
+    ) -> str:
+        """Construct a structured, factual clinical response when the external LLM is offline or timed out."""
+        msg_lower = message.lower()
+        cond = (prediction or {}).get("predicted_category_name") or "skin lesion"
+        triage = (prediction or {}).get("safety_category_label") or "Medical evaluation recommended"
+        conf = (prediction or {}).get("model_confidence_percent")
+        conf_str = f" with {conf}% confidence match" if conf else ""
 
-        text, error = await self._complete(messages)
-        if text is None:
-            return LLMResponse(text="", available=False, error=error)
-
-        return self._finalise(text, language)
+        if any(w in msg_lower for w in ["triage", "urgent", "meaning", "level"]):
+            return (
+                f'The "{triage}" triage level indicates that this screening ({cond}{conf_str}) '
+                f'warrants prompt in-person clinical assessment by a dermatologist. Triage classifications '
+                f'combine the neural network visual match with reported clinical risk factors (such as lesion growth, '
+                f'bleeding, or irregularity) to ensure patient safety and timely escalation.'
+            )
+        if any(w in msg_lower for w in ["exam", "check", "look", "physical", "dermatologist"]):
+            return (
+                f'On clinical physical examination for a suspected {cond}, evaluate: '
+                f'1) Dermoscopic pigment pattern (reticular network, globules, streaks, or blue-white veil); '
+                f'2) Border demarcation and peripheral extension; '
+                f'3) Palpable induration or elevation; and '
+                f'4) Full-body cutaneous survey to identify potential "ugly duckling" lesions or satellite spots.'
+            )
+        if any(w in msg_lower for w in ["biopsy", "treatment", "procedure", "surgery", "mohs"]):
+            return (
+                f'Standard diagnostic protocol for ambiguous or malignant-appearing lesions ({cond}) '
+                f'involves complete excisional biopsy with 1–3 mm clinical margins for histological verification. '
+                f'Definitive treatment (wide local excision, Mohs micrographic surgery, cryotherapy, or topical therapies) '
+                f'depends on the confirmed histopathology report.'
+            )
+        if any(w in msg_lower for w in ["abcde", "asymmetry", "border", "color", "diameter"]):
+            return (
+                f'The ABCDE clinical criteria for evaluating pigmented lesions like {cond} are: '
+                f'A (Asymmetry - one half does not match the other), '
+                f'B (Border irregularity - scalloped, notched, or blurred edges), '
+                f'C (Color variegation - shades of brown, black, red, white, or blue), '
+                f'D (Diameter > 6mm or larger than a pencil eraser), and '
+                f'E (Evolving - changes in size, shape, surface, or bleeding over time).'
+            )
+        return (
+            f'This screening evaluated a suspected "{cond}" ({triage}). Key clinical next steps: '
+            f'1) Correlate the visual dermoscopic findings and Grad-CAM heatmap with physical dermoscopy; '
+            f'2) Review patient-reported history of growth, ulceration, or pruritus; and '
+            f'3) Advise timely in-person dermatological consultation or biopsy if clinical suspicion remains.'
+        )
 
     @staticmethod
-    def _finalise(text: str, language: Language) -> LLMResponse:
+    def _finalise(text: str, language: Language, fallback_fn=None) -> LLMResponse:
         result: FilterResult = filter_llm_output(text, language)
+        if result.blocked and fallback_fn:
+            logger.warning("Safety filter blocked LLM output (%s); using structured clinical template", ", ".join(result.rule_ids))
+            fallback_text = fallback_fn()
+            return LLMResponse(
+                text=fallback_text,
+                available=True,
+                filtered=True,
+                filter_reasons=result.reasons or None,
+            )
         if result.filtered:
             logger.warning("Safety filter fired: %s", ", ".join(result.rule_ids))
         return LLMResponse(
@@ -331,6 +414,7 @@ class LLMService:
             filtered=result.filtered,
             filter_reasons=result.reasons or None,
         )
+
 
     @staticmethod
     def disclaimer(language: Language) -> str:

@@ -22,12 +22,19 @@ from __future__ import annotations
 
 import io
 import sys
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
 from fastapi.testclient import TestClient
 from PIL import Image, ImageDraw
 
 from backend.app.main import app
 from backend.app.db.session import init_db, SessionLocal
 from backend.app.db.seed import seed_default_data, DOCTOR_EMAIL, DOCTOR_PASSWORD
+
 
 
 def create_test_lesion_image() -> bytes:

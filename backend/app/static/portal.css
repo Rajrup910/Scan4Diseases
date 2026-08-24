@@ -1024,33 +1024,48 @@ table.data tbody tr:hover { background: var(--surface-3); }
 /* Fullscreen / Expanded Workspace Mode */
 .ai-chat.is-expanded {
   position: fixed;
-  top: 70px;
+  top: 72px;
   left: 20px;
   right: 20px;
   bottom: 20px;
-  z-index: 99;
-  margin: 0;
+  max-width: 1200px;
+  margin: 0 auto;
+  z-index: 1000;
   display: flex;
   flex-direction: column;
   border-radius: var(--r-3);
-  background: var(--glass-sheen), var(--surface-1);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--border);
+  background: var(--surface-1) !important;
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.75), 0 0 0 100vmax rgba(5, 10, 16, 0.65);
   animation: expand-in 0.22s var(--ease-out);
+  padding: var(--s-4) var(--s-5) var(--s-3);
+  box-sizing: border-box;
+  overflow: hidden;
 }
 @keyframes expand-in {
   from { opacity: 0.8; transform: scale(0.985); }
   to { opacity: 1; transform: scale(1); }
 }
+
+body.has-expanded-chat {
+  overflow: hidden !important;
+}
+body.has-expanded-chat .site-footer {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
+
 .ai-chat.is-expanded .ai-chat-intro {
-  margin-bottom: var(--s-2);
+  margin: var(--s-1) 0 var(--s-2);
 }
 .ai-chat.is-expanded .ai-log {
   flex: 1;
   max-height: none;
   min-height: 0;
+  margin-bottom: var(--s-2);
 }
+
 .ai-msg { display: flex; }
 .ai-msg-user { justify-content: flex-end; }
 .ai-msg-bot { justify-content: flex-start; }
@@ -1170,10 +1185,36 @@ table.data tbody tr:hover { background: var(--surface-3); }
 
 .ai-analyzing-label { font-size: .875rem; font-weight: 600; color: var(--ink); }
 
-.ai-form { display: flex; gap: var(--s-2); margin-top: var(--s-3); }
-.ai-input { margin-top: 0; flex: 1; }
-.ai-send { flex: none; padding: .5rem .8rem; align-self: stretch; }
-.ai-chat-foot { margin: var(--s-2) 0 0; font-size: .78rem; }
+.ai-form {
+  display: flex;
+  gap: var(--s-2);
+  margin-top: 0;
+  margin-bottom: var(--s-2);
+  align-items: center;
+}
+.ai-input {
+  margin-top: 0;
+  flex: 1;
+  height: 44px;
+  padding: 0 var(--s-3);
+  box-sizing: border-box;
+}
+.ai-send {
+  flex: none;
+  height: 44px;
+  padding: 0 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.ai-chat-foot {
+  margin: 0;
+  padding: 2px 0 0;
+  font-size: .78rem;
+  color: var(--ink-faint);
+  line-height: 1.35;
+}
+
 
 /* ============================================================ 6b. REPORT DETAIL 2-COLUMN SPLIT LAYOUT */
 .detail-split-layout {

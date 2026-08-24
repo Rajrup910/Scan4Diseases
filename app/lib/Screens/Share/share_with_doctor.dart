@@ -105,62 +105,67 @@ class _ShareSheetState extends State<_ShareSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(20, 14, 20, 20 + bottomInset),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 42,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Themes.border,
-                borderRadius: BorderRadius.circular(2),
+    final maxSheetHeight = MediaQuery.of(context).size.height * 0.82;
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxSheetHeight),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(20, 14, 20, 20 + bottomInset),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Themes.border,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          const Text('Share with a doctor',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
-          const SizedBox(height: 4),
-          Text(
-            'Choose a doctor to review your "${widget.report.condition}" screening. '
-            'They will be able to see this report and its image in their portal.',
-            style: const TextStyle(color: Themes.muted, height: 1.35, fontSize: 13),
-          ),
-          const SizedBox(height: 16),
-          Flexible(
-            child: FutureBuilder<List<DoctorDirectoryEntry>>(
-              future: _doctors,
-              builder: (context, snap) {
-                if (snap.connectionState == ConnectionState.waiting) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 30),
-                    child: Center(child: CircularProgressIndicator()),
-                  );
-                }
-                if (snap.hasError) {
-                  return _errorBox(
-                    snap.error is SharingException
-                        ? (snap.error as SharingException).message
-                        : 'Could not load the list of doctors.',
-                  );
-                }
-                final doctors = snap.data ?? const [];
-                if (doctors.isEmpty) {
-                  return _errorBox('No verified doctors are available yet.');
-                }
-                return ListView.separated(
-                  shrinkWrap: true,
-                  itemCount: doctors.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
-                  itemBuilder: (_, i) => _doctorTile(doctors[i]),
-                );
-              },
+            const SizedBox(height: 16),
+            const Text('Share with a doctor',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 4),
+            Text(
+              'Choose a doctor to review your "${widget.report.condition}" screening. '
+              'They will be able to see this report and its image in their portal.',
+              style: const TextStyle(color: Themes.muted, height: 1.35, fontSize: 13),
             ),
-          ),
+            const SizedBox(height: 16),
+            Flexible(
+              child: FutureBuilder<List<DoctorDirectoryEntry>>(
+                future: _doctors,
+                builder: (context, snap) {
+                  if (snap.connectionState == ConnectionState.waiting) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 30),
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+                  if (snap.hasError) {
+                    return _errorBox(
+                      snap.error is SharingException
+                          ? (snap.error as SharingException).message
+                          : 'Could not load the list of doctors.',
+                    );
+                  }
+                  final doctors = snap.data ?? const [];
+                  if (doctors.isEmpty) {
+                    return _errorBox('No verified doctors are available yet.');
+                  }
+                  return ListView.separated(
+                    shrinkWrap: true,
+                    physics: const ClampingScrollPhysics(),
+                    itemCount: doctors.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 8),
+                    itemBuilder: (_, i) => _doctorTile(doctors[i]),
+                  );
+                },
+              ),
+            ),
+
           const SizedBox(height: 16),
           SizedBox(
             height: 52,
@@ -185,16 +190,18 @@ class _ShareSheetState extends State<_ShareSheet> {
               },
             ),
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Your photo is encrypted before it is stored, and only the doctor you choose can '
-            'see it. You can stop sharing at any time.',
-            style: TextStyle(color: Themes.muted, fontSize: 11.5, height: 1.3),
-          ),
-        ],
+            const SizedBox(height: 8),
+            const Text(
+              'Your photo is encrypted before it is stored, and only the doctor you choose can '
+              'see it. You can stop sharing at any time.',
+              style: TextStyle(color: Themes.muted, fontSize: 11.5, height: 1.3),
+            ),
+          ],
+        ),
       ),
     );
   }
+
 
   Widget _doctorTile(DoctorDirectoryEntry d) {
     final selected = d.id == _selectedId;

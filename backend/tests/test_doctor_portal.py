@@ -385,9 +385,14 @@ def test_shared_image_blob_on_disk_is_ciphertext(portal, tmp_path):
     _, _, patient_token, _, report_id = _seed_doctor_with_shared_report(portal)
     assert _upload_image(portal, patient_token, report_id).status_code == 200
 
-    blobs = list((tmp_path / "storage" / "shared").glob("simg_*.enc"))
-    assert len(blobs) == 1
-    raw = blobs[0].read_bytes()
+    from backend.app.db.models import Report
+    db = portal.Session()
+    rep = db.query(Report).get(report_id)
+    db.close()
+
+    blob_file = tmp_path / "storage" / "shared" / rep.image_path
+    assert blob_file.exists()
+    raw = blob_file.read_bytes()
     # Not a decodable image, and free of the PNG/JPEG magic bytes -- it is ciphertext.
     with pytest.raises((UnidentifiedImageError, OSError)):
         Image.open(io.BytesIO(raw)).load()
@@ -423,11 +428,17 @@ def test_doctor_cannot_fetch_another_patients_image(portal):
 def test_unsharing_destroys_the_image(portal, tmp_path):
     doctor_token, _, patient_token, _, report_id = _seed_doctor_with_shared_report(portal)
     _upload_image(portal, patient_token, report_id)
-    assert list((tmp_path / "storage" / "shared").glob("simg_*.enc"))
+
+    from backend.app.db.models import Report
+    db = portal.Session()
+    rep = db.query(Report).get(report_id)
+    db.close()
+    blob_file = tmp_path / "storage" / "shared" / rep.image_path
+    assert blob_file.exists()
 
     portal.client.delete(f"/patient/reports/{report_id}/share", headers=_auth(patient_token))
     # Blob is gone from disk, and the doctor is cut off at the access gate.
-    assert not list((tmp_path / "storage" / "shared").glob("simg_*.enc"))
+    assert not blob_file.exists()
     assert portal.client.get(
         f"/doctor/reports/{report_id}/image", headers=_auth(doctor_token)
     ).status_code == 403
