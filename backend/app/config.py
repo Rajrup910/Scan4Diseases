@@ -79,7 +79,7 @@ class Settings(BaseSettings):
     # --- image quality gate ---
     quality_min_side_px: int = 224
     quality_max_upload_mb: float = 10.0
-    quality_blur_threshold: float = 45.0
+    quality_blur_threshold: float = 10.0
     quality_dark_threshold: float = 40.0
     quality_bright_threshold: float = 225.0
 

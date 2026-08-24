@@ -173,6 +173,39 @@ def seed_default_data(db: Session) -> None:
         patient_raj.password_hash = hash_password(PATIENT_PASSWORD)
         db.flush()
 
+    # Seed demo reports for raj@gmail.com if none exist
+    has_raj_reports = db.scalar(select(Report).where(Report.user_id == patient_raj.id))
+    if has_raj_reports is None:
+        r1_date = now - timedelta(days=3)
+        db.add(
+            Report(
+                user_id=patient_raj.id,
+                condition="Melanocytic nevus",
+                predicted_class="nv",
+                confidence=0.92,
+                triage="Routine dermatologist consultation",
+                status=REPORT_NEW,
+                explanation="Well-defined, symmetric pigmented lesion with uniform color network.",
+                symptoms={"duration_weeks": 52, "stable": True, "itching": False},
+                created_at=r1_date,
+            )
+        )
+        r2_date = now - timedelta(days=14)
+        db.add(
+            Report(
+                user_id=patient_raj.id,
+                condition="Basal cell carcinoma",
+                predicted_class="bcc",
+                confidence=0.79,
+                triage="Prompt dermatologist consultation",
+                status=REPORT_NEW,
+                explanation="Pearly nodule with fine telangiectasia observed.",
+                symptoms={"duration_weeks": 16, "itching": False, "bleeding": True},
+                created_at=r2_date,
+            )
+        )
+        db.flush()
+
     # 3. Seed demo patients & worklist reports for Doctor Portal
     for name, email, reports in DEMO_PATIENTS:
         p = db.scalar(select(User).where(User.email == email))
