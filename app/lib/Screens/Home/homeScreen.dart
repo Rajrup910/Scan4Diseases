@@ -4,6 +4,7 @@ import '../Guide/skinGuideScreen.dart';
 import '../theme.dart';
 import '../app_data.dart';
 import '../widgets/app_logo_mark.dart';
+import '../widgets/emerald_waves.dart';
 import '../widgets/slide_to_start.dart';
 
 class HomeScreen extends StatelessWidget {
