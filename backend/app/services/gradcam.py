@@ -23,21 +23,24 @@ from PIL import Image
 
 
 class GradCAM:
-    """Grad-CAM over a single target layer with zero-overhead backprop."""
+    """Grad-CAM over a single target layer using forward/backward hooks."""
 
     def __init__(self, model: nn.Module, target_layer: nn.Module) -> None:
         self.model = model
         self.target_layer = target_layer
         self._activations: torch.Tensor | None = None
+        self._gradients: torch.Tensor | None = None
         self._handles: list[Any] = []
 
     def _save_activations(self, _module: nn.Module, _inputs: Any, output: torch.Tensor) -> None:
-        output.requires_grad_(True)
-        output.retain_grad()
         self._activations = output
+
+    def _save_gradients(self, _module: nn.Module, _grad_in: Any, grad_output: tuple) -> None:
+        self._gradients = grad_output[0]
 
     def __enter__(self) -> GradCAM:
         self._handles.append(self.target_layer.register_forward_hook(self._save_activations))
+        self._handles.append(self.target_layer.register_full_backward_hook(self._save_gradients))
         return self
 
     def __exit__(
@@ -53,6 +56,7 @@ class GradCAM:
             handle.remove()
         self._handles.clear()
         self._activations = None
+        self._gradients = None
 
     def __call__(
         self, input_tensor: torch.Tensor, class_index: int | None = None
@@ -64,20 +68,21 @@ class GradCAM:
             input_tensor = input_tensor.unsqueeze(0)
 
         self.model.eval()
+        x = input_tensor.clone().detach().requires_grad_(True)
 
         with torch.enable_grad():
             self.model.zero_grad(set_to_none=True)
-            logits = self.model(input_tensor)
+            logits = self.model(x)
             probabilities = torch.softmax(logits, dim=1)[0].detach().cpu().numpy()
             if class_index is None:
                 class_index = int(logits.argmax(dim=1).item())
             logits[0, class_index].backward()
 
-        if self._activations is None or self._activations.grad is None:
+        if self._activations is None or self._gradients is None:
             raise RuntimeError("Grad-CAM captured no activations; is the target layer in this model?")
 
         activations = self._activations[0].detach()
-        gradients = self._activations.grad[0].detach()
+        gradients = self._gradients[0].detach()
         weights = gradients.mean(dim=(1, 2))
         cam = F.relu((weights[:, None, None] * activations).sum(dim=0))
 

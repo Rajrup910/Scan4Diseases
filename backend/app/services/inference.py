@@ -87,6 +87,10 @@ class InferenceService:
             logger.error("Failed to load checkpoint %s: %s", path.name, exc)
             return
 
+        # Freeze parameters to optimize memory during serving
+        for p in model.parameters():
+            p.requires_grad = False
+
         self.model = model
         self.checkpoint_meta = {k: v for k, v in payload.items() if k not in ("state_dict", "config", "history")}
         self.arch = payload["arch"]
