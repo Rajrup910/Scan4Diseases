@@ -186,8 +186,17 @@
 <!-- Row 3: AI assistant — discuss this result with the safety-filtered model -->
 <section class="card ai-chat" data-ai-chat data-report-id="{{ report.id }}">
   <div class="ai-chat-head">
-    <h2><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#message"/></svg> Ask about this result</h2>
-    <span class="badge status-under_review">AI assistant</span>
+    <div class="ai-chat-title-group">
+      <h2><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#message"/></svg> Ask about this result</h2>
+      <span class="badge status-under_review">AI assistant</span>
+    </div>
+    <div class="ai-chat-actions">
+      <button type="button" class="btn-chat-expand" data-ai-expand title="Expand chat workspace" aria-label="Expand chat workspace">
+        <svg class="icon icon-sm icon-expand" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#maximize"/></svg>
+        <svg class="icon icon-sm icon-collapse" aria-hidden="true" style="display:none;"><use href="/portal/static/vendor/icons/sprite.svg#minimize"/></svg>
+        <span class="expand-btn-text">Expand</span>
+      </button>
+    </div>
   </div>
   <p class="muted ai-chat-intro">
     Ask the assistant to explain the screening, suggest what to check, or draft

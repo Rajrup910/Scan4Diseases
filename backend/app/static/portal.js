@@ -383,6 +383,40 @@
     var history = [];
     var busy = false;
 
+    var expandBtn = root.querySelector("[data-ai-expand]");
+    if (expandBtn) {
+      var iconExpand = expandBtn.querySelector(".icon-expand");
+      var iconCollapse = expandBtn.querySelector(".icon-collapse");
+      var label = expandBtn.querySelector(".expand-btn-text");
+
+      function setExpanded(on) {
+        if (on) {
+          root.classList.add("is-expanded");
+          if (iconExpand) iconExpand.style.display = "none";
+          if (iconCollapse) iconCollapse.style.display = "";
+          if (label) label.textContent = "Restore";
+          expandBtn.title = "Restore chat workspace";
+        } else {
+          root.classList.remove("is-expanded");
+          if (iconExpand) iconExpand.style.display = "";
+          if (iconCollapse) iconCollapse.style.display = "none";
+          if (label) label.textContent = "Expand";
+          expandBtn.title = "Expand chat workspace";
+        }
+        scroll();
+      }
+
+      expandBtn.addEventListener("click", function () {
+        setExpanded(!root.classList.contains("is-expanded"));
+      });
+
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && root.classList.contains("is-expanded")) {
+          setExpanded(false);
+        }
+      });
+    }
+
     function scroll() { log.scrollTop = log.scrollHeight; }
     function bubble(role, text, isError) {
       var wrap = document.createElement("div");

@@ -96,10 +96,12 @@ class _SlideToStartState extends State<SlideToStart> {
             borderRadius: borderRadius,
             child: Stack(
               children: [
-                // Base track with dynamic organic waves of bright and dark green
+                // Base track with dynamic organic sine waves running in opposite direction
                 EmeraldWaves(
                   height: _height,
                   borderRadius: borderRadius,
+                  reverse: true,
+                  speedMultiplier: 1.25,
                 ),
                 // Filled portion behind the thumb — grows with drag/commit.
                 AnimatedPositioned(

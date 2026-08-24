@@ -203,18 +203,11 @@ class HomeScreen extends StatelessWidget {
   static String _date(DateTime d) => '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
 
   Widget _hero(BuildContext context) => Container(
-    padding: const EdgeInsets.all(22),
     decoration: BoxDecoration(
-      gradient: const LinearGradient(
-        colors: [Themes.brand, Themes.brandDark],
-        begin: Alignment.topLeft,
-        end: Alignment.bottomRight,
-      ),
       borderRadius: BorderRadius.circular(22),
-      border: Border.all(color: Colors.white.withValues(alpha: 0.35), width: 1.2),
       boxShadow: [
         BoxShadow(
-          color: Themes.brand.withValues(alpha: 0.30),
+          color: Themes.brand.withValues(alpha: 0.35),
           blurRadius: 22,
           offset: const Offset(0, 8),
         ),
@@ -225,49 +218,57 @@ class HomeScreen extends StatelessWidget {
         ),
       ],
     ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    child: EmeraldWaves(
+      borderRadius: BorderRadius.circular(22),
+      reverse: false,
+      speedMultiplier: 0.85,
+      child: Padding(
+        padding: const EdgeInsets.all(22),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
-              ),
-              child: const Icon(Icons.health_and_safety_rounded, color: Colors.white, size: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+                  ),
+                  child: const Icon(Icons.health_and_safety_rounded, color: Colors.white, size: 24),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
+                  ),
+                  child: const Text(
+                    'Clinical AI Tool',
+                    style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.18),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.35)),
-              ),
-              child: const Text(
-                'Clinical AI Tool',
-                style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
-              ),
+            const SizedBox(height: 16),
+            const Text(
+              'AI-assisted skin screening',
+              style: TextStyle(color: Colors.white, fontSize: 21, fontWeight: FontWeight.w800, letterSpacing: -0.01),
             ),
+            const SizedBox(height: 6),
+            Text(
+              'Upload a clear skin photo and answer symptoms for an immediate evidence-grounded preliminary assessment.',
+              style: TextStyle(color: Colors.white.withValues(alpha: 0.88), height: 1.4, fontSize: 13.5),
+            ),
+            const SizedBox(height: 18),
+            // Slide-to-start — dragging the thumb to the end fires onStart (opposite wave motion).
+            SlideToStart(label: 'New screening', onComplete: onStart),
           ],
         ),
-        const SizedBox(height: 16),
-        const Text(
-          'AI-assisted skin screening',
-          style: TextStyle(color: Colors.white, fontSize: 21, fontWeight: FontWeight.w800, letterSpacing: -0.01),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          'Upload a clear skin photo and answer symptoms for an immediate evidence-grounded preliminary assessment.',
-          style: TextStyle(color: Colors.white.withValues(alpha: 0.88), height: 1.4, fontSize: 13.5),
-        ),
-        const SizedBox(height: 18),
-        // Slide-to-start — dragging the thumb to the end fires onStart.
-        SlideToStart(label: 'New screening', onComplete: onStart),
-      ],
+      ),
     ),
   );
 
