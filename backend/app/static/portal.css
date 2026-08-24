@@ -45,6 +45,7 @@
   --brand-soft:   #2f8a78;
   --brand-tint:   #e6f2ef;
   --brand-glow:   rgba(18, 105, 90, .35);
+  --mint:         #2f8a78;
 
   /* surfaces — four tiers, so panels read as different sheets */
   --bg:          #eef1f5;
@@ -130,6 +131,7 @@
   --brand-soft:   #2fb9a3;
   --brand-tint:   rgba(47, 185, 163, .14);
   --brand-glow:   rgba(47, 185, 163, .45);
+  --mint:         #6fe0cd;
 
   --bg:          #0d0f14;   /* tier 0: page */
   --surface:     #161922;   /* tier 1: list panel */
@@ -2466,8 +2468,10 @@ body.is-transitioning .flow-takeover,
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.04em;
-  background: linear-gradient(180deg, var(--mint) 0%, var(--brand) 60%, var(--brand-strong) 100%);
+  color: var(--brand);
+  background: linear-gradient(180deg, var(--mint, #2f8a78) 0%, var(--brand) 60%, var(--brand-strong) 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
   filter: drop-shadow(0 4px 20px var(--brand-glow));
 }

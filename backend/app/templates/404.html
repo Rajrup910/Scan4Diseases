@@ -32,14 +32,21 @@
       </p>
 
       <div class="card-404-actions">
+        {% if doctor %}
         <a href="/portal/patients" class="btn btn-primary btn-glow">
           <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#users"/></svg>
           Patient directory
         </a>
-        <a href="/portal/login" class="btn btn-ghost">
+        {% else %}
+        <a href="/portal/login" class="btn btn-primary btn-glow">
           <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#user"/></svg>
           Clinician sign in
         </a>
+        {% endif %}
+        <button type="button" onclick="window.history.length > 1 ? history.back() : location.href='/portal/patients'" class="btn btn-ghost">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#arrow-left"/></svg>
+          Go back
+        </button>
         <a href="/docs" class="btn btn-ghost" target="_blank" rel="noopener">
           <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#file-text"/></svg>
           API docs
