@@ -363,10 +363,10 @@ class _LogoAuthHaloState extends State<_LogoAuthHalo>
     super.initState();
     _c = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 950),
+      duration: const Duration(milliseconds: 1250),
     )
       ..addListener(() {
-        if (!widget.isError && !_peaked && _c.value >= 0.45) {
+        if (!widget.isError && !_peaked && _c.value >= 0.70) {
           _peaked = true;
           widget.onPeak?.call();
         }
@@ -405,78 +405,152 @@ class _LogoAuthHaloState extends State<_LogoAuthHalo>
       animation: _c,
       builder: (context, _) {
         final t = _c.value;
-        // Smooth bell curve opacity
+        if (t <= 0.001) return const SizedBox.shrink();
+
+        // Smooth multi-stage opacity envelope
         final double opacity;
-        if (t <= 0.3) {
-          opacity = (t / 0.3).clamp(0.0, 1.0);
-        } else if (t <= 0.7) {
+        if (t <= 0.30) {
+          opacity = (t / 0.30).clamp(0.0, 1.0);
+        } else if (t <= 0.75) {
           opacity = 1.0;
         } else {
-          opacity = (1.0 - (t - 0.7) / 0.3).clamp(0.0, 1.0);
+          opacity = (1.0 - (t - 0.75) / 0.25).clamp(0.0, 1.0);
         }
 
-        final scale = 0.75 + 0.55 * Curves.easeOutBack.transform(t.clamp(0.0, 1.0));
+        // Wave scale factors
+        final scale1 = 0.4 + 0.75 * Curves.easeOutBack.transform(t.clamp(0.0, 1.0));
+        final scale2 = 0.3 + 0.95 * Curves.easeOutCubic.transform(t.clamp(0.0, 1.0));
+        final scale3 = 0.2 + 1.15 * Curves.easeOutCubic.transform(t.clamp(0.0, 1.0));
+        final symbolScale = 0.3 + 0.85 * Curves.easeOutBack.transform(t.clamp(0.0, 1.0));
 
-        if (opacity <= 0.01) return const SizedBox.shrink();
+        final brandGreen = const Color(0xFF2DD4BF);
+        final brandRuby = const Color(0xFFEF4444);
+        final activeColor = isErr ? brandRuby : brandGreen;
 
         return Positioned.fill(
           child: Center(
-            child: Transform.scale(
-              scale: scale,
-              child: Opacity(
-                opacity: opacity * 0.92,
-                child: Container(
-                  width: 110,
-                  height: 110,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: RadialGradient(
-                      colors: isErr
-                          ? [
-                              const Color(0xFFEF4444).withValues(alpha: 0.75),
-                              const Color(0xFFB91C1C).withValues(alpha: 0.40),
-                              const Color(0xFF7F1D1D).withValues(alpha: 0.15),
-                              Colors.transparent,
-                            ]
-                          : [
-                              const Color(0xFF2DD4BF).withValues(alpha: 0.80),
-                              const Color(0xFF15B79E).withValues(alpha: 0.45),
-                              const Color(0xFF0F766E).withValues(alpha: 0.18),
-                              Colors.transparent,
-                            ],
-                      stops: const [0.0, 0.45, 0.75, 1.0],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: (isErr ? const Color(0xFFEF4444) : Themes.brand)
-                            .withValues(alpha: 0.50),
-                        blurRadius: 28,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                  child: ClipOval(
-                    child: BackdropFilter(
-                      filter: ui.ImageFilter.blur(sigmaX: 4, sigmaY: 4),
-                      child: Center(
-                        child: Icon(
-                          isErr ? Icons.close_rounded : Icons.check_rounded,
-                          size: 48,
-                          color: isErr
-                              ? const Color(0xFFFCA5A5)
-                              : const Color(0xFFE6FFFA),
-                          shadows: [
-                            Shadow(
-                              color: (isErr ? const Color(0xFFEF4444) : Themes.mint)
-                                  .withValues(alpha: 0.8),
-                              blurRadius: 12,
-                            ),
+            child: Opacity(
+              opacity: opacity,
+              child: Stack(
+                alignment: Alignment.center,
+                clipBehavior: Clip.none,
+                children: [
+                  // Outer Shockwave Wave 3
+                  Transform.scale(
+                    scale: scale3,
+                    child: Container(
+                      width: 260,
+                      height: 260,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: activeColor.withValues(alpha: 0.35 * opacity),
+                          width: 1.5,
+                        ),
+                        gradient: RadialGradient(
+                          colors: [
+                            activeColor.withValues(alpha: 0.12 * opacity),
+                            Colors.transparent,
                           ],
+                          stops: const [0.0, 1.0],
                         ),
                       ),
                     ),
                   ),
-                ),
+
+                  // Middle Shockwave Wave 2
+                  Transform.scale(
+                    scale: scale2,
+                    child: Container(
+                      width: 190,
+                      height: 190,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: activeColor.withValues(alpha: 0.60 * opacity),
+                          width: 2.0,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: activeColor.withValues(alpha: 0.35 * opacity),
+                            blurRadius: 24,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                        gradient: RadialGradient(
+                          colors: [
+                            (isErr ? const Color(0xFFB91C1C) : const Color(0xFF0F766E))
+                                .withValues(alpha: 0.30 * opacity),
+                            Colors.transparent,
+                          ],
+                          stops: const [0.0, 0.8],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Inner Core Glowing Disk Wave 1
+                  Transform.scale(
+                    scale: scale1,
+                    child: Container(
+                      width: 130,
+                      height: 130,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        gradient: RadialGradient(
+                          colors: isErr
+                              ? [
+                                  const Color(0xFFEF4444).withValues(alpha: 0.85),
+                                  const Color(0xFFB91C1C).withValues(alpha: 0.50),
+                                  const Color(0xFF7F1D1D).withValues(alpha: 0.20),
+                                  Colors.transparent,
+                                ]
+                              : [
+                                  const Color(0xFF2DD4BF).withValues(alpha: 0.90),
+                                  const Color(0xFF15B79E).withValues(alpha: 0.55),
+                                  const Color(0xFF0F766E).withValues(alpha: 0.25),
+                                  Colors.transparent,
+                                ],
+                          stops: const [0.0, 0.45, 0.75, 1.0],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: activeColor.withValues(alpha: 0.65),
+                            blurRadius: 36,
+                            spreadRadius: 4,
+                          ),
+                        ],
+                      ),
+                      child: ClipOval(
+                        child: BackdropFilter(
+                          filter: ui.ImageFilter.blur(sigmaX: 5, sigmaY: 5),
+                          child: const SizedBox.expand(),
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  // Central Glowing Tick / Cross Symbol
+                  Transform.scale(
+                    scale: symbolScale,
+                    child: Icon(
+                      isErr ? Icons.close_rounded : Icons.check_rounded,
+                      size: 58,
+                      color: isErr ? const Color(0xFFFCA5A5) : const Color(0xFFFFFFFF),
+                      shadows: [
+                        Shadow(
+                          color: activeColor.withValues(alpha: 0.95),
+                          blurRadius: 18,
+                        ),
+                        Shadow(
+                          color: Colors.black.withValues(alpha: 0.45),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

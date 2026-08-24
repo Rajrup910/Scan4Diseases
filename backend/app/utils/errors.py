@@ -16,7 +16,7 @@ import uuid
 from fastapi import FastAPI, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from backend.app.schemas.common import ErrorResponse
@@ -54,10 +54,18 @@ def error_response(
     )
 
 
+from pathlib import Path
+from starlette.templating import Jinja2Templates
+
 def register_exception_handlers(app: FastAPI) -> None:
+    templates_dir = Path(__file__).resolve().parent.parent / "templates"
+    templates = Jinja2Templates(directory=str(templates_dir))
+
     @app.exception_handler(AppError)
-    async def _app_error(_request: Request, exc: AppError) -> JSONResponse:
+    async def _app_error(request: Request, exc: AppError) -> Response:
         logger.info("AppError %s: %s", exc.code, exc.message)
+        if exc.status_code == 404 and "text/html" in request.headers.get("accept", ""):
+            return templates.TemplateResponse(request, "404.html", {}, status_code=404)
         return error_response(exc.code, exc.message, exc.status_code, exc.detail)
 
     @app.exception_handler(RequestValidationError)
@@ -77,7 +85,9 @@ def register_exception_handlers(app: FastAPI) -> None:
         )
 
     @app.exception_handler(StarletteHTTPException)
-    async def _http_error(_request: Request, exc: StarletteHTTPException) -> JSONResponse:
+    async def _http_error(request: Request, exc: StarletteHTTPException) -> Response:
+        if exc.status_code == 404 and "text/html" in request.headers.get("accept", ""):
+            return templates.TemplateResponse(request, "404.html", {}, status_code=404)
         codes = {
             404: ("not_found", "The requested resource was not found."),
             405: ("method_not_allowed", "That operation is not supported here."),

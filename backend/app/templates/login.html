@@ -9,9 +9,19 @@
   <div class="login-card">
     <aside class="login-brand">
       <div class="login-emblem-wrap">
-        <div class="login-auth-halo" aria-hidden="true">
-          <svg class="login-auth-symbol icon-tick" viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 12.5l5 5 10-10" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <svg class="login-auth-symbol icon-cross" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <!-- Multi-layer exploding concentric shockwaves & halo behind the logo -->
+        <div class="login-exploding-halo" aria-hidden="true">
+          <div class="halo-wave wave-1"></div>
+          <div class="halo-wave wave-2"></div>
+          <div class="halo-wave wave-3"></div>
+          <div class="halo-symbol-wrap">
+            <svg class="login-auth-symbol icon-tick" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4.5 12.5l5 5 10-10" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <svg class="login-auth-symbol icon-cross" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
         </div>
         <svg class="login-emblem" viewBox="0 0 48 48" aria-hidden="true">
           <circle cx="24" cy="24" r="16.5" fill="none" stroke="currentColor" stroke-width="2.4"/>

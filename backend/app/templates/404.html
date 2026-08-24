@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Page not found{% endblock %}
+{% block body_attr %} class="on-404"{% endblock %}
+{% block content %}
+<section class="page-404-container">
+  <div class="card glass-card card-404">
+    <div class="card-404-header">
+      <div class="glow-digit-wrap" aria-hidden="true">
+        <span class="glow-digit">4</span>
+        <div class="glow-emblem-wrap">
+          <svg class="glow-emblem-svg" viewBox="0 0 48 48" aria-hidden="true">
+            <circle cx="24" cy="24" r="16.5" fill="none" stroke="currentColor" stroke-width="2.4"/>
+            <path d="M24 3.5v6M24 38.5v6M3.5 24h6M38.5 24h6"
+                  stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+            <path d="M24 12.5v23M12.5 24h23" stroke="currentColor" stroke-width="4.5"
+                  stroke-linecap="round" opacity=".85"/>
+            <circle cx="24" cy="24" r="6" fill="var(--surface)"/>
+            <circle cx="24" cy="24" r="6" fill="none" stroke="currentColor" stroke-width="2.4"/>
+            <path d="M24 20.5l2.6 4.5h-5.2z" fill="currentColor"/>
+          </svg>
+        </div>
+        <span class="glow-digit">4</span>
+      </div>
+      <span class="badge status-under_review">404 · Signal Lost</span>
+    </div>
+
+    <div class="card-404-body">
+      <h1>Clinical resource not found</h1>
+      <p class="muted card-404-desc">
+        The screening report, patient record, or portal endpoint you are looking for
+        has moved, expired, or is unavailable. Check the URL or navigate back to the clinician workspace.
+      </p>
+
+      <div class="card-404-actions">
+        <a href="/portal/patients" class="btn btn-primary btn-glow">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#users"/></svg>
+          Patient directory
+        </a>
+        <a href="/portal/login" class="btn btn-ghost">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#user"/></svg>
+          Clinician sign in
+        </a>
+        <a href="/docs" class="btn btn-ghost" target="_blank" rel="noopener">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#file-text"/></svg>
+          API docs
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+{% endblock %}
