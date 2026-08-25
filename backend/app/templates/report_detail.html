@@ -102,6 +102,7 @@
       <div class="imagery-display">
         <figure class="shot-full">
           <img src="/portal/reports/{{ report.id }}/image" alt="Shared lesion photograph" loading="lazy"
+               onload="this.closest('.shot-full') &amp;&amp; this.closest('.shot-full').classList.add('is-loaded')"
                onerror="this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='none'; var p=this.closest('.imagery-display'); if(p) p.innerHTML='<div class=\'imagery-empty-panel\'><svg class=\'icon\' aria-hidden=\'true\'><use href=\'/portal/static/vendor/icons/sprite.svg#image\'/></svg><p class=\'muted\'>Photograph currently unavailable.</p></div>';">
           <figcaption>Lesion photograph (AES encrypted)</figcaption>
         </figure>
@@ -124,6 +125,7 @@
       <div class="imagery-display">
         <figure class="shot-full">
           <img src="/portal/reports/{{ report.id }}/gradcam" alt="Grad-CAM attention overlay" loading="lazy"
+               onload="this.closest('.shot-full') &amp;&amp; this.closest('.shot-full').classList.add('is-loaded')"
                onerror="this.style.display='none'; if (this.nextElementSibling) this.nextElementSibling.style.display='none'; var p=this.closest('.imagery-display'); if(p) p.innerHTML='<div class=\'imagery-empty-panel\'><svg class=\'icon\' aria-hidden=\'true\'><use href=\'/portal/static/vendor/icons/sprite.svg#sparkles\'/></svg><p class=\'muted\'>Grad-CAM overlay currently unavailable.</p></div>';">
           <figcaption>Attention overlay — regions model attended to</figcaption>
         </figure>

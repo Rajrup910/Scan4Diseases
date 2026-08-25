@@ -90,8 +90,8 @@ class Themes {
     double? topAlpha,
     double? bottomAlpha,
   }) {
-    final tA = topAlpha ?? (dark ? 0.62 : 0.68);
-    final bA = bottomAlpha ?? (dark ? 0.42 : 0.44);
+    final tA = topAlpha ?? (dark ? 0.92 : 0.68);
+    final bA = bottomAlpha ?? (dark ? 0.82 : 0.44);
     final baseTop = dark ? const Color(0xFF1E2430) : (customFill ?? Colors.white);
     final baseBottom = dark ? const Color(0xFF141820) : (customFill ?? Colors.white);
     return BoxDecoration(
@@ -437,15 +437,14 @@ class Themes {
         ),
       ),
       cardTheme: CardThemeData(
-        // Dark glass at ~55% alpha (was 94%) so the ambient video / blueprint
-        // reads through the panel — matches the light theme's new glass value
-        // and stops raw Cards from looking like solid slabs.
-        color: const Color(0x8C161920),
+        // High-opacity dark frosted glass (~95% alpha) so text is crisp and legible
+        // over ambient backdrops without distracting bleed-through.
+        color: const Color(0xF2161920),
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: tealGlow.withValues(alpha: 0.22), width: 1.1),
+          side: BorderSide(color: tealGlow.withValues(alpha: 0.28), width: 1.1),
         ),
         shadowColor: Colors.black.withValues(alpha: 0.55),
       ),

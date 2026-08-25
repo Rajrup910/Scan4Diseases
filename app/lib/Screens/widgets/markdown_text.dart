@@ -29,10 +29,14 @@ class MarkdownText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final accent = dark ? Themes.tealLight : Themes.brand;
+    final primaryAccent = dark ? Themes.tealGlow : Themes.primary;
+
     final baseStyle = TextStyle(
       height: 1.48,
       fontSize: fontSize ?? 14.0,
-      color: color ?? Themes.ink,
+      color: color ?? (dark ? Themes.darkInk : Themes.ink),
     );
 
     final blocks = <Widget>[];
@@ -44,7 +48,7 @@ class MarkdownText extends StatelessWidget {
       if (paraBuffer.isEmpty) return;
       blocks.add(Padding(
         padding: const EdgeInsets.only(bottom: 8),
-        child: _renderInline(paraBuffer.join(' '), baseStyle),
+        child: _renderInline(paraBuffer.join(' '), baseStyle, dark),
       ));
       paraBuffer.clear();
     }
@@ -53,7 +57,7 @@ class MarkdownText extends StatelessWidget {
       if (tableRows.isEmpty) return;
       blocks.add(Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
-        child: _renderTable(tableRows, baseStyle),
+        child: _renderTable(tableRows, baseStyle, dark),
       ));
       tableRows.clear();
     }
@@ -107,9 +111,10 @@ class MarkdownText extends StatelessWidget {
             baseStyle.copyWith(
               fontSize: size,
               fontWeight: FontWeight.w800,
-              color: Themes.brand,
+              color: accent,
               letterSpacing: -0.2,
             ),
+            dark,
           ),
         ));
       } else if (boldHead != null) {
@@ -121,9 +126,10 @@ class MarkdownText extends StatelessWidget {
             baseStyle.copyWith(
               fontSize: 14.5,
               fontWeight: FontWeight.w800,
-              color: Themes.brand,
+              color: accent,
               letterSpacing: -0.1,
             ),
+            dark,
           ),
         ));
       } else if (n != null) {
@@ -139,7 +145,7 @@ class MarkdownText extends StatelessWidget {
                 margin: const EdgeInsets.only(top: 2, right: 8),
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
                 decoration: BoxDecoration(
-                  color: Themes.primary.withValues(alpha: 0.12),
+                  color: primaryAccent.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -147,11 +153,11 @@ class MarkdownText extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 11.5,
                     fontWeight: FontWeight.w800,
-                    color: Themes.primary,
+                    color: dark ? Themes.tealLight : Themes.primary,
                   ),
                 ),
               ),
-              Expanded(child: _renderInline(itemText, baseStyle)),
+              Expanded(child: _renderInline(itemText, baseStyle, dark)),
             ],
           ),
         ));
@@ -166,12 +172,12 @@ class MarkdownText extends StatelessWidget {
                 margin: const EdgeInsets.only(top: 6, right: 8, left: 2),
                 width: 6,
                 height: 6,
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Themes.primary,
+                  color: primaryAccent,
                 ),
               ),
-              Expanded(child: _renderInline(b.group(1)!, baseStyle)),
+              Expanded(child: _renderInline(b.group(1)!, baseStyle, dark)),
             ],
           ),
         ));
@@ -190,21 +196,22 @@ class MarkdownText extends StatelessWidget {
     );
   }
 
-  Widget _renderTable(List<List<String>> rows, TextStyle baseStyle) {
+  Widget _renderTable(List<List<String>> rows, TextStyle baseStyle, bool dark) {
     if (rows.isEmpty) return const SizedBox.shrink();
     final header = rows.first;
     final dataRows = rows.length > 1 ? rows.sublist(1) : <List<String>>[];
+    final borderColor = dark ? Themes.darkBorder : Themes.border;
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.90),
+          color: dark ? const Color(0xFF1E2430) : Colors.white.withValues(alpha: 0.90),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Themes.border),
+          border: Border.all(color: borderColor),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.04),
+              color: Colors.black.withValues(alpha: dark ? 0.20 : 0.04),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -219,15 +226,15 @@ class MarkdownText extends StatelessWidget {
             columnSpacing: 14,
             horizontalMargin: 12,
             headingRowColor: WidgetStateProperty.all(
-              Themes.brandTint.withValues(alpha: 0.8),
+              dark ? Themes.darkBrandTint : Themes.brandTint.withValues(alpha: 0.8),
             ),
             border: TableBorder(
               horizontalInside: BorderSide(
-                color: Themes.border.withValues(alpha: 0.7),
+                color: borderColor.withValues(alpha: 0.7),
                 width: 1,
               ),
               verticalInside: BorderSide(
-                color: Themes.border.withValues(alpha: 0.4),
+                color: borderColor.withValues(alpha: 0.4),
                 width: 1,
               ),
             ),
@@ -239,8 +246,9 @@ class MarkdownText extends StatelessWidget {
                     baseStyle.copyWith(
                       fontWeight: FontWeight.w800,
                       fontSize: 12.5,
-                      color: Themes.brand,
+                      color: dark ? Themes.tealLight : Themes.brand,
                     ),
+                    dark,
                   ),
                 ),
             ],
@@ -248,7 +256,9 @@ class MarkdownText extends StatelessWidget {
               for (var i = 0; i < dataRows.length; i++)
                 DataRow(
                   color: WidgetStateProperty.all(
-                    i.isEven ? Colors.transparent : Themes.brandTint.withValues(alpha: 0.25),
+                    i.isEven
+                        ? Colors.transparent
+                        : (dark ? const Color(0x33232A36) : Themes.brandTint.withValues(alpha: 0.25)),
                   ),
                   cells: [
                     for (final cell in dataRows[i])
@@ -260,6 +270,7 @@ class MarkdownText extends StatelessWidget {
                             child: _renderInline(
                               cell,
                               baseStyle.copyWith(fontSize: 12.5),
+                              dark,
                             ),
                           ),
                         ),
@@ -273,7 +284,7 @@ class MarkdownText extends StatelessWidget {
     );
   }
 
-  Widget _renderInline(String text, TextStyle base) {
+  Widget _renderInline(String text, TextStyle base, bool dark) {
     final spans = <InlineSpan>[];
     // Inline regex for **bold**, *italic*, `code`
     final inlineRegex = RegExp(r'(\*\*(.+?)\*\*|\*([^*]+?)\*|`([^`]+?)`)');
@@ -287,7 +298,10 @@ class MarkdownText extends StatelessWidget {
       if (matchedStr.startsWith('**') && matchedStr.endsWith('**')) {
         spans.add(TextSpan(
           text: match.group(2),
-          style: base.copyWith(fontWeight: FontWeight.w800, color: Themes.brand),
+          style: base.copyWith(
+            fontWeight: FontWeight.w800,
+            color: dark ? Themes.tealLight : Themes.brand,
+          ),
         ));
       } else if (matchedStr.startsWith('*') && matchedStr.endsWith('*')) {
         spans.add(TextSpan(
@@ -300,7 +314,7 @@ class MarkdownText extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
             decoration: BoxDecoration(
-              color: Themes.border.withValues(alpha: 0.5),
+              color: dark ? Themes.darkBorder : Themes.border.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(4),
             ),
             child: Text(
@@ -309,7 +323,7 @@ class MarkdownText extends StatelessWidget {
                 fontFamily: 'monospace',
                 fontSize: (base.fontSize ?? 14.0) * 0.9,
                 fontWeight: FontWeight.w600,
-                color: Themes.ink,
+                color: dark ? Themes.darkInk : Themes.ink,
               ),
             ),
           ),

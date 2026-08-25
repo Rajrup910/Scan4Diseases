@@ -65,28 +65,31 @@ class _FindDoctorCardState extends State<FindDoctorCard> {
   void _retry() => setState(() => _future = NearbyDoctors.search());
 
   @override
-  Widget build(BuildContext context) => Container(
-        clipBehavior: Clip.antiAlias,
-        decoration: Themes.liquidGlassDecoration(radius: 20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _header(),
-            AnimatedCrossFade(
-              firstChild: const SizedBox(width: double.infinity),
-              secondChild: _dropdown(),
-              crossFadeState:
-                  _expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-              duration: const Duration(milliseconds: 220),
-              sizeCurve: Curves.easeInOut,
-            ),
-          ],
-        ),
-      );
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: Themes.liquidGlassDecoration(radius: 20, dark: dark),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _header(dark),
+          AnimatedCrossFade(
+            firstChild: const SizedBox(width: double.infinity),
+            secondChild: _dropdown(dark),
+            crossFadeState:
+                _expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 220),
+            sizeCurve: Curves.easeInOut,
+          ),
+        ],
+      ),
+    );
+  }
 
   // --- gradient header (the dropdown toggle) ---------------------------------
 
-  Widget _header() => Material(
+  Widget _header(bool dark) => Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: _toggle,
@@ -97,28 +100,38 @@ class _FindDoctorCardState extends State<FindDoctorCard> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Themes.brandTint.withValues(alpha: 0.70),
+                    color: (dark ? Themes.tealGlow : Themes.brand).withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.85)),
+                    border: Border.all(
+                      color: dark
+                          ? Themes.tealGlow.withValues(alpha: 0.28)
+                          : Colors.white.withValues(alpha: 0.85),
+                    ),
                   ),
-                  child: const Icon(Icons.location_on_outlined, color: Themes.brand, size: 22),
+                  child: Icon(Icons.location_on_outlined, color: dark ? Themes.tealLight : Themes.brand, size: 22),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Find a dermatologist near you',
                         style: TextStyle(
-                            color: Themes.ink, fontSize: 15, fontWeight: FontWeight.w800),
+                          color: dark ? Themes.darkInk : Themes.ink,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                       const SizedBox(height: 3),
                       Text(
                         widget.subtitle ??
                             'Tap to see skin doctors and clinics close to you.',
-                        style: const TextStyle(
-                            color: Themes.inkSoft, height: 1.35, fontSize: 12.5),
+                        style: TextStyle(
+                          color: dark ? Themes.darkInkSoft : Themes.inkSoft,
+                          height: 1.35,
+                          fontSize: 12.5,
+                        ),
                       ),
                     ],
                   ),
@@ -127,8 +140,11 @@ class _FindDoctorCardState extends State<FindDoctorCard> {
                 AnimatedRotation(
                   turns: _expanded ? 0.5 : 0,
                   duration: const Duration(milliseconds: 220),
-                  child: const Icon(Icons.keyboard_arrow_down_rounded,
-                      color: Themes.brand, size: 24),
+                  child: Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: dark ? Themes.tealLight : Themes.brand,
+                    size: 24,
+                  ),
                 ),
               ],
             ),
@@ -138,50 +154,55 @@ class _FindDoctorCardState extends State<FindDoctorCard> {
 
   // --- expandable body -------------------------------------------------------
 
-  Widget _dropdown() => Container(
+  Widget _dropdown(bool dark) => Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.50),
-          border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.85))),
+          color: dark ? Themes.darkSurface.withValues(alpha: 0.95) : Colors.white.withValues(alpha: 0.50),
+          border: Border(
+            top: BorderSide(
+              color: dark ? Themes.darkBorder : Colors.white.withValues(alpha: 0.85),
+            ),
+          ),
         ),
         padding: const EdgeInsets.fromLTRB(14, 14, 14, 16),
         child: FutureBuilder<List<Clinic>>(
           future: _future,
           builder: (context, snap) {
             if (snap.connectionState == ConnectionState.waiting) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 22),
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 22),
                 child: Column(children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 12),
-                  Text('Finding clinics near you…', style: TextStyle(color: Themes.muted)),
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 12),
+                  Text('Finding clinics near you…',
+                      style: TextStyle(color: dark ? Themes.darkInkSoft : Themes.muted)),
                 ]),
               );
             }
-            if (snap.hasError) return _error(snap.error);
+            if (snap.hasError) return _error(snap.error, dark);
             final clinics = snap.data ?? const <Clinic>[];
             if (clinics.isEmpty) {
-              return _error(NearbyError('No clinics were listed near you.', 'empty'));
+              return _error(NearbyError('No clinics were listed near you.', 'empty'), dark);
             }
-            return _results(clinics);
+            return _results(clinics, dark);
           },
         ),
       );
 
-  Widget _results(List<Clinic> clinics) {
+  Widget _results(List<Clinic> clinics, bool dark) {
     final shown = clinics.take(_inlineLimit).toList();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 2, right: 2, bottom: 10),
+        Padding(
+          padding: const EdgeInsets.only(left: 2, right: 2, bottom: 10),
           child: Text(
             'Nearest first. Tap a clinic to get directions from your location.',
-            style: TextStyle(color: Themes.muted, fontSize: 12, height: 1.35),
+            style: TextStyle(color: dark ? Themes.darkInkSoft : Themes.muted, fontSize: 12, height: 1.35),
           ),
         ),
         for (final c in shown) ...[
-          _clinicRow(c),
+          _clinicRow(c, dark),
           const SizedBox(height: 10),
         ],
         Row(children: [
@@ -211,10 +232,12 @@ class _FindDoctorCardState extends State<FindDoctorCard> {
 
   // --- one clinic (tap → directions) -----------------------------------------
 
-  Widget _clinicRow(Clinic c) {
-    final accent = c.isDermatology ? Themes.primary : Themes.mint;
+  Widget _clinicRow(Clinic c, bool dark) {
+    final accent = c.isDermatology
+        ? (dark ? Themes.tealGlow : Themes.primary)
+        : (dark ? Themes.tealLight : Themes.mint);
     return Material(
-      color: Themes.surface,
+      color: dark ? const Color(0xFF1E2430) : Themes.surface,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -225,7 +248,7 @@ class _FindDoctorCardState extends State<FindDoctorCard> {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.12),
+                color: accent.withValues(alpha: dark ? 0.20 : 0.12),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -238,37 +261,47 @@ class _FindDoctorCardState extends State<FindDoctorCard> {
             const SizedBox(width: 12),
             Expanded(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(c.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                Text(
+                  c.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                    color: dark ? Themes.darkInk : Themes.ink,
+                  ),
+                ),
                 const SizedBox(height: 6),
                 Wrap(spacing: 6, runSpacing: 6, children: [
-                  _chip(Icons.place_outlined, '${c.distanceLabel} · ${c.proximityLabel}',
-                      accent),
-                  _chip(c.isDermatology ? Icons.verified_outlined : Icons.local_hospital_outlined,
-                      c.kind, accent),
+                  _chip(Icons.place_outlined, '${c.distanceLabel} · ${c.proximityLabel}', accent, dark),
+                  _chip(c.isDermatology ? Icons.verified_outlined : Icons.local_hospital_outlined, c.kind, accent, dark),
                   if (c.hasRating)
-                    _chip(Icons.star_rounded, c.rating!.toStringAsFixed(1),
-                        Themes.warning),
+                    _chip(Icons.star_rounded, c.rating!.toStringAsFixed(1), Themes.warning, dark),
                   if (c.openingHours != null && c.openingHours!.length <= 18)
-                    _chip(Icons.schedule_rounded, c.openingHours!, Themes.muted),
-                  if (c.phone != null) _chip(Icons.call_outlined, 'Phone', Themes.muted),
+                    _chip(Icons.schedule_rounded, c.openingHours!, Themes.muted, dark),
+                  if (c.phone != null) _chip(Icons.call_outlined, 'Phone', Themes.muted, dark),
                 ]),
                 if (c.address != null) ...[
                   const SizedBox(height: 6),
-                  Text(c.address!,
-                      style: const TextStyle(color: Themes.muted, fontSize: 12.5)),
+                  Text(
+                    c.address!,
+                    style: TextStyle(color: dark ? Themes.darkInkSoft : Themes.muted, fontSize: 12.5),
+                  ),
                 ],
               ]),
             ),
             const SizedBox(width: 6),
-            Column(mainAxisSize: MainAxisSize.min, children: const [
-              Icon(Icons.directions_rounded, color: Themes.primary),
-              SizedBox(height: 2),
-              Text('Directions',
-                  style: TextStyle(
-                      color: Themes.primary, fontSize: 10.5, fontWeight: FontWeight.w700)),
+            Column(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.directions_rounded, color: dark ? Themes.tealLight : Themes.primary),
+              const SizedBox(height: 2),
+              Text(
+                'Directions',
+                style: TextStyle(
+                  color: dark ? Themes.tealLight : Themes.primary,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ]),
           ]),
         ),
@@ -276,23 +309,29 @@ class _FindDoctorCardState extends State<FindDoctorCard> {
     );
   }
 
-  Widget _chip(IconData icon, String label, Color color) => Container(
+  Widget _chip(IconData icon, String label, Color color, bool dark) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.10),
+          color: color.withValues(alpha: dark ? 0.20 : 0.10),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 13, color: color),
+          Icon(icon, size: 13, color: dark && color == Themes.muted ? Themes.darkInkSoft : color),
           const SizedBox(width: 3),
-          Text(label,
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: color)),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: dark && color == Themes.muted ? Themes.darkInkSoft : (dark && color == Themes.primary ? Themes.tealLight : color),
+            ),
+          ),
         ]),
       );
 
   // --- error / empty ---------------------------------------------------------
 
-  Widget _error(Object? error) {
+  Widget _error(Object? error, bool dark) {
     final ne = error is NearbyError ? error : NearbyError('Something went wrong.', 'network');
     final icon = switch (ne.kind) {
       'permission' => Icons.location_disabled_rounded,
@@ -303,9 +342,11 @@ class _FindDoctorCardState extends State<FindDoctorCard> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
       child: Column(children: [
-        Icon(icon, size: 40, color: Themes.muted),
+        Icon(icon, size: 40, color: dark ? Themes.darkInkSoft : Themes.muted),
         const SizedBox(height: 12),
-        Text(ne.message, textAlign: TextAlign.center, style: const TextStyle(height: 1.4)),
+        Text(ne.message,
+            textAlign: TextAlign.center,
+            style: TextStyle(height: 1.4, color: dark ? Themes.darkInk : Themes.ink)),
         const SizedBox(height: 16),
         Row(children: [
           Expanded(

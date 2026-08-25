@@ -91,24 +91,24 @@ class DiagnosisResultsUI extends StatelessWidget {
                 const SizedBox(height: 16),
                 // The screened photograph itself. Also the Hero landing point
                 // for the thumbnail on the Reports list.
-                _lesionCard(),
-                _triageCard(),
+                _lesionCard(dark),
+                _triageCard(dark),
                 const SizedBox(height: 14),
                 // Send this screening to a verified doctor for review (patient-initiated sharing).
                 if (_canShare) ...[
-                  _shareCard(context),
+                  _shareCard(context, dark),
                   const SizedBox(height: 14),
                 ],
                 // Talk to the assistant about this specific result (diagnosis-aware chat).
-                _askCard(context),
+                _askCard(context, dark),
                 const SizedBox(height: 14),
                 // Shown after every screening (lesion, healthy, or wound) so the user always has
                 // a clear route to professional in-person care.
                 FindDoctorCard(subtitle: _doctorSubtitle(outcome)),
                 const SizedBox(height: 14),
-                _gradcamCard(),
-                if (isLesion) _explanationCard(),
-                _probabilitiesCard(),
+                _gradcamCard(dark),
+                if (isLesion) _explanationCard(dark),
+                _probabilitiesCard(dark),
                 const SizedBox(height: 14),
                 // Explains this specific result in plain language, and opens the full guide.
                 UnderstandResultBar(
@@ -118,7 +118,7 @@ class DiagnosisResultsUI extends StatelessWidget {
                   isLesion: isLesion,
                 ),
                 const SizedBox(height: 14),
-                _disclaimerCard(),
+                _disclaimerCard(dark),
               ],
             ),
           ),
@@ -131,7 +131,7 @@ class DiagnosisResultsUI extends StatelessWidget {
 
   // --- share-with-a-doctor CTA -----------------------------------------------
 
-  Widget _shareCard(BuildContext context) => Card(
+  Widget _shareCard(BuildContext context, bool dark) => Card(
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () => showShareWithDoctorSheet(
@@ -145,23 +145,25 @@ class DiagnosisResultsUI extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Themes.brandTint.withValues(alpha: 0.70),
+                  color: (dark ? Themes.tealGlow : Themes.brand).withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.85)),
+                  border: Border.all(
+                    color: dark ? Themes.tealGlow.withValues(alpha: 0.28) : Colors.white.withValues(alpha: 0.85),
+                  ),
                 ),
-                child: const Icon(Icons.medical_services_outlined, color: Themes.brand, size: 22),
+                child: Icon(Icons.medical_services_outlined, color: dark ? Themes.tealLight : Themes.brand, size: 22),
               ),
               const SizedBox(width: 14),
-              const Expanded(
+              Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('Share with a verified doctor',
-                      style: TextStyle(color: Themes.ink, fontWeight: FontWeight.w800, fontSize: 15)),
-                  SizedBox(height: 3),
+                      style: TextStyle(color: dark ? Themes.darkInk : Themes.ink, fontWeight: FontWeight.w800, fontSize: 15)),
+                  const SizedBox(height: 3),
                   Text('Send this screening and image to a dermatologist for clinical review.',
-                      style: TextStyle(color: Themes.inkSoft, height: 1.35, fontSize: 12.5)),
+                      style: TextStyle(color: dark ? Themes.darkInkSoft : Themes.inkSoft, height: 1.35, fontSize: 12.5)),
                 ]),
               ),
-              const Icon(Icons.chevron_right_rounded, color: Themes.brand),
+              Icon(Icons.chevron_right_rounded, color: dark ? Themes.tealLight : Themes.brand),
             ]),
           ),
         ),
@@ -169,7 +171,7 @@ class DiagnosisResultsUI extends StatelessWidget {
 
   // --- ask-the-assistant CTA -------------------------------------------------
 
-  Widget _askCard(BuildContext context) => Card(
+  Widget _askCard(BuildContext context, bool dark) => Card(
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: () => _openChat(context),
@@ -179,11 +181,13 @@ class DiagnosisResultsUI extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Themes.brandTint.withValues(alpha: 0.70),
+                  color: (dark ? Themes.tealGlow : Themes.brand).withValues(alpha: 0.14),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.85)),
+                  border: Border.all(
+                    color: dark ? Themes.tealGlow.withValues(alpha: 0.28) : Colors.white.withValues(alpha: 0.85),
+                  ),
                 ),
-                child: const Icon(Icons.forum_outlined, color: Themes.brand, size: 22),
+                child: Icon(Icons.forum_outlined, color: dark ? Themes.tealLight : Themes.brand, size: 22),
               ),
               const SizedBox(width: 14),
               Expanded(
@@ -193,26 +197,28 @@ class DiagnosisResultsUI extends StatelessWidget {
                     spacing: 8,
                     runSpacing: 4,
                     children: [
-                      const Text('Ask about this result',
-                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: Themes.ink)),
+                      Text('Ask about this result',
+                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: dark ? Themes.darkInk : Themes.ink)),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                         decoration: BoxDecoration(
-                          color: Themes.brandTint.withValues(alpha: 0.75),
+                          color: dark ? Themes.darkBrandTint : Themes.brandTint.withValues(alpha: 0.75),
                           borderRadius: const BorderRadius.all(Radius.circular(6)),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.85)),
+                          border: Border.all(
+                            color: dark ? Themes.tealGlow.withValues(alpha: 0.28) : Colors.white.withValues(alpha: 0.85),
+                          ),
                         ),
-                        child: const Text('AI Assistant',
-                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Themes.brand)),
+                        child: Text('AI Assistant',
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: dark ? Themes.tealLight : Themes.brand)),
                       ),
                     ],
                   ),
                   const SizedBox(height: 3),
-                  const Text('Chat with the assistant to understand what it means and recommended next steps.',
-                      style: TextStyle(color: Themes.inkSoft, height: 1.35, fontSize: 12.5)),
+                  Text('Chat with the assistant to understand what it means and recommended next steps.',
+                      style: TextStyle(color: dark ? Themes.darkInkSoft : Themes.inkSoft, height: 1.35, fontSize: 12.5)),
                 ]),
               ),
-              const Icon(Icons.chevron_right_rounded, color: Themes.brand),
+              Icon(Icons.chevron_right_rounded, color: dark ? Themes.tealLight : Themes.brand),
             ]),
           ),
         ),
@@ -325,7 +331,7 @@ class DiagnosisResultsUI extends StatelessWidget {
 
   // --- triage (colour-coded by urgency) -------------------------------------
 
-  Widget _triageCard() {
+  Widget _triageCard(bool dark) {
     final triage = diagnosisData['triage'];
     if (triage is! Map) return const SizedBox.shrink();
 
@@ -336,9 +342,24 @@ class DiagnosisResultsUI extends StatelessWidget {
     final lowConfidence = triage['low_confidence'] == true;
 
     final (color, bg, border, icon) = switch (category) {
-      'urgent_evaluation' => (Themes.urgent, Themes.urgentBg, Themes.urgentBorder, Icons.priority_high_rounded),
-      'prompt_consultation' => (Themes.soon, Themes.soonBg, Themes.soonBorder, Icons.schedule_rounded),
-      _ => (Themes.routine, Themes.routineBg, Themes.routineBorder, Icons.check_circle_outline_rounded),
+      'urgent_evaluation' => (
+          Themes.urgent,
+          dark ? const Color(0xFF2B1315) : Themes.urgentBg,
+          dark ? const Color(0xFF6B2127) : Themes.urgentBorder,
+          Icons.priority_high_rounded
+        ),
+      'prompt_consultation' => (
+          Themes.soon,
+          dark ? const Color(0xFF281E09) : Themes.soonBg,
+          dark ? const Color(0xFF5D430C) : Themes.soonBorder,
+          Icons.schedule_rounded
+        ),
+      _ => (
+          dark ? Themes.tealLight : Themes.routine,
+          dark ? const Color(0xFF102722) : Themes.routineBg,
+          dark ? const Color(0xFF1B594C) : Themes.routineBorder,
+          Icons.check_circle_outline_rounded
+        ),
     };
 
     return Container(
@@ -348,20 +369,23 @@ class DiagnosisResultsUI extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            bg.withValues(alpha: 0.85),
-            bg.withValues(alpha: 0.65),
+            bg.withValues(alpha: dark ? 0.95 : 0.85),
+            bg.withValues(alpha: dark ? 0.85 : 0.65),
           ],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.85), width: 1.2),
+        border: Border.all(
+          color: dark ? border : Colors.white.withValues(alpha: 0.85),
+          width: 1.2,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.white.withValues(alpha: 0.50),
-            blurRadius: 3,
+            color: dark ? border.withValues(alpha: 0.20) : Colors.white.withValues(alpha: 0.50),
+            blurRadius: 4,
             spreadRadius: 0.5,
           ),
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
+            color: Colors.black.withValues(alpha: dark ? 0.35 : 0.06),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -374,7 +398,7 @@ class DiagnosisResultsUI extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
+                color: color.withValues(alpha: dark ? 0.22 : 0.15),
                 shape: BoxShape.circle,
               ),
               child: Icon(icon, color: color, size: 18),
@@ -387,28 +411,30 @@ class DiagnosisResultsUI extends StatelessWidget {
           ]),
           if (advice.isNotEmpty) ...[
             const SizedBox(height: 10),
-            Text(advice, style: const TextStyle(height: 1.4, color: Themes.ink, fontSize: 13.5)),
+            Text(advice, style: TextStyle(height: 1.4, color: dark ? Themes.darkInk : Themes.ink, fontSize: 13.5)),
           ],
           if (lowConfidence) ...[
             const SizedBox(height: 10),
-            Row(crossAxisAlignment: CrossAxisAlignment.start, children: const [
-              Icon(Icons.info_outline, size: 16, color: Themes.inkSoft),
-              SizedBox(width: 6),
+            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Icon(Icons.info_outline, size: 16, color: dark ? Themes.darkInkSoft : Themes.inkSoft),
+              const SizedBox(width: 6),
               Expanded(child: Text(
                 'The model was not confident about this image — rely on a professional examination.',
-                style: TextStyle(fontSize: 12.5, color: Themes.inkSoft),
+                style: TextStyle(fontSize: 12.5, color: dark ? Themes.darkInkSoft : Themes.inkSoft),
               )),
             ]),
           ],
           if (reasons.isNotEmpty) ...[
             const SizedBox(height: 12),
-            const Text('Clinical criteria evaluated:', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Themes.ink)),
+            Text('Clinical criteria evaluated:',
+                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: dark ? Themes.darkInk : Themes.ink)),
             const SizedBox(height: 6),
             ...reasons.map((r) => Padding(
                   padding: const EdgeInsets.only(bottom: 4),
                   child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Text('•  ', style: TextStyle(color: Themes.inkSoft)),
-                    Expanded(child: Text(r.toString(), style: const TextStyle(height: 1.35, fontSize: 13, color: Themes.ink))),
+                    Text('•  ', style: TextStyle(color: dark ? Themes.darkInkSoft : Themes.inkSoft)),
+                    Expanded(child: Text(r.toString(),
+                        style: TextStyle(height: 1.35, fontSize: 13, color: dark ? Themes.darkInk : Themes.ink))),
                   ]),
                 )),
           ],
@@ -419,16 +445,7 @@ class DiagnosisResultsUI extends StatelessWidget {
 
   // --- screened photograph ---------------------------------------------------
 
-  /// The lesion photo this result was produced from, when the device-local file
-  /// is still present. Doubles as the Hero destination for the thumbnail on the
-  /// Reports list, so opening a saved report flies the photo up into place
-  /// instead of cutting to a new screen.
-  ///
-  /// Returns an empty box when there is no local file (an older report whose
-  /// image has been cleared, or a result opened straight from a scan before the
-  /// report is saved) — the Hero on the list side is likewise suppressed there,
-  /// so the tags always pair up.
-  Widget _lesionCard() {
+  Widget _lesionCard(bool dark) {
     final path = report?.imagePath ?? '';
     if (path.isEmpty) return const SizedBox.shrink();
     final file = File(path);
@@ -453,13 +470,14 @@ class DiagnosisResultsUI extends StatelessWidget {
             ? image
             // Matches `_lesionThumb` in reportScreen.dart. Keep the tags in sync.
             : Hero(tag: 'lesion-${report!.id}', child: image),
+        dark: dark,
       ),
     );
   }
 
   // --- Grad-CAM overlay ------------------------------------------------------
 
-  Widget _gradcamCard() {
+  Widget _gradcamCard(bool dark) {
     final url = diagnosisData['gradcam_display_url']?.toString();
     if (url == null || url.isEmpty) return const SizedBox.shrink();
     final focus = _string('gradcam_focus', '');
@@ -494,31 +512,37 @@ class DiagnosisResultsUI extends StatelessWidget {
                     child: child,
                   );
                 },
-                errorBuilder: (c, e, s) => const SizedBox(
+                errorBuilder: (c, e, s) => SizedBox(
                   height: 100,
-                  child: Center(child: Text('Heatmap unavailable (temporary asset expired).', style: TextStyle(color: Themes.inkSoft, fontSize: 12))),
+                  child: Center(
+                    child: Text(
+                      'Heatmap unavailable (temporary asset expired).',
+                      style: TextStyle(color: dark ? Themes.darkInkSoft : Themes.inkSoft, fontSize: 12),
+                    ),
+                  ),
                 ),
               ),
             ),
             if (focus.isNotEmpty) ...[
               const SizedBox(height: 8),
               Text('Attention concentrated: $focus.',
-                  style: const TextStyle(color: Themes.inkSoft, fontSize: 12.5)),
+                  style: TextStyle(color: dark ? Themes.darkInkSoft : Themes.inkSoft, fontSize: 12.5)),
             ],
             const SizedBox(height: 4),
-            const Text(
+            Text(
               'Highlighted regions influenced the model output. This is an explainability aid, not proof of clinical reasoning.',
-              style: TextStyle(color: Themes.inkSoft, fontSize: 11.5, height: 1.3),
+              style: TextStyle(color: dark ? Themes.darkInkSoft : Themes.inkSoft, fontSize: 11.5, height: 1.3),
             ),
           ],
         ),
+        dark: dark,
       ),
     );
   }
 
   // --- explanation -----------------------------------------------------------
 
-  Widget _explanationCard() {
+  Widget _explanationCard(bool dark) {
     final available = diagnosisData['explanation_available'] == true;
     final explanation = _string(
       'explanation',
@@ -527,13 +551,17 @@ class DiagnosisResultsUI extends StatelessWidget {
     if (explanation.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
-      child: _section('Clinical explanation', MarkdownText(explanation, color: Themes.ink)),
+      child: _section(
+        'Clinical explanation',
+        MarkdownText(explanation, color: dark ? Themes.darkInk : Themes.ink),
+        dark: dark,
+      ),
     );
   }
 
   // --- per-class scores (LIST from the backend) ------------------------------
 
-  Widget _probabilitiesCard() {
+  Widget _probabilitiesCard(bool dark) {
     final probs = diagnosisData['probabilities'];
     if (probs is! List || probs.isEmpty) return const SizedBox.shrink();
 
@@ -542,20 +570,21 @@ class DiagnosisResultsUI extends StatelessWidget {
       Column(
         children: [
           for (final p in probs)
-            if (p is Map) _probRow(p),
+            if (p is Map) _probRow(p, dark),
         ],
       ),
+      dark: dark,
     );
   }
 
-  Widget _probRow(Map p) {
+  Widget _probRow(Map p, bool dark) {
     final name = p['name']?.toString() ?? p['code']?.toString() ?? '—';
     final value = p['probability'] is num ? (p['probability'] as num).toDouble() : 0.0;
     final malignancy = p['malignancy']?.toString() ?? 'benign';
     final color = switch (malignancy) {
       'malignant' => Themes.urgent,
       'premalignant' => Themes.soon,
-      _ => Themes.routine,
+      _ => dark ? Themes.tealLight : Themes.routine,
     };
 
     return Padding(
@@ -563,8 +592,24 @@ class DiagnosisResultsUI extends StatelessWidget {
       child: Column(
         children: [
           Row(children: [
-            Expanded(child: Text(name, style: const TextStyle(fontSize: 13.5, color: Themes.ink, fontWeight: FontWeight.w600))),
-            Text('${(value * 100).toStringAsFixed(1)}%', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Themes.ink)),
+            Expanded(
+              child: Text(
+                name,
+                style: TextStyle(
+                  fontSize: 13.5,
+                  color: dark ? Themes.darkInk : Themes.ink,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Text(
+              '${(value * 100).toStringAsFixed(1)}%',
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+                color: dark ? Themes.darkInk : Themes.ink,
+              ),
+            ),
           ]),
           const SizedBox(height: 5),
           ClipRRect(
@@ -572,7 +617,7 @@ class DiagnosisResultsUI extends StatelessWidget {
             child: LinearProgressIndicator(
               value: value.clamp(0, 1),
               minHeight: 6,
-              backgroundColor: Themes.border,
+              backgroundColor: dark ? Themes.darkBorder : Themes.border,
               color: color,
             ),
           ),
@@ -583,19 +628,24 @@ class DiagnosisResultsUI extends StatelessWidget {
 
   // --- disclaimer + stub -----------------------------------------------------
 
-  Widget _disclaimerCard() {
+  Widget _disclaimerCard(bool dark) {
     final text = _string('disclaimer', _fallbackDisclaimer);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Themes.warningTint,
+        color: dark ? const Color(0xFF261E10) : Themes.warningTint,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Themes.soonBorder),
+        border: Border.all(color: dark ? const Color(0xFF5A4418) : Themes.soonBorder),
       ),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Icon(Icons.shield_outlined, color: Themes.warning, size: 20),
+        Icon(Icons.shield_outlined, color: dark ? Themes.tealLight : Themes.warning, size: 20),
         const SizedBox(width: 10),
-        Expanded(child: Text(text, style: const TextStyle(height: 1.4, color: Themes.ink, fontSize: 12.5))),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(height: 1.4, color: dark ? Themes.darkInk : Themes.ink, fontSize: 12.5),
+          ),
+        ),
       ]),
     );
   }
@@ -620,13 +670,20 @@ class DiagnosisResultsUI extends StatelessWidget {
 
   // --- helpers ---------------------------------------------------------------
 
-  Widget _section(String title, Widget child) => Card(
+  Widget _section(String title, Widget child, {bool dark = false}) => Card(
         child: Padding(
           padding: const EdgeInsets.all(17),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800)),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: dark ? Themes.darkInk : Themes.ink,
+                ),
+              ),
               const SizedBox(height: 12),
               child,
             ],
@@ -669,82 +726,97 @@ class UnderstandResultBar extends StatelessWidget {
   bool get _lowConfidence => triage?['low_confidence'] == true;
 
   @override
-  Widget build(BuildContext context) => Card(
-        clipBehavior: Clip.antiAlias,
-        child: Theme(
-          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-          child: ExpansionTile(
-            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            expandedCrossAxisAlignment: CrossAxisAlignment.start,
-            leading: Container(
-              padding: const EdgeInsets.all(9),
-              decoration: BoxDecoration(
-                color: Themes.primary.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.school_outlined, color: Themes.primary),
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final primaryColor = dark ? Themes.tealLight : Themes.primary;
+    final ink = dark ? Themes.darkInk : Themes.ink;
+    final muted = dark ? Themes.darkInkSoft : Themes.muted;
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          expandedCrossAxisAlignment: CrossAxisAlignment.start,
+          leading: Container(
+            padding: const EdgeInsets.all(9),
+            decoration: BoxDecoration(
+              color: primaryColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(12),
             ),
-            title: const Text('Understand this result',
-                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16)),
-            subtitle: const Padding(
-              padding: EdgeInsets.only(top: 2),
-              child: Text('What the score and triage actually mean for you.',
-                  style: TextStyle(color: Themes.muted, fontSize: 12.5, height: 1.3)),
-            ),
-            children: [
-              if (confidence != null)
-                _point(
-                  Icons.percent_rounded,
-                  'The ${(confidence! * 100).toStringAsFixed(1)}% is a match score, not a diagnosis',
-                  'It means the image resembled this category more than the others the model '
-                      'knows. It is not the chance that you have this condition, and the model '
-                      'can only pick from the classes it was trained on.',
-                ),
-              if (_category.isNotEmpty) _point(Icons.flag_outlined, _triageTitle(), _triageBody()),
-              if (_lowConfidence)
-                _point(
-                  Icons.help_outline_rounded,
-                  'Confidence was low — treat this as "unclear"',
-                  'Blur, poor lighting, hair or an unfamiliar lesion all reduce confidence. '
-                      'A low-confidence result is not a clean bill of health: retake the photo '
-                      'in better light, or have it examined.',
-                ),
-              if (hasHeatmap)
-                _point(
-                  Icons.blur_on_rounded,
-                  'Read the heatmap as attention, not proof',
-                  'Warm colours mark what influenced the output. Heat centred on the lesion is '
-                      'reassuring; heat on background skin or hair means the model may have '
-                      'keyed on an artefact, so weigh the result accordingly.',
-                ),
-              _point(
-                Icons.check_circle_outline_rounded,
-                'What to do next',
-                isLesion
-                    ? 'Photograph the same spot monthly so change is easy to see, and book a '
-                        'dermatologist if it grows, changes colour, bleeds or itches — '
-                        'regardless of what this screen said.'
-                    : 'Keep an eye on the area and seek care if it worsens, fails to heal, or '
-                        'becomes painful, swollen or infected.',
-              ),
-              const SizedBox(height: 4),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (_) => const SkinGuideScreen(focusResults: true)),
-                  ),
-                  icon: const Icon(Icons.menu_book_outlined, size: 18),
-                  label: const Text('Open the full skin health guide'),
-                ),
-              ),
-            ],
+            child: Icon(Icons.school_outlined, color: primaryColor),
           ),
+          title: Text(
+            'Understand this result',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: ink),
+          ),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(
+              'What the score and triage actually mean for you.',
+              style: TextStyle(color: muted, fontSize: 12.5, height: 1.3),
+            ),
+          ),
+          children: [
+            if (confidence != null)
+              _point(
+                Icons.percent_rounded,
+                'The ${(confidence! * 100).toStringAsFixed(1)}% is a match score, not a diagnosis',
+                'It means the image resembled this category more than the others the model '
+                    'knows. It is not the chance that you have this condition, and the model '
+                    'can only pick from the classes it was trained on.',
+                dark,
+              ),
+            if (_category.isNotEmpty) _point(Icons.flag_outlined, _triageTitle(), _triageBody(), dark),
+            if (_lowConfidence)
+              _point(
+                Icons.help_outline_rounded,
+                'Confidence was low — treat this as "unclear"',
+                'Blur, poor lighting, hair or an unfamiliar lesion all reduce confidence. '
+                    'A low-confidence result is not a clean bill of health: retake the photo '
+                    'in better light, or have it examined.',
+                dark,
+              ),
+            if (hasHeatmap)
+              _point(
+                Icons.blur_on_rounded,
+                'Read the heatmap as attention, not proof',
+                'Warm colours mark what influenced the output. Heat centred on the lesion is '
+                    'reassuring; heat on background skin or hair means the model may have '
+                    'keyed on an artefact, so weigh the result accordingly.',
+                dark,
+              ),
+            _point(
+              Icons.check_circle_outline_rounded,
+              'What to do next',
+              isLesion
+                  ? 'Photograph the same spot monthly so change is easy to see, and book a '
+                      'dermatologist if it grows, changes colour, bleeds or itches — '
+                      'regardless of what this screen said.'
+                  : 'Keep an eye on the area and seek care if it worsens, fails to heal, or '
+                      'becomes painful, swollen or infected.',
+              dark,
+            ),
+            const SizedBox(height: 4),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const SkinGuideScreen(focusResults: true)),
+                ),
+                icon: const Icon(Icons.menu_book_outlined, size: 18),
+                label: const Text('Open the full skin health guide'),
+              ),
+            ),
+          ],
         ),
-      );
+      ),
+    );
+  }
 
   String _triageTitle() => switch (_category) {
         'urgent_evaluation' => 'Urgent evaluation — act on this within days',
@@ -765,25 +837,33 @@ class UnderstandResultBar extends StatelessWidget {
               'Re-check monthly and escalate on any change.',
       };
 
-  Widget _point(IconData icon, String title, String body) => Padding(
+  Widget _point(IconData icon, String title, String body, bool dark) => Padding(
         padding: const EdgeInsets.only(bottom: 14),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Padding(
               padding: const EdgeInsets.only(top: 2),
-              child: Icon(icon, size: 17, color: Themes.primary),
+              child: Icon(icon, size: 17, color: dark ? Themes.tealLight : Themes.primary),
             ),
             const SizedBox(width: 9),
             Expanded(
               child: Text(title,
-                  style: const TextStyle(fontWeight: FontWeight.w800, height: 1.3)),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    height: 1.3,
+                    color: dark ? Themes.darkInk : Themes.ink,
+                  )),
             ),
           ]),
           const SizedBox(height: 4),
           Padding(
             padding: const EdgeInsets.only(left: 26),
             child: Text(body,
-                style: const TextStyle(color: Themes.muted, height: 1.45, fontSize: 12.8)),
+                style: TextStyle(
+                  color: dark ? Themes.darkInkSoft : Themes.muted,
+                  height: 1.45,
+                  fontSize: 12.8,
+                )),
           ),
         ]),
       );

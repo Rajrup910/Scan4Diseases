@@ -107,6 +107,10 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final ink = dark ? Themes.darkInk : Themes.ink;
+    final inkSoft = dark ? Themes.darkInkSoft : Themes.inkSoft;
+
     final subtitle = widget.conditionName == null || widget.conditionName!.isEmpty
         ? 'Ask about your screening result'
         : 'About: ${widget.conditionName}';
@@ -114,7 +118,10 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.white.withValues(alpha: 0.85),
+        backgroundColor: dark
+            ? const Color(0xFF161920).withValues(alpha: 0.72)
+            : Colors.white.withValues(alpha: 0.85),
+        foregroundColor: ink,
         elevation: 0,
         scrolledUnderElevation: 1,
         title: const Text('Ask about your result'),
@@ -125,7 +132,7 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(subtitle,
-                  style: const TextStyle(color: Themes.inkSoft, fontSize: 12.5, fontWeight: FontWeight.w600)),
+                  style: TextStyle(color: inkSoft, fontSize: 12.5, fontWeight: FontWeight.w600)),
             ),
           ),
         ),
@@ -139,10 +146,10 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Column(
               children: [
                 Expanded(
-                  child: _messages.isEmpty ? _empty() : _list(),
+                  child: _messages.isEmpty ? _empty(dark) : _list(dark),
                 ),
-                if (_disclaimer.isNotEmpty) _disclaimerStrip(),
-                _composer(),
+                if (_disclaimer.isNotEmpty) _disclaimerStrip(dark),
+                _composer(dark),
               ],
             ),
           ),
@@ -151,28 +158,28 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Widget _empty() => Center(
+  Widget _empty(bool dark) => Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
           child: Container(
             padding: const EdgeInsets.all(22),
-            decoration: Themes.liquidGlassDecoration(radius: 24),
+            decoration: Themes.liquidGlassDecoration(radius: 24, dark: dark),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 const AppLogoMark(size: 56, glow: true),
                 const SizedBox(height: 14),
-                const Text(
+                Text(
                   'Questions about your result?',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: Themes.ink),
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: dark ? Themes.darkInk : Themes.ink),
                 ),
                 const SizedBox(height: 6),
-                const Text(
+                Text(
                   'This assistant explains your preliminary screening result. It is not a doctor '
                   'and cannot diagnose. Try a question:',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Themes.inkSoft, height: 1.4, fontSize: 13),
+                  style: TextStyle(color: dark ? Themes.darkInkSoft : Themes.inkSoft, height: 1.4, fontSize: 13),
                 ),
                 const SizedBox(height: 18),
                 Wrap(
@@ -182,12 +189,20 @@ class _ChatScreenState extends State<ChatScreen> {
                   children: [
                     for (final s in _suggestions)
                       ActionChip(
-                        backgroundColor: const Color(0x66FFFFFF),
+                        backgroundColor: dark ? Themes.darkBrandTint : const Color(0x66FFFFFF),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
-                          side: BorderSide(color: Colors.white.withValues(alpha: 0.85), width: 1.2),
+                          side: BorderSide(
+                            color: dark ? Themes.tealGlow.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.85),
+                            width: 1.2,
+                          ),
                         ),
-                        label: Text(s, style: const TextStyle(color: Themes.brand, fontWeight: FontWeight.w600, fontSize: 13)),
+                        label: Text(s,
+                            style: TextStyle(
+                              color: dark ? Themes.tealLight : Themes.brand,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                            )),
                         onPressed: () => _send(s),
                       ),
                   ],
@@ -198,7 +213,7 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
       );
 
-  Widget _list() => ListView.builder(
+  Widget _list(bool dark) => ListView.builder(
         controller: _scroll,
         padding: const EdgeInsets.fromLTRB(14, 14, 14, 8),
         itemCount: _messages.length + (_loading ? 1 : 0),
@@ -206,11 +221,11 @@ class _ChatScreenState extends State<ChatScreen> {
           if (i == _messages.length && _loading) {
             return const AnalyzingResultBubble(label: 'Analyzing Results…');
           }
-          return _bubble(_messages[i]);
+          return _bubble(_messages[i], dark);
         },
       );
 
-  Widget _bubble(_Msg m) {
+  Widget _bubble(_Msg m, bool dark) {
     final isUser = m.role == 'user';
     Widget wrap(Widget child) => _BubbleEnter(fromRight: isUser, child: child);
     if (m.system) {
@@ -218,14 +233,14 @@ class _ChatScreenState extends State<ChatScreen> {
         margin: const EdgeInsets.symmetric(vertical: 6),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Themes.warningTint.withValues(alpha: 0.85),
+          color: dark ? const Color(0xFF261E10) : Themes.warningTint.withValues(alpha: 0.85),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.85)),
+          border: Border.all(color: dark ? const Color(0xFF5A4418) : Colors.white.withValues(alpha: 0.85)),
         ),
         child: Row(children: [
           const Icon(Icons.info_outline, size: 18, color: Themes.warning),
           const SizedBox(width: 8),
-          Expanded(child: Text(m.content, style: const TextStyle(height: 1.35, color: Themes.ink, fontSize: 13))),
+          Expanded(child: Text(m.content, style: TextStyle(height: 1.35, color: dark ? Themes.darkInk : Themes.ink, fontSize: 13))),
         ]),
       ));
     }
@@ -254,9 +269,10 @@ class _ChatScreenState extends State<ChatScreen> {
               )
             : Themes.liquidGlassDecoration(
                 radius: 18,
+                dark: dark,
                 borderRadius: BorderRadius.circular(18).copyWith(bottomLeft: const Radius.circular(4)),
-                topAlpha: 0.88,
-                bottomAlpha: 0.72,
+                topAlpha: dark ? 0.95 : 0.88,
+                bottomAlpha: dark ? 0.85 : 0.72,
               ),
         child: isUser
             ? Text(
@@ -266,41 +282,54 @@ class _ChatScreenState extends State<ChatScreen> {
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      AppLogoMark(size: 16, glow: false),
-                      SizedBox(width: 6),
+                      const AppLogoMark(size: 16, glow: false),
+                      const SizedBox(width: 6),
                       Text('Assistant',
-                          style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: Themes.brand)),
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w700,
+                            color: dark ? Themes.tealLight : Themes.brand,
+                          )),
                     ],
                   ),
                   const SizedBox(height: 6),
-                  MarkdownText(m.content, color: Themes.ink),
+                  MarkdownText(m.content, color: dark ? Themes.darkInk : Themes.ink),
                 ],
               ),
       ),
     ));
   }
 
-  Widget _disclaimerStrip() => Container(
+  Widget _disclaimerStrip(bool dark) => Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          color: Themes.warningTint.withValues(alpha: 0.80),
-          border: Border(top: BorderSide(color: Colors.white.withValues(alpha: 0.85))),
+          color: dark ? const Color(0xFF261E10) : Themes.warningTint.withValues(alpha: 0.80),
+          border: Border(top: BorderSide(color: dark ? const Color(0xFF5A4418) : Colors.white.withValues(alpha: 0.85))),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         child: Text(
           _disclaimer.replaceAll('\n\n', ' '),
-          style: const TextStyle(fontSize: 11, color: Color(0xFF7A6318), height: 1.3),
+          style: TextStyle(
+            fontSize: 11,
+            color: dark ? Themes.tealLight : const Color(0xFF7A6318),
+            height: 1.3,
+          ),
         ),
       );
 
-  Widget _composer() => Padding(
+  Widget _composer(bool dark) => Padding(
         padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
         child: Container(
           padding: const EdgeInsets.all(6),
-          decoration: Themes.liquidGlassDecoration(radius: 28, topAlpha: 0.88, bottomAlpha: 0.72),
+          decoration: Themes.liquidGlassDecoration(
+            radius: 28,
+            dark: dark,
+            topAlpha: dark ? 0.95 : 0.88,
+            bottomAlpha: dark ? 0.85 : 0.72,
+          ),
           child: Row(
             children: [
               Expanded(
@@ -310,11 +339,13 @@ class _ChatScreenState extends State<ChatScreen> {
                   maxLines: 4,
                   textInputAction: TextInputAction.send,
                   onSubmitted: _send,
-                  decoration: const InputDecoration(
+                  style: TextStyle(color: dark ? Themes.darkInk : Themes.ink),
+                  decoration: InputDecoration(
                     hintText: 'Ask a question…',
+                    hintStyle: TextStyle(color: dark ? Themes.darkInkSoft : Themes.inkMuted),
                     filled: true,
                     fillColor: Colors.transparent,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                     border: InputBorder.none,
                     enabledBorder: InputBorder.none,
                     focusedBorder: InputBorder.none,

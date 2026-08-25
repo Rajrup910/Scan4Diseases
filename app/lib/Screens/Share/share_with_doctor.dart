@@ -15,10 +15,11 @@ Future<void> showShareWithDoctorSheet(
   ScreeningReport report, {
   String? gradcamUrl,
 }) {
+  final dark = Theme.of(context).brightness == Brightness.dark;
   return showModalBottomSheet<void>(
     context: context,
     isScrollControlled: true,
-    backgroundColor: Colors.white,
+    backgroundColor: dark ? Themes.darkSurface : Colors.white,
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
     ),
@@ -104,6 +105,7 @@ class _ShareSheetState extends State<_ShareSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
     final maxSheetHeight = MediaQuery.of(context).size.height * 0.82;
     return ConstrainedBox(
@@ -119,19 +121,29 @@ class _ShareSheetState extends State<_ShareSheet> {
                 width: 42,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Themes.border,
+                  color: dark ? Themes.darkBorder : Themes.border,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
             ),
             const SizedBox(height: 16),
-            const Text('Share with a doctor',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800)),
+            Text(
+              'Share with a doctor',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: dark ? Themes.darkInk : Themes.ink,
+              ),
+            ),
             const SizedBox(height: 4),
             Text(
               'Choose a doctor to review your "${widget.report.condition}" screening. '
               'They will be able to see this report and its image in their portal.',
-              style: const TextStyle(color: Themes.muted, height: 1.35, fontSize: 13),
+              style: TextStyle(
+                color: dark ? Themes.darkInkSoft : Themes.muted,
+                height: 1.35,
+                fontSize: 13,
+              ),
             ),
             const SizedBox(height: 16),
             Flexible(
@@ -149,18 +161,19 @@ class _ShareSheetState extends State<_ShareSheet> {
                       snap.error is SharingException
                           ? (snap.error as SharingException).message
                           : 'Could not load the list of doctors.',
+                      dark,
                     );
                   }
                   final doctors = snap.data ?? const [];
                   if (doctors.isEmpty) {
-                    return _errorBox('No verified doctors are available yet.');
+                    return _errorBox('No verified doctors are available yet.', dark);
                   }
                   return ListView.separated(
                     shrinkWrap: true,
                     physics: const ClampingScrollPhysics(),
                     itemCount: doctors.length,
                     separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (_, i) => _doctorTile(doctors[i]),
+                    itemBuilder: (_, i) => _doctorTile(doctors[i], dark),
                   );
                 },
               ),
@@ -191,10 +204,14 @@ class _ShareSheetState extends State<_ShareSheet> {
             ),
           ),
             const SizedBox(height: 8),
-            const Text(
+            Text(
               'Your photo is encrypted before it is stored, and only the doctor you choose can '
               'see it. You can stop sharing at any time.',
-              style: TextStyle(color: Themes.muted, fontSize: 11.5, height: 1.3),
+              style: TextStyle(
+                color: dark ? Themes.darkInkSoft : Themes.muted,
+                fontSize: 11.5,
+                height: 1.3,
+              ),
             ),
           ],
         ),
@@ -202,19 +219,26 @@ class _ShareSheetState extends State<_ShareSheet> {
     );
   }
 
-
-  Widget _doctorTile(DoctorDirectoryEntry d) {
+  Widget _doctorTile(DoctorDirectoryEntry d, bool dark) {
     final selected = d.id == _selectedId;
+    final accent = dark ? Themes.tealGlow : Themes.primary;
+    final tileBg = dark
+        ? (selected ? Themes.tealGlow.withValues(alpha: 0.12) : const Color(0xFF1E2430))
+        : (selected ? Themes.primary.withValues(alpha: 0.06) : Colors.white);
+    final borderColor = selected
+        ? accent
+        : (dark ? Themes.darkBorder : Themes.border);
+
     return InkWell(
       onTap: _submitting ? null : () => setState(() => _selectedId = d.id),
       borderRadius: BorderRadius.circular(16),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: selected ? Themes.primary.withValues(alpha: 0.06) : Colors.white,
+          color: tileBg,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: selected ? Themes.primary : Themes.border,
+            color: borderColor,
             width: selected ? 1.5 : 1,
           ),
         ),
@@ -223,43 +247,54 @@ class _ShareSheetState extends State<_ShareSheet> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: Themes.primary.withValues(alpha: 0.1),
+              color: accent.withValues(alpha: dark ? 0.20 : 0.10),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.medical_services_outlined, color: Themes.primary),
+            child: Icon(Icons.medical_services_outlined, color: dark ? Themes.tealLight : Themes.primary),
           ),
           const SizedBox(width: 13),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(d.label,
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+              Text(
+                d.label,
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15,
+                  color: dark ? Themes.darkInk : Themes.ink,
+                ),
+              ),
               if (d.regNo != null && d.regNo!.isNotEmpty) ...[
                 const SizedBox(height: 2),
-                Text('Reg. ${d.regNo}',
-                    style: const TextStyle(color: Themes.muted, fontSize: 12.5)),
+                Text(
+                  'Reg. ${d.regNo}',
+                  style: TextStyle(
+                    color: dark ? Themes.darkInkSoft : Themes.muted,
+                    fontSize: 12.5,
+                  ),
+                ),
               ],
             ]),
           ),
           Icon(
             selected ? Icons.radio_button_checked : Icons.radio_button_off,
-            color: selected ? Themes.primary : Themes.muted,
+            color: selected ? accent : (dark ? Themes.darkInkSoft : Themes.muted),
           ),
         ]),
       ),
     );
   }
 
-  Widget _errorBox(String message) => Container(
+  Widget _errorBox(String message, bool dark) => Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Themes.danger.withValues(alpha: 0.06),
+          color: Themes.danger.withValues(alpha: dark ? 0.12 : 0.06),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: Themes.danger.withValues(alpha: 0.3)),
         ),
         child: Column(children: [
           Text(message,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Themes.ink, height: 1.35)),
+              style: TextStyle(color: dark ? Themes.darkInk : Themes.ink, height: 1.35)),
           const SizedBox(height: 10),
           TextButton.icon(
             onPressed: _retry,
@@ -297,10 +332,6 @@ class _ShareSuccessDialogState extends State<ShareSuccessDialog>
   @override
   void initState() {
     super.initState();
-    // Calmed from 900ms elastic bounce → 620ms ease-out settle. The disc no
-    // longer springs into place; a soft brand-tint halo fades up around it
-    // once (no expanding wave loop) so success reads as a confirmation, not a
-    // celebration.
     _controller = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 620),
@@ -336,9 +367,20 @@ class _ShareSuccessDialogState extends State<ShareSuccessDialog>
 
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final ink = dark ? Themes.darkInk : Themes.ink;
+    final inkSoft = dark ? Themes.darkInkSoft : Themes.inkSoft;
+    final primaryAccent = dark ? Themes.tealLight : Themes.primary;
+
     return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
-      backgroundColor: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(28),
+        side: BorderSide(
+          color: dark ? Themes.tealGlow.withValues(alpha: 0.22) : Colors.transparent,
+          width: 1.1,
+        ),
+      ),
+      backgroundColor: dark ? Themes.darkSurface : Colors.white,
       elevation: 16,
       insetPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
       child: Padding(
@@ -363,8 +405,8 @@ class _ShareSuccessDialogState extends State<ShareSuccessDialog>
                           shape: BoxShape.circle,
                           gradient: RadialGradient(
                             colors: [
-                              Themes.primary.withValues(alpha: 0.18),
-                              Themes.primary.withValues(alpha: 0.0),
+                              (dark ? Themes.tealGlow : Themes.primary).withValues(alpha: 0.18),
+                              (dark ? Themes.tealGlow : Themes.primary).withValues(alpha: 0.0),
                             ],
                             stops: const [0.35, 1.0],
                           ),
@@ -410,13 +452,13 @@ class _ShareSuccessDialogState extends State<ShareSuccessDialog>
             const SizedBox(height: 20),
 
             // Headline
-            const Text(
+            Text(
               'Report Shared Successfully!',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 21,
                 fontWeight: FontWeight.w800,
-                color: Themes.ink,
+                color: ink,
                 letterSpacing: -0.3,
               ),
             ),
@@ -426,17 +468,17 @@ class _ShareSuccessDialogState extends State<ShareSuccessDialog>
             RichText(
               textAlign: TextAlign.center,
               text: TextSpan(
-                style: const TextStyle(fontSize: 14, color: Themes.inkSoft, height: 1.4),
+                style: TextStyle(fontSize: 14, color: inkSoft, height: 1.4),
                 children: [
                   const TextSpan(text: 'Your screening for '),
                   TextSpan(
                     text: widget.condition,
-                    style: const TextStyle(fontWeight: FontWeight.w700, color: Themes.ink),
+                    style: TextStyle(fontWeight: FontWeight.w700, color: ink),
                   ),
                   const TextSpan(text: ' has been delivered to '),
                   TextSpan(
                     text: widget.doctorName,
-                    style: const TextStyle(fontWeight: FontWeight.w700, color: Themes.primary),
+                    style: TextStyle(fontWeight: FontWeight.w700, color: primaryAccent),
                   ),
                   const TextSpan(text: ' for clinical evaluation.'),
                 ],
@@ -450,15 +492,16 @@ class _ShareSuccessDialogState extends State<ShareSuccessDialog>
               child: Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: Themes.brandTint.withValues(alpha: 0.5),
+                  color: dark ? Themes.darkBrandTint.withValues(alpha: 0.6) : Themes.brandTint.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Themes.border),
+                  border: Border.all(color: dark ? Themes.darkBorder : Themes.border),
                 ),
                 child: Column(
                   children: [
                     _deliverableRow(
                       icon: Icons.lock_outline_rounded,
                       text: 'Lesion Photograph (AES-Encrypted)',
+                      dark: dark,
                     ),
                     const SizedBox(height: 10),
                     _deliverableRow(
@@ -466,11 +509,13 @@ class _ShareSuccessDialogState extends State<ShareSuccessDialog>
                       text: widget.hasGradcam
                           ? 'Grad-CAM Attention Heatmap Attached'
                           : 'Clinical AI Assessment Linked',
+                      dark: dark,
                     ),
                     const SizedBox(height: 10),
                     _deliverableRow(
                       icon: Icons.verified_user_outlined,
                       text: 'Available Live in Clinician Portal',
+                      dark: dark,
                     ),
                   ],
                 ),
@@ -485,8 +530,8 @@ class _ShareSuccessDialogState extends State<ShareSuccessDialog>
               child: FilledButton(
                 onPressed: () => Navigator.of(context).pop(),
                 style: FilledButton.styleFrom(
-                  backgroundColor: Themes.primary,
-                  foregroundColor: Colors.white,
+                  backgroundColor: dark ? Themes.tealGlow : Themes.primary,
+                  foregroundColor: dark ? const Color(0xFF06231E) : Colors.white,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                   elevation: 2,
                 ),
@@ -502,25 +547,26 @@ class _ShareSuccessDialogState extends State<ShareSuccessDialog>
     );
   }
 
-  Widget _deliverableRow({required IconData icon, required String text}) {
+  Widget _deliverableRow({required IconData icon, required String text, required bool dark}) {
+    final iconAccent = dark ? Themes.tealGlow : Themes.mint;
     return Row(
       children: [
         Container(
           padding: const EdgeInsets.all(4),
           decoration: BoxDecoration(
-            color: Themes.mint.withValues(alpha: 0.15),
+            color: iconAccent.withValues(alpha: dark ? 0.22 : 0.15),
             shape: BoxShape.circle,
           ),
-          child: const Icon(Icons.check_circle_rounded, color: Themes.mint, size: 16),
+          child: Icon(Icons.check_circle_rounded, color: iconAccent, size: 16),
         ),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12.5,
               fontWeight: FontWeight.w600,
-              color: Themes.ink,
+              color: dark ? Themes.darkInk : Themes.ink,
             ),
           ),
         ),
