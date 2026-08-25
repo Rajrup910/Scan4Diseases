@@ -90,10 +90,10 @@ class Themes {
     double? topAlpha,
     double? bottomAlpha,
   }) {
-    final tA = topAlpha ?? (dark ? 0.92 : 0.68);
-    final bA = bottomAlpha ?? (dark ? 0.82 : 0.44);
-    final baseTop = dark ? const Color(0xFF1E2430) : (customFill ?? Colors.white);
-    final baseBottom = dark ? const Color(0xFF141820) : (customFill ?? Colors.white);
+    final tA = topAlpha ?? (dark ? 0.78 : 0.72);
+    final bA = bottomAlpha ?? (dark ? 0.60 : 0.46);
+    final baseTop = dark ? const Color(0xFF1C222E) : (customFill ?? Colors.white);
+    final baseBottom = dark ? const Color(0xFF12161F) : (customFill ?? Colors.white);
     return BoxDecoration(
       gradient: LinearGradient(
         begin: Alignment.topCenter,
@@ -106,23 +106,22 @@ class Themes {
       borderRadius: borderRadius ?? BorderRadius.circular(radius),
       border: Border.all(
         color: dark
-            ? Themes.tealGlow.withValues(alpha: 0.22)
-            : Colors.white.withValues(alpha: 0.78),
-        width: 1.1,
+            ? Themes.tealGlow.withValues(alpha: 0.28)
+            : Colors.white.withValues(alpha: 0.88),
+        width: 1.2,
       ),
       boxShadow: [
-        // Specular luminous rim sparkle highlight — pushed brighter to keep
-        // the glossy impression when the body is more translucent.
+        // Specular luminous rim sparkle highlight — glossy liquid sheen
         BoxShadow(
           color: dark
-              ? Themes.tealGlow.withValues(alpha: 0.16)
-              : Colors.white.withValues(alpha: 0.65),
-          blurRadius: 6,
-          spreadRadius: 0.5,
+              ? Themes.tealGlow.withValues(alpha: 0.22)
+              : Colors.white.withValues(alpha: 0.85),
+          blurRadius: 10,
+          spreadRadius: 1,
         ),
         // Ambient soft depth shadow
         BoxShadow(
-          color: Colors.black.withValues(alpha: dark ? 0.38 : 0.08),
+          color: Colors.black.withValues(alpha: dark ? 0.40 : 0.08),
           blurRadius: 20,
           offset: const Offset(0, 8),
         ),

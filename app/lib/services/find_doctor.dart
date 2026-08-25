@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../Screens/Doctors/nearbyDoctorsScreen.dart';
 import '../Screens/theme.dart';
+import 'language_service.dart';
 import 'nearby_doctors.dart';
 
 /// Opens the device's maps app (or browser) searching for dermatologists near the user.
@@ -116,7 +117,9 @@ class _FindDoctorCardState extends State<FindDoctorCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Find a dermatologist near you',
+                        LanguageService.instance.code.value == 'hi'
+                            ? 'निकटतम त्वचा रोग विशेषज्ञ खोजें'
+                            : 'Find a dermatologist near you',
                         style: TextStyle(
                           color: dark ? Themes.darkInk : Themes.ink,
                           fontSize: 15,

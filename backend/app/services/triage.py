@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from backend.app.safety.disclaimer import triage_advice, triage_label
+from backend.app.safety.disclaimer import triage_advice, triage_label, triage_reason
 from backend.app.schemas.common import Language, TriageCategory
 from backend.app.schemas.prediction import TriageResult
 from backend.app.schemas.questionnaire import Duration, Questionnaire, SizeChange
@@ -231,11 +231,21 @@ def build_triage_result(
     decision: TriageDecision, language: Language = Language.ENGLISH
 ) -> TriageResult:
     """Turn a decision into the API response object, with fixed localised text."""
+    red_flags_count = len(decision.red_flags)
+    localized_reasons = [
+        triage_reason(
+            rule_id,
+            default_text=decision.reasons[i] if i < len(decision.reasons) else "",
+            language=language,
+            count=red_flags_count,
+        )
+        for i, rule_id in enumerate(decision.rule_ids)
+    ]
     return TriageResult(
         category=decision.category,
         label=triage_label(decision.category, language),
         advice=triage_advice(decision.category, language),
-        reasons=decision.reasons,
+        reasons=localized_reasons if localized_reasons else decision.reasons,
         rule_ids=decision.rule_ids,
         low_confidence=decision.low_confidence,
     )

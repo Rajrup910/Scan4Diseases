@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../services/find_doctor.dart';
+import '../../services/language_service.dart';
 import '../../services/theme_service.dart';
 import '../Chat/chatScreen.dart';
 import '../Guide/skinGuideScreen.dart';
@@ -45,181 +46,195 @@ class DiagnosisResultsUI extends StatelessWidget {
     final outcome = _string('outcome', 'lesion');
     final isLesion = outcome == 'lesion';
 
-    final name = _string('predicted_name', _string('predicted_class', 'Screening result'));
+    final isHindi = LanguageService.instance.code.value == 'hi' ||
+        diagnosisData['language'] == 'hi';
+
+    final name = _string('predicted_name', _string('predicted_class', isHindi ? 'स्क्रीनिंग परिणाम' : 'Screening result'));
     final code = isLesion ? _string('predicted_class', '') : '';
     final confidence = isLesion ? _double('confidence') : null;
     final stub = diagnosisData['stub'] == true;
 
-    // Wraps the whole screen so a theme flip mid-visit rebuilds every
-    // card. Individual card helpers below still return their existing
-    // widget trees; Card + the shared themeData supply their surface and
-    // default text colors, so the visible chrome (headline, glass, ring)
-    // switches without a per-line rewrite.
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: ThemeService.instance.mode,
       builder: (context, __, ___) {
         final dark = ThemeService.instance.isDark(context);
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        backgroundColor: dark
-            ? const Color(0xFF161920).withValues(alpha: 0.72)
-            : Colors.white.withValues(alpha: 0.85),
-        foregroundColor: dark ? Themes.darkInk : Themes.ink,
-        elevation: 0,
-        scrolledUnderElevation: 1,
-        title: const Text('Screening result'),
-        actions: [
-          if (report != null)
-            IconButton(
-              tooltip: 'Doctor summary',
-              icon: const Icon(Icons.summarize_outlined),
-              onPressed: () => showReportSummarySheet(context, report!),
-            ),
-        ],
-      ),
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          const VideoBackground.ambient(),
-          SafeArea(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(18, 12, 18, 32),
-              children: [
-                if (stub) _stubBanner(),
-                _headline(name, code, confidence),
-                const SizedBox(height: 16),
-                // The screened photograph itself. Also the Hero landing point
-                // for the thumbnail on the Reports list.
-                _lesionCard(dark),
-                _triageCard(dark),
-                const SizedBox(height: 14),
-                // Send this screening to a verified doctor for review (patient-initiated sharing).
-                if (_canShare) ...[
-                  _shareCard(context, dark),
-                  const SizedBox(height: 14),
-                ],
-                // Talk to the assistant about this specific result (diagnosis-aware chat).
-                _askCard(context, dark),
-                const SizedBox(height: 14),
-                // Shown after every screening (lesion, healthy, or wound) so the user always has
-                // a clear route to professional in-person care.
-                FindDoctorCard(subtitle: _doctorSubtitle(outcome)),
-                const SizedBox(height: 14),
-                _gradcamCard(dark),
-                if (isLesion) _explanationCard(dark),
-                _probabilitiesCard(dark),
-                const SizedBox(height: 14),
-                // Explains this specific result in plain language, and opens the full guide.
-                UnderstandResultBar(
-                  confidence: confidence,
-                  triage: diagnosisData['triage'] is Map ? diagnosisData['triage'] as Map : null,
-                  hasHeatmap: (diagnosisData['gradcam_display_url']?.toString() ?? '').isNotEmpty,
-                  isLesion: isLesion,
+        return Scaffold(
+          extendBodyBehindAppBar: true,
+          appBar: AppBar(
+            backgroundColor: dark
+                ? const Color(0xFF161920).withValues(alpha: 0.72)
+                : Colors.white.withValues(alpha: 0.85),
+            foregroundColor: dark ? Themes.darkInk : Themes.ink,
+            elevation: 0,
+            scrolledUnderElevation: 1,
+            title: Text(isHindi ? 'स्क्रीनिंग परिणाम' : 'Screening result'),
+            actions: [
+              if (report != null)
+                IconButton(
+                  tooltip: isHindi ? 'डॉक्टर सारांश' : 'Doctor summary',
+                  icon: const Icon(Icons.summarize_outlined),
+                  onPressed: () => showReportSummarySheet(context, report!),
                 ),
-                const SizedBox(height: 14),
-                _disclaimerCard(dark),
-              ],
-            ),
+            ],
           ),
-        ],
-      ),
-    );
+          body: Stack(
+            fit: StackFit.expand,
+            children: [
+              const VideoBackground.ambient(),
+              SafeArea(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(18, 12, 18, 32),
+                  children: [
+                    if (stub) _stubBanner(),
+                    _headline(name, code, confidence, isHindi),
+                    const SizedBox(height: 16),
+                    _lesionCard(dark, isHindi),
+                    _triageCard(dark, isHindi),
+                    const SizedBox(height: 14),
+                    if (_canShare) ...[
+                      _shareCard(context, dark, isHindi),
+                      const SizedBox(height: 14),
+                    ],
+                    _askCard(context, dark, isHindi),
+                    const SizedBox(height: 14),
+                    FindDoctorCard(subtitle: _doctorSubtitle(outcome, isHindi)),
+                    const SizedBox(height: 14),
+                    _gradcamCard(dark, isHindi),
+                    if (isLesion) _explanationCard(dark, isHindi),
+                    _probabilitiesCard(dark, isHindi),
+                    const SizedBox(height: 14),
+                    UnderstandResultBar(
+                      confidence: confidence,
+                      triage: diagnosisData['triage'] is Map ? diagnosisData['triage'] as Map : null,
+                      hasHeatmap: (diagnosisData['gradcam_display_url']?.toString() ?? '').isNotEmpty,
+                      isLesion: isLesion,
+                      isHindi: isHindi,
+                    ),
+                    const SizedBox(height: 14),
+                    _disclaimerCard(dark),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
       },
     );
   }
 
   // --- share-with-a-doctor CTA -----------------------------------------------
 
-  Widget _shareCard(BuildContext context, bool dark) => Card(
+  Widget _shareCard(BuildContext context, bool dark, bool isHindi) => Container(
         clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () => showShareWithDoctorSheet(
-            context,
-            report!,
-            gradcamUrl: diagnosisData['gradcam_display_url']?.toString(),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: (dark ? Themes.tealGlow : Themes.brand).withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: dark ? Themes.tealGlow.withValues(alpha: 0.28) : Colors.white.withValues(alpha: 0.85),
+        decoration: Themes.liquidGlassDecoration(radius: 20, dark: dark),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => showShareWithDoctorSheet(
+              context,
+              report!,
+              gradcamUrl: diagnosisData['gradcam_display_url']?.toString(),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: (dark ? Themes.tealGlow : Themes.brand).withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: dark ? Themes.tealGlow.withValues(alpha: 0.28) : Colors.white.withValues(alpha: 0.85),
+                    ),
                   ),
+                  child: Icon(Icons.medical_services_outlined, color: dark ? Themes.tealLight : Themes.brand, size: 22),
                 ),
-                child: Icon(Icons.medical_services_outlined, color: dark ? Themes.tealLight : Themes.brand, size: 22),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Share with a verified doctor',
-                      style: TextStyle(color: dark ? Themes.darkInk : Themes.ink, fontWeight: FontWeight.w800, fontSize: 15)),
-                  const SizedBox(height: 3),
-                  Text('Send this screening and image to a dermatologist for clinical review.',
-                      style: TextStyle(color: dark ? Themes.darkInkSoft : Themes.inkSoft, height: 1.35, fontSize: 12.5)),
-                ]),
-              ),
-              Icon(Icons.chevron_right_rounded, color: dark ? Themes.tealLight : Themes.brand),
-            ]),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(
+                      isHindi ? 'सत्यापित डॉक्टर से साझा करें' : 'Share with a verified doctor',
+                      style: TextStyle(color: dark ? Themes.darkInk : Themes.ink, fontWeight: FontWeight.w800, fontSize: 15),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      isHindi
+                          ? 'विशेषज्ञ समीक्षा के लिए इस स्क्रीनिंग और तस्वीर को त्वचा रोग विशेषज्ञ को भेजें।'
+                          : 'Send this screening and image to a dermatologist for clinical review.',
+                      style: TextStyle(color: dark ? Themes.darkInkSoft : Themes.inkSoft, height: 1.35, fontSize: 12.5),
+                    ),
+                  ]),
+                ),
+                Icon(Icons.chevron_right_rounded, color: dark ? Themes.tealLight : Themes.brand),
+              ]),
+            ),
           ),
         ),
       );
 
   // --- ask-the-assistant CTA -------------------------------------------------
 
-  Widget _askCard(BuildContext context, bool dark) => Card(
+  Widget _askCard(BuildContext context, bool dark, bool isHindi) => Container(
         clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () => _openChat(context),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: (dark ? Themes.tealGlow : Themes.brand).withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: dark ? Themes.tealGlow.withValues(alpha: 0.28) : Colors.white.withValues(alpha: 0.85),
+        decoration: Themes.liquidGlassDecoration(radius: 20, dark: dark),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: () => _openChat(context),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: (dark ? Themes.tealGlow : Themes.brand).withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: dark ? Themes.tealGlow.withValues(alpha: 0.28) : Colors.white.withValues(alpha: 0.85),
+                    ),
                   ),
+                  child: Icon(Icons.forum_outlined, color: dark ? Themes.tealLight : Themes.brand, size: 22),
                 ),
-                child: Icon(Icons.forum_outlined, color: dark ? Themes.tealLight : Themes.brand, size: 22),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Wrap(
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: [
-                      Text('Ask about this result',
-                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: dark ? Themes.darkInk : Themes.ink)),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: dark ? Themes.darkBrandTint : Themes.brandTint.withValues(alpha: 0.75),
-                          borderRadius: const BorderRadius.all(Radius.circular(6)),
-                          border: Border.all(
-                            color: dark ? Themes.tealGlow.withValues(alpha: 0.28) : Colors.white.withValues(alpha: 0.85),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 8,
+                      runSpacing: 4,
+                      children: [
+                        Text(
+                          isHindi ? 'इस परिणाम के बारे में पूछें' : 'Ask about this result',
+                          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: dark ? Themes.darkInk : Themes.ink),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: dark ? Themes.darkBrandTint : Themes.brandTint.withValues(alpha: 0.75),
+                            borderRadius: const BorderRadius.all(Radius.circular(6)),
+                            border: Border.all(
+                              color: dark ? Themes.tealGlow.withValues(alpha: 0.28) : Colors.white.withValues(alpha: 0.85),
+                            ),
+                          ),
+                          child: Text(
+                            isHindi ? 'AI सहायक' : 'AI Assistant',
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: dark ? Themes.tealLight : Themes.brand),
                           ),
                         ),
-                        child: Text('AI Assistant',
-                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: dark ? Themes.tealLight : Themes.brand)),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 3),
-                  Text('Chat with the assistant to understand what it means and recommended next steps.',
-                      style: TextStyle(color: dark ? Themes.darkInkSoft : Themes.inkSoft, height: 1.35, fontSize: 12.5)),
-                ]),
-              ),
-              Icon(Icons.chevron_right_rounded, color: dark ? Themes.tealLight : Themes.brand),
-            ]),
+                      ],
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      isHindi
+                          ? 'परिणाम को समझने और अगले कदमों के लिए AI सहायक से चर्चा करें।'
+                          : 'Chat with the assistant to understand what it means and recommended next steps.',
+                      style: TextStyle(color: dark ? Themes.darkInkSoft : Themes.inkSoft, height: 1.35, fontSize: 12.5),
+                    ),
+                  ]),
+                ),
+                Icon(Icons.chevron_right_rounded, color: dark ? Themes.tealLight : Themes.brand),
+              ]),
+            ),
           ),
         ),
       );
@@ -247,17 +262,23 @@ class DiagnosisResultsUI extends StatelessWidget {
     );
   }
 
-  String _doctorSubtitle(String outcome) => switch (outcome) {
-        'healthy' =>
-          'Nothing concerning was found here, but a dermatologist can examine your skin in person.',
-        'other_damage' =>
-          'See a doctor if the wound does not heal, or becomes painful, swollen, or infected.',
-        _ => 'Have this professionally examined by a dermatologist near you.',
+  String _doctorSubtitle(String outcome, bool isHindi) => switch (outcome) {
+        'healthy' => isHindi
+            ? 'यहाँ कोई चिंताजनक घाव नहीं मिला, लेकिन डॉक्टर व्यक्तिगत रूप से जाँच कर सकते हैं।'
+            : 'Nothing concerning was found here, but a dermatologist can examine your skin in person.',
+        'other_damage' => isHindi
+            ? 'यदि घाव ठीक न हो, या दर्द, सूजन या संक्रमण हो तो डॉक्टर से मिलें।'
+            : 'See a doctor if the wound does not heal, or becomes painful, swollen, or infected.',
+        _ => isHindi
+            ? 'अपने नजदीकी त्वचा रोग विशेषज्ञ से इसकी पेशेवर जाँच कराएँ।'
+            : 'Have this professionally examined by a dermatologist near you.',
       };
 
   // --- header with the model score ------------------------------------------
 
-  Widget _headline(String name, String code, double? confidence) => Container(
+  // --- header with the model score ------------------------------------------
+
+  Widget _headline(String name, String code, double? confidence, bool isHindi) => Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           gradient: const LinearGradient(
@@ -283,12 +304,13 @@ class DiagnosisResultsUI extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Uniform brandmark (white variant to sit on the coloured banner)
-            // + assessment label — replaces the "S4D MODEL ASSESSMENT" text pill.
             Row(children: [
               const AppLogoMark(size: 22, color: Colors.white, holeColor: Colors.transparent, glow: false),
               const SizedBox(width: 8),
-              const Text('MODEL ASSESSMENT', style: TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: 0.5)),
+              Text(
+                isHindi ? 'मॉडल मूल्यांकन' : 'MODEL ASSESSMENT',
+                style: const TextStyle(color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+              ),
             ]),
             const SizedBox(height: 12),
             Text(name,
@@ -296,8 +318,10 @@ class DiagnosisResultsUI extends StatelessWidget {
             if (code.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 2),
-                child: Text('Model class code: ${code.toUpperCase()}',
-                    style: const TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 0.8)),
+                child: Text(
+                  isHindi ? 'मॉडल वर्ग कोड: ${code.toUpperCase()}' : 'Model class code: ${code.toUpperCase()}',
+                  style: const TextStyle(color: Colors.white70, fontSize: 12, letterSpacing: 0.8),
+                ),
               ),
             if (confidence != null) ...[
               const SizedBox(height: 16),
@@ -314,15 +338,17 @@ class DiagnosisResultsUI extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('Match score', style: TextStyle(color: Colors.white70, fontSize: 12.5)),
+                  Text(isHindi ? 'मिलान स्कोर' : 'Match score', style: const TextStyle(color: Colors.white70, fontSize: 12.5)),
                   Text('${(confidence * 100).toStringAsFixed(1)}%',
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 14)),
                 ],
               ),
               const SizedBox(height: 2),
-              const Text(
-                'A match score — not the probability that you have this condition.',
-                style: TextStyle(color: Colors.white70, fontSize: 11.5, height: 1.3),
+              Text(
+                isHindi
+                    ? 'यह एक मिलान स्कोर है — यह आपके रोगग्रस्त होने की संभावना नहीं है।'
+                    : 'A match score — not the probability that you have this condition.',
+                style: const TextStyle(color: Colors.white70, fontSize: 11.5, height: 1.3),
               ),
             ],
           ],
@@ -331,12 +357,12 @@ class DiagnosisResultsUI extends StatelessWidget {
 
   // --- triage (colour-coded by urgency) -------------------------------------
 
-  Widget _triageCard(bool dark) {
+  Widget _triageCard(bool dark, bool isHindi) {
     final triage = diagnosisData['triage'];
     if (triage is! Map) return const SizedBox.shrink();
 
     final category = triage['category']?.toString() ?? '';
-    final label = triage['label']?.toString() ?? 'Professional review recommended';
+    final label = triage['label']?.toString() ?? (isHindi ? 'पेशेवर समीक्षा अनुशंसित' : 'Professional review recommended');
     final advice = triage['advice']?.toString() ?? '';
     final reasons = (triage['reasons'] is List) ? List.from(triage['reasons']) : const [];
     final lowConfidence = triage['low_confidence'] == true;
@@ -419,15 +445,19 @@ class DiagnosisResultsUI extends StatelessWidget {
               Icon(Icons.info_outline, size: 16, color: dark ? Themes.darkInkSoft : Themes.inkSoft),
               const SizedBox(width: 6),
               Expanded(child: Text(
-                'The model was not confident about this image — rely on a professional examination.',
+                isHindi
+                    ? 'मॉडल इस तस्वीर को लेकर आश्वस्त नहीं था — पेशेवर जाँच पर भरोसा करें।'
+                    : 'The model was not confident about this image — rely on a professional examination.',
                 style: TextStyle(fontSize: 12.5, color: dark ? Themes.darkInkSoft : Themes.inkSoft),
               )),
             ]),
           ],
           if (reasons.isNotEmpty) ...[
             const SizedBox(height: 12),
-            Text('Clinical criteria evaluated:',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: dark ? Themes.darkInk : Themes.ink)),
+            Text(
+              isHindi ? 'मूल्यांकन किए गए चिकित्सीय मानदंड:' : 'Clinical criteria evaluated:',
+              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: dark ? Themes.darkInk : Themes.ink),
+            ),
             const SizedBox(height: 6),
             ...reasons.map((r) => Padding(
                   padding: const EdgeInsets.only(bottom: 4),
@@ -445,7 +475,7 @@ class DiagnosisResultsUI extends StatelessWidget {
 
   // --- screened photograph ---------------------------------------------------
 
-  Widget _lesionCard(bool dark) {
+  Widget _lesionCard(bool dark, bool isHindi) {
     final path = report?.imagePath ?? '';
     if (path.isEmpty) return const SizedBox.shrink();
     final file = File(path);
@@ -465,10 +495,9 @@ class DiagnosisResultsUI extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: _section(
-        'Screened photograph',
+        isHindi ? 'जाँची गई तस्वीर' : 'Screened photograph',
         report?.id == null
             ? image
-            // Matches `_lesionThumb` in reportScreen.dart. Keep the tags in sync.
             : Hero(tag: 'lesion-${report!.id}', child: image),
         dark: dark,
       ),
@@ -477,7 +506,7 @@ class DiagnosisResultsUI extends StatelessWidget {
 
   // --- Grad-CAM overlay ------------------------------------------------------
 
-  Widget _gradcamCard(bool dark) {
+  Widget _gradcamCard(bool dark, bool isHindi) {
     final url = diagnosisData['gradcam_display_url']?.toString();
     if (url == null || url.isEmpty) return const SizedBox.shrink();
     final focus = _string('gradcam_focus', '');
@@ -485,7 +514,7 @@ class DiagnosisResultsUI extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: _section(
-        'Model visual attention (Grad-CAM)',
+        isHindi ? 'मॉडल विज़ुअल अटेंशन (Grad-CAM)' : 'Model visual attention (Grad-CAM)',
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -499,10 +528,6 @@ class DiagnosisResultsUI extends StatelessWidget {
                 loadingBuilder: (c, child, progress) => progress == null
                     ? child
                     : const SizedBox(height: 220, child: Center(child: CircularProgressIndicator())),
-                // Fade the heatmap in once the bytes have arrived instead of a
-                // hard cut. `frameBuilder` fires with `wasSynchronouslyLoaded`
-                // true for cached images — skip the animation in that case so
-                // it doesn't dip on rebuilds.
                 frameBuilder: (_, child, frame, wasSync) {
                   if (wasSync) return child;
                   return AnimatedOpacity(
@@ -516,7 +541,7 @@ class DiagnosisResultsUI extends StatelessWidget {
                   height: 100,
                   child: Center(
                     child: Text(
-                      'Heatmap unavailable (temporary asset expired).',
+                      isHindi ? 'हीटमैप अनुपलब्ध है।' : 'Heatmap unavailable (temporary asset expired).',
                       style: TextStyle(color: dark ? Themes.darkInkSoft : Themes.inkSoft, fontSize: 12),
                     ),
                   ),
@@ -525,12 +550,16 @@ class DiagnosisResultsUI extends StatelessWidget {
             ),
             if (focus.isNotEmpty) ...[
               const SizedBox(height: 8),
-              Text('Attention concentrated: $focus.',
-                  style: TextStyle(color: dark ? Themes.darkInkSoft : Themes.inkSoft, fontSize: 12.5)),
+              Text(
+                isHindi ? 'ध्यान केंद्रित: $focus.' : 'Attention concentrated: $focus.',
+                style: TextStyle(color: dark ? Themes.darkInkSoft : Themes.inkSoft, fontSize: 12.5),
+              ),
             ],
             const SizedBox(height: 4),
             Text(
-              'Highlighted regions influenced the model output. This is an explainability aid, not proof of clinical reasoning.',
+              isHindi
+                  ? 'हाइलाइट किए गए क्षेत्रों ने मॉडल के परिणाम को प्रभावित किया। यह व्याख्या सहायता है, नैदानिक प्रमाण नहीं।'
+                  : 'Highlighted regions influenced the model output. This is an explainability aid, not proof of clinical reasoning.',
               style: TextStyle(color: dark ? Themes.darkInkSoft : Themes.inkSoft, fontSize: 11.5, height: 1.3),
             ),
           ],
@@ -542,17 +571,17 @@ class DiagnosisResultsUI extends StatelessWidget {
 
   // --- explanation -----------------------------------------------------------
 
-  Widget _explanationCard(bool dark) {
+  Widget _explanationCard(bool dark, bool isHindi) {
     final available = diagnosisData['explanation_available'] == true;
     final explanation = _string(
       'explanation',
-      available ? '' : 'The written explanation service is offline. The result above is unaffected.',
+      available ? '' : (isHindi ? 'व्याख्या सेवा ऑफ़लाइन है। ऊपर दिया गया परिणाम अप्रभावित है।' : 'The written explanation service is offline. The result above is unaffected.'),
     );
     if (explanation.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: _section(
-        'Clinical explanation',
+        isHindi ? 'चिकित्सीय व्याख्या' : 'Clinical explanation',
         MarkdownText(explanation, color: dark ? Themes.darkInk : Themes.ink),
         dark: dark,
       ),
@@ -561,12 +590,12 @@ class DiagnosisResultsUI extends StatelessWidget {
 
   // --- per-class scores (LIST from the backend) ------------------------------
 
-  Widget _probabilitiesCard(bool dark) {
+  Widget _probabilitiesCard(bool dark, bool isHindi) {
     final probs = diagnosisData['probabilities'];
     if (probs is! List || probs.isEmpty) return const SizedBox.shrink();
 
     return _section(
-      'All category match scores',
+      isHindi ? 'सभी श्रेणियों के मिलान स्कोर' : 'All category match scores',
       Column(
         children: [
           for (final p in probs)
@@ -632,11 +661,7 @@ class DiagnosisResultsUI extends StatelessWidget {
     final text = _string('disclaimer', _fallbackDisclaimer);
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: dark ? const Color(0xFF261E10) : Themes.warningTint,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: dark ? const Color(0xFF5A4418) : Themes.soonBorder),
-      ),
+      decoration: Themes.liquidGlassDecoration(radius: 16, dark: dark),
       child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Icon(Icons.shield_outlined, color: dark ? Themes.tealLight : Themes.warning, size: 20),
         const SizedBox(width: 10),
@@ -670,7 +695,9 @@ class DiagnosisResultsUI extends StatelessWidget {
 
   // --- helpers ---------------------------------------------------------------
 
-  Widget _section(String title, Widget child, {bool dark = false}) => Card(
+  Widget _section(String title, Widget child, {bool dark = false}) => Container(
+        margin: const EdgeInsets.only(bottom: 14),
+        decoration: Themes.liquidGlassDecoration(radius: 20, dark: dark),
         child: Padding(
           padding: const EdgeInsets.all(17),
           child: Column(
@@ -704,10 +731,6 @@ class DiagnosisResultsUI extends StatelessWidget {
 }
 
 /// "Understand this result" — an expandable bar at the foot of every screening result.
-///
-/// Explains, for *this* result, what the model score means, what the triage band is asking
-/// of the user, how to read the heatmap, and what to do next. Links through to the full
-/// skin health guide with its results section already open.
 class UnderstandResultBar extends StatelessWidget {
   const UnderstandResultBar({
     super.key,
@@ -715,12 +738,14 @@ class UnderstandResultBar extends StatelessWidget {
     required this.triage,
     required this.hasHeatmap,
     required this.isLesion,
+    this.isHindi = false,
   });
 
   final double? confidence;
   final Map? triage;
   final bool hasHeatmap;
   final bool isLesion;
+  final bool isHindi;
 
   String get _category => triage?['category']?.toString() ?? '';
   bool get _lowConfidence => triage?['low_confidence'] == true;
@@ -732,8 +757,9 @@ class UnderstandResultBar extends StatelessWidget {
     final ink = dark ? Themes.darkInk : Themes.ink;
     final muted = dark ? Themes.darkInkSoft : Themes.muted;
 
-    return Card(
+    return Container(
       clipBehavior: Clip.antiAlias,
+      decoration: Themes.liquidGlassDecoration(radius: 20, dark: dark),
       child: Theme(
         data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
         child: ExpansionTile(
@@ -749,13 +775,13 @@ class UnderstandResultBar extends StatelessWidget {
             child: Icon(Icons.school_outlined, color: primaryColor),
           ),
           title: Text(
-            'Understand this result',
+            isHindi ? 'इस परिणाम को समझें' : 'Understand this result',
             style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16, color: ink),
           ),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 2),
             child: Text(
-              'What the score and triage actually mean for you.',
+              isHindi ? 'यह स्कोर और ट्राइएज आपके लिए वास्तव में क्या मायने रखते हैं।' : 'What the score and triage actually mean for you.',
               style: TextStyle(color: muted, fontSize: 12.5, height: 1.3),
             ),
           ),
@@ -763,40 +789,41 @@ class UnderstandResultBar extends StatelessWidget {
             if (confidence != null)
               _point(
                 Icons.percent_rounded,
-                'The ${(confidence! * 100).toStringAsFixed(1)}% is a match score, not a diagnosis',
-                'It means the image resembled this category more than the others the model '
-                    'knows. It is not the chance that you have this condition, and the model '
-                    'can only pick from the classes it was trained on.',
+                isHindi
+                    ? '${(confidence! * 100).toStringAsFixed(1)}% एक मिलान स्कोर है, कोई निश्चित निदान नहीं'
+                    : 'The ${(confidence! * 100).toStringAsFixed(1)}% is a match score, not a diagnosis',
+                isHindi
+                    ? 'इसका मतलब है कि तस्वीर इस श्रेणी से सबसे अधिक मिलती-जुलती है। यह आपके इस रोग से ग्रस्त होने की संभावना नहीं है।'
+                    : 'It means the image resembled this category more than the others the model knows. It is not the chance that you have this condition, and the model can only pick from the classes it was trained on.',
                 dark,
               ),
             if (_category.isNotEmpty) _point(Icons.flag_outlined, _triageTitle(), _triageBody(), dark),
             if (_lowConfidence)
               _point(
                 Icons.help_outline_rounded,
-                'Confidence was low — treat this as "unclear"',
-                'Blur, poor lighting, hair or an unfamiliar lesion all reduce confidence. '
-                    'A low-confidence result is not a clean bill of health: retake the photo '
-                    'in better light, or have it examined.',
+                isHindi ? 'विश्वास कम था — इसे "अस्पष्ट" मानें' : 'Confidence was low — treat this as "unclear"',
+                isHindi
+                    ? 'धुंधलापन, कम रोशनी या असामान्य घाव से विश्वास कम हो जाता है। कृपया बेहतर रोशनी में दोबारा फोटो लें या जाँच कराएँ।'
+                    : 'Blur, poor lighting, hair or an unfamiliar lesion all reduce confidence. A low-confidence result is not a clean bill of health: retake the photo in better light, or have it examined.',
                 dark,
               ),
             if (hasHeatmap)
               _point(
                 Icons.blur_on_rounded,
-                'Read the heatmap as attention, not proof',
-                'Warm colours mark what influenced the output. Heat centred on the lesion is '
-                    'reassuring; heat on background skin or hair means the model may have '
-                    'keyed on an artefact, so weigh the result accordingly.',
+                isHindi ? 'हीटमैप को ध्यान के रूप में पढ़ें, प्रमाण नहीं' : 'Read the heatmap as attention, not proof',
+                isHindi
+                    ? 'गर्म रंग उन हिस्सों को दर्शाते हैं जिन्होंने मॉडल के निर्णय को प्रभावित किया।'
+                    : 'Warm colours mark what influenced the output. Heat centred on the lesion is reassuring; heat on background skin or hair means the model may have keyed on an artefact, so weigh the result accordingly.',
                 dark,
               ),
             _point(
               Icons.check_circle_outline_rounded,
-              'What to do next',
-              isLesion
-                  ? 'Photograph the same spot monthly so change is easy to see, and book a '
-                      'dermatologist if it grows, changes colour, bleeds or itches — '
-                      'regardless of what this screen said.'
-                  : 'Keep an eye on the area and seek care if it worsens, fails to heal, or '
-                      'becomes painful, swollen or infected.',
+              isHindi ? 'आगे क्या करें' : 'What to do next',
+              isHindi
+                  ? 'हर महीने उसी जगह की तस्वीर लें ताकि बदलाव आसानी से दिख सके, और घाव बढ़ने या बदलने पर डॉक्टर से मिलें।'
+                  : (isLesion
+                      ? 'Photograph the same spot monthly so change is easy to see, and book a dermatologist if it grows, changes colour, bleeds or itches — regardless of what this screen said.'
+                      : 'Keep an eye on the area and seek care if it worsens, fails to heal, or becomes painful, swollen or infected.'),
               dark,
             ),
             const SizedBox(height: 4),
@@ -809,7 +836,7 @@ class UnderstandResultBar extends StatelessWidget {
                       builder: (_) => const SkinGuideScreen(focusResults: true)),
                 ),
                 icon: const Icon(Icons.menu_book_outlined, size: 18),
-                label: const Text('Open the full skin health guide'),
+                label: Text(isHindi ? 'त्वचा स्वास्थ्य गाइड खोलें' : 'Open the full skin health guide'),
               ),
             ),
           ],
@@ -819,22 +846,21 @@ class UnderstandResultBar extends StatelessWidget {
   }
 
   String _triageTitle() => switch (_category) {
-        'urgent_evaluation' => 'Urgent evaluation — act on this within days',
-        'prompt_consultation' => 'Prompt consultation — book an appointment soon',
-        _ => 'Routine monitoring — keep watching this spot',
+        'urgent_evaluation' => isHindi ? 'तत्काल मूल्यांकन — कुछ ही दिनों में कार्रवाई करें' : 'Urgent evaluation — act on this within days',
+        'prompt_consultation' => isHindi ? 'शीघ्र परामर्श — जल्द अपॉइंटमेंट बुक करें' : 'Prompt consultation — book an appointment soon',
+        _ => isHindi ? 'नियमित निगरानी — इस स्थान पर नज़र बनाए रखें' : 'Routine monitoring — keep watching this spot',
       };
 
   String _triageBody() => switch (_category) {
-        'urgent_evaluation' =>
-          'The triage band is the part to act on. It is set cautiously and can be more urgent '
-              'than the top prediction alone suggests — that is deliberate, because missing a '
-              'serious lesion is far costlier than an unnecessary visit.',
-        'prompt_consultation' =>
-          'Arrange a professional look in the next few weeks. This band means the findings '
-              'are not clearly benign, not that something is definitely wrong.',
-        _ =>
-          'Nothing here demanded urgent action, but screening cannot rule anything out. '
-              'Re-check monthly and escalate on any change.',
+        'urgent_evaluation' => isHindi
+            ? 'ट्राइएज श्रेणी सावधानीपूर्वक तय की गई है। किसी भी गंभीर घाव की जल्द जाँच कराना सबसे सुरक्षित है।'
+            : 'The triage band is the part to act on. It is set cautiously and can be more urgent than the top prediction alone suggests — that is deliberate, because missing a serious lesion is far costlier than an unnecessary visit.',
+        'prompt_consultation' => isHindi
+            ? 'अगले कुछ हफ़्तों में पेशेवर जाँच कराएँ।'
+            : 'Arrange a professional look in the next few weeks. This band means the findings are not clearly benign, not that something is definitely wrong.',
+        _ => isHindi
+            ? 'यहाँ किसी तत्काल कार्रवाई की आवश्यकता नहीं है, फिर भी मासिक रूप से जाँच करते रहें।'
+            : 'Nothing here demanded urgent action, but screening cannot rule anything out. Re-check monthly and escalate on any change.',
       };
 
   Widget _point(IconData icon, String title, String body, bool dark) => Padding(

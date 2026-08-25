@@ -216,3 +216,82 @@ def quality_rejection_message(language: Language = Language.ENGLISH) -> str:
 
 def llm_unavailable_notice(language: Language = Language.ENGLISH) -> str:
     return LLM_UNAVAILABLE_NOTICE.get(language, LLM_UNAVAILABLE_NOTICE[Language.ENGLISH])
+
+
+RULE_REASONS: dict[str, dict[Language, str]] = {
+    "flag_bleeding": {
+        Language.ENGLISH: "You reported that the lesion has bled on its own.",
+        Language.HINDI: "आपने बताया कि घाव से अपने आप खून बह चुका है।",
+    },
+    "flag_growing": {
+        Language.ENGLISH: "You reported that the lesion is growing.",
+        Language.HINDI: "आपने बताया कि घाव का आकार बढ़ रहा है।",
+    },
+    "flag_colour": {
+        Language.ENGLISH: "You reported a change in the lesion's colour.",
+        Language.HINDI: "आपने बताया कि घाव के रंग में बदलाव आया है।",
+    },
+    "flag_recent_change": {
+        Language.ENGLISH: "You reported a recent change in the lesion.",
+        Language.HINDI: "आपने बताया कि हाल ही में घाव में बदलाव हुआ है।",
+    },
+    "flag_pain": {
+        Language.ENGLISH: "You reported that the lesion is painful or tender.",
+        Language.HINDI: "आपने बताया कि घाव में दर्द या छूने पर तकलीफ़ होती है।",
+    },
+    "flag_longstanding_change": {
+        Language.ENGLISH: "You reported a long-standing lesion that has recently changed.",
+        Language.HINDI: "आपने बताया कि पुराना घाव हाल ही में बदलने लगा है।",
+    },
+    "R1_malignant_class": {
+        Language.ENGLISH: "The screening model's leading category is one that can be cancerous.",
+        Language.HINDI: "स्क्रीनिंग मॉडल की प्रमुख श्रेणी संभावित रूप से कैंसरयुक्त हो सकती है।",
+    },
+    "R2_premalignant_class": {
+        Language.ENGLISH: "The screening model's leading category is one that can develop into cancer if untreated.",
+        Language.HINDI: "मॉडल की प्रमुख श्रेणी अनुपचारित रहने पर कैंसर में बदल सकती है।",
+    },
+    "R3_malignant_mass_high": {
+        Language.ENGLISH: "A substantial part of the model's output pointed toward categories that can be cancerous.",
+        Language.HINDI: "मॉडल के परिणामों का एक बड़ा हिस्सा संभावित कैंसरयुक्त श्रेणियों की ओर संकेत करता है।",
+    },
+    "R4_malignant_mass_moderate": {
+        Language.ENGLISH: "Part of the model's output pointed toward categories that can be cancerous.",
+        Language.HINDI: "मॉडल के परिणामों का कुछ हिस्सा संभावित कैंसरयुक्त श्रेणियों की ओर संकेत करता है।",
+    },
+    "R4b_premalignant_mass": {
+        Language.ENGLISH: "Part of the model's output pointed toward a category that can develop into cancer if left untreated.",
+        Language.HINDI: "मॉडल का कुछ परिणाम ऐसी श्रेणी की ओर संकेत करता है जो अनुपचारित रहने पर कैंसर बन सकती है।",
+    },
+    "R5_low_confidence": {
+        Language.ENGLISH: "The model was not confident about this image, so this result should be checked by a professional rather than relied upon.",
+        Language.HINDI: "मॉडल इस तस्वीर को लेकर आश्वस्त नहीं था, इसलिए इस पर निर्भर रहने के बजाय विशेषज्ञ से जाँच कराएँ।",
+    },
+    "R6_multiple_red_flags": {
+        Language.ENGLISH: "You reported {count} symptoms that warrant prompt attention.",
+        Language.HINDI: "आपने {count} ऐसे लक्षणों की जानकारी दी है जिन पर तत्काल ध्यान देने की आवश्यकता है।",
+    },
+    "R7_red_flag": {
+        Language.ENGLISH: "You reported at least one symptom that warrants professional attention.",
+        Language.HINDI: "आपने कम से कम एक ऐसा लक्षण बताया है जिसके लिए पेशेवर जाँच की ज़रूरत है।",
+    },
+    "R8_bleeding": {
+        Language.ENGLISH: "A lesion that bleeds without being injured should be examined promptly.",
+        Language.HINDI: "बिना चोट लगे जिस घाव से खून आए, उसकी तुरंत पेशेवर जाँच होनी चाहिए।",
+    },
+    "R9_default_routine": {
+        Language.ENGLISH: "Nothing in the image analysis or your answers indicated urgency. This is a screening result only, not a clearance.",
+        Language.HINDI: "तस्वीर या आपके उत्तरों में कोई तात्कालिक चिंता नहीं पाई गई। यह केवल स्क्रीनिंग है, चिकित्सकीय प्रमाणन नहीं।",
+    },
+}
+
+
+def triage_reason(rule_id: str, default_text: str = "", language: Language = Language.ENGLISH, count: int | None = None) -> str:
+    """Return localized text for a triage rule reason."""
+    rule_dict = RULE_REASONS.get(rule_id)
+    if not rule_dict:
+        return default_text
+    text = rule_dict.get(language, rule_dict.get(Language.ENGLISH, default_text))
+    if count is not None and "{count}" in text:
+        return text.format(count=count)
+    return text

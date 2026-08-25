@@ -126,66 +126,91 @@ class _SymptomsListState extends State<SymptomsList> {
     final menuBg = dark ? const Color(0xF8161922) : const Color(0xF8FFFFFF);
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 2),
-      decoration: BoxDecoration(
-        color: dark ? const Color(0x661E2430) : Colors.white.withValues(alpha: 0.50),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: dark ? Themes.tealGlow.withValues(alpha: 0.20) : Colors.white.withValues(alpha: 0.85),
-          width: 1.2,
-        ),
-      ),
-      child: DropdownButtonFormField<T>(
-        initialValue: value,
-        isExpanded: true,
-        dropdownColor: menuBg,
-        borderRadius: BorderRadius.circular(16),
-        elevation: 12,
-        icon: Icon(Icons.keyboard_arrow_down_rounded, color: accent, size: 22),
-        style: TextStyle(fontSize: 13.5, color: ink, fontWeight: FontWeight.w600),
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: TextStyle(fontSize: 13, color: inkSoft, fontWeight: FontWeight.w500),
-          floatingLabelStyle: TextStyle(fontSize: 14, color: accent, fontWeight: FontWeight.w700),
-          prefixIcon: Icon(icon, color: accent, size: 20),
-          filled: false,
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        ),
-        items: [
-          for (final e in items.entries)
-            DropdownMenuItem<T>(
-              value: e.key,
-              child: Row(
-                children: [
-                  Container(
-                    width: 7,
-                    height: 7,
-                    margin: const EdgeInsets.only(right: 10),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: e.key == value ? accent : inkSoft.withValues(alpha: 0.35),
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 6),
+            child: Row(
+              children: [
+                Icon(icon, color: accent, size: 16),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: dark ? Themes.darkInk : Themes.ink,
                     ),
                   ),
+                ),
+              ],
+            ),
+          ),
+          PopupMenuButton<T>(
+            position: PopupMenuPosition.under,
+            color: menuBg,
+            elevation: 12,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(
+                color: dark ? Themes.tealGlow.withValues(alpha: 0.25) : Colors.white.withValues(alpha: 0.85),
+                width: 1.2,
+              ),
+            ),
+            onSelected: onChanged,
+            itemBuilder: (context) => [
+              for (final e in items.entries)
+                PopupMenuItem<T>(
+                  value: e.key,
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          e.value,
+                          style: TextStyle(
+                            fontSize: 13.5,
+                            fontWeight: e.key == value ? FontWeight.w700 : FontWeight.w500,
+                            color: e.key == value ? accent : ink,
+                          ),
+                        ),
+                      ),
+                      if (e.key == value)
+                        Icon(Icons.check_rounded, color: accent, size: 18),
+                    ],
+                  ),
+                ),
+            ],
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: dark ? const Color(0x661E2430) : Colors.white.withValues(alpha: 0.50),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: dark ? Themes.tealGlow.withValues(alpha: 0.20) : Colors.white.withValues(alpha: 0.85),
+                  width: 1.2,
+                ),
+              ),
+              child: Row(
+                children: [
                   Expanded(
                     child: Text(
-                      e.value,
+                      value != null ? (items[value] ?? '') : 'Select an option...',
                       style: TextStyle(
                         fontSize: 13.5,
-                        fontWeight: e.key == value ? FontWeight.w700 : FontWeight.w500,
-                        color: e.key == value ? accent : ink,
+                        fontWeight: FontWeight.w600,
+                        color: value != null ? ink : inkSoft,
                       ),
                     ),
                   ),
-                  if (e.key == value)
-                    Icon(Icons.check_rounded, color: accent, size: 16),
+                  Icon(Icons.keyboard_arrow_down_rounded, color: accent, size: 20),
                 ],
               ),
             ),
+          ),
         ],
-        onChanged: onChanged,
       ),
     );
   }

@@ -64,20 +64,28 @@ HARD RULES
 - Never tell the user they do not need to see a doctor.
 - State that this is a preliminary screening result, not a diagnosis.
 - Always recommend consulting a qualified dermatologist.
+- NEVER quote, mention, or print internal JSON field names or variable names (e.g. NEVER write "what_this_category_is", "predicted_category", "safety_category", or similar). Express the facts smoothly in natural prose.
 
 STRUCTURE
-Write four short sections with these headings:
-1. What the scan found
-2. What this could mean
-3. How urgent this is
-4. What to do now
+Write four short sections with these headings depending on language:
+
+For English:
+### What the scan found
+### What this could mean
+### How urgent this is
+### What to do now
+
+For Hindi (हिन्दी):
+### स्कैन में क्या मिला
+### इसका क्या अर्थ हो सकता है
+### यह कितना ज़रूरी है
+### अब आगे क्या करें
 
 Keep the whole response under 250 words. Use short sentences and everyday words. Do not use
 medical jargon without immediately explaining it. Do not use bullet lists inside sections.
 
 LANGUAGE
-Write your entire response in {language}. Keep the medical category name and the numeric
-confidence value exactly as given - translate the explanation around them, never the numbers.
+Write your entire response (including all 4 headings and body content) in {language}. Keep the medical category code/name and the numeric confidence value exactly as given - translate the explanation around them, never the numbers.
 """
 
 CHAT_SYSTEM_PROMPT = """\
@@ -269,13 +277,12 @@ class LLMService:
             context = {
                 "predicted_category": predicted_code,
                 "predicted_category_name": predicted_name,
-                "what_this_category_is": class_description,
+                "description_of_category": class_description,
                 "model_confidence_percent": round(confidence * 100),
                 "model_was_uncertain": low_confidence,
-                "safety_category": triage_category,
-                "safety_category_label": triage_label,
-                "why_this_safety_category": triage_reasons,
-                "symptoms_the_user_reported": symptoms or "the user did not answer the symptom questions",
+                "safety_urgency_level": triage_label,
+                "clinical_reasons_for_urgency": triage_reasons,
+                "symptoms_reported_by_user": symptoms or "the user did not answer the symptom questions",
                 "where_the_heatmap_focused": gradcam_focus or "not available",
             }
 
