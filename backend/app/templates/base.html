@@ -59,20 +59,26 @@
       </a>
 
       {% if doctor %}
-      {# Command-palette trigger — click opens the palette. Clean search affordance. #}
-      <button class="cmdk-trigger" type="button" data-cmdk-open
-              aria-label="Search patients, actions">
-        <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#search"/></svg>
-        <span class="cmdk-trigger-label">Search patients, actions…</span>
-      </button>
+      <div class="header-center">
+        {# Command-palette trigger — click opens the palette. Clean search affordance. #}
+        <button class="cmdk-trigger" type="button" data-cmdk-open
+                aria-label="Search patients, actions">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#search"/></svg>
+          <span class="cmdk-trigger-label">Search patients, actions…</span>
+        </button>
 
-      {# Persistent disclaimer chip in the chrome — the model output on every
-         report is screening, not diagnosis; make that promise structural, not
-         only footer-tucked. #}
-      <span class="screening-chip" role="note" aria-label="Screening only, not a diagnosis">
-        <span class="screening-beacon" aria-hidden="true"><span class="beacon-core"></span><span class="beacon-ring"></span></span>
-        <span class="screening-chip-text">Screening only <span class="dotsep">·</span> <b>not a diagnosis</b></span>
-      </span>
+        {# Screening tab with hover disclaimer tooltip #}
+        <div class="screening-wrap" data-screening-wrap>
+          <span class="screening-chip" role="note" tabindex="0" aria-label="Screening support — not a medical diagnosis">
+            <span class="screening-beacon" aria-hidden="true"><span class="beacon-core"></span><span class="beacon-ring"></span></span>
+            <span class="screening-label">Screening</span>
+          </span>
+          <div class="screening-tooltip" role="tooltip">
+            <span class="screening-tooltip-dot"></span>
+            <span>AI-assisted screening support only — <strong>not a medical diagnosis</strong>.</span>
+          </div>
+        </div>
+      </div>
       {% endif %}
 
       <nav class="header-nav">
@@ -123,29 +129,14 @@
 
   <footer class="site-footer">
     <div class="wrap">
-      <p>
-        AI-assisted screening support only — <strong>not a medical diagnosis</strong>.
-        Patient data shown here was explicitly shared with you and may be withdrawn at any time.
-      </p>
+      <p>Scan4Disease Clinician Portal · Encrypted patient records explicitly shared with your account</p>
     </div>
   </footer>
 
   {% if doctor %}
-  {# Floating quick-filter — live-filters the primary data table on the page
-     (rows carrying data-status). Persistent, so a doctor can keep typing while
-     scrolling. Hidden automatically on pages that have no such table. #}
-  <div class="quickfilter" data-quickfilter hidden>
-    <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#search"/></svg>
-    <input type="search" placeholder="Search by patient, condition…"
-           aria-label="Filter shown rows" autocomplete="off"
-           data-quickfilter-input>
-    <button type="button" class="quickfilter-clear" data-quickfilter-clear
-            aria-label="Clear filter" hidden>×</button>
-  </div>
-
   {# Floating bottom dock — the two-way pivot between the worklist, the current
      patient, and the current report; center pill is a refresh, right pill is
-     the current report id (when on one). Pages set body[data-view]. #}
+     the current report id (when on one). #}
   <nav class="dock" data-dock aria-label="Section navigation">
     <a class="dock-item {% if request.url.path == '/portal/patients' %}is-active{% endif %}"
        href="/portal/patients" data-dock-worklist>
@@ -188,14 +179,6 @@
     </span>
     {% endif %}
   </nav>
-
-  {# "All shared reports" jump-pill — top-left floating chip that quickly
-     scrolls to the primary table on the current page (or navigates back to
-     the worklist if there is none in view). #}
-  <a class="reports-jump" href="/portal/patients#worklist-tables" data-reports-jump>
-    <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#file-text"/></svg>
-    <span>All shared reports</span>
-  </a>
 
   {# Command palette — hidden until data-cmdk-open triggers it. Uses <dialog>
      for native modal semantics with a JS enhancement layer for typeahead. #}
