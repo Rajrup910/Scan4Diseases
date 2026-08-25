@@ -81,6 +81,14 @@ async def _janitor(store: TemporaryStore, interval_seconds: int = 300) -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    import torch
+    torch.set_num_threads(1)
+    if hasattr(torch, "set_num_interop_threads"):
+        try:
+            torch.set_num_interop_threads(1)
+        except RuntimeError:
+            pass
+
     settings = get_settings()
     configure_logging(settings.debug)
 
@@ -90,9 +98,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     init_db()
     with SessionLocal() as db_session:
         seed_default_data(db_session)
-
-    import torch
-    torch.set_num_threads(1)
 
     inference = InferenceService(settings)
     inference.load()

@@ -96,14 +96,20 @@ class InferenceService:
         self.arch = payload["arch"]
         self.image_size = payload.get("image_size", self.settings.model_image_size)
         self.load_error = None
+        epoch = payload.get("epoch")
+        monitor_metric = payload.get("monitor_metric")
+        monitor_value = payload.get("monitor_value", float("nan"))
+        del payload
+        import gc
+        gc.collect()
 
         logger.info(
             "Loaded %s from %s (epoch %s, val %s=%.4f) on %s",
             self.arch,
             path.name,
-            payload.get("epoch"),
-            payload.get("monitor_metric"),
-            payload.get("monitor_value", float("nan")),
+            epoch,
+            monitor_metric,
+            monitor_value,
             self.device,
         )
 
@@ -111,6 +117,8 @@ class InferenceService:
         self.model = None
         if self.device.type == "cuda":
             torch.cuda.empty_cache()
+        import gc
+        gc.collect()
 
     @property
     def is_loaded(self) -> bool:
@@ -130,7 +138,12 @@ class InferenceService:
             return None
         assert self.model is not None
         tensor = to_tensor(image, self.image_size).to(self.device)
-        return extract_features(self.model, tensor)[0]
+        try:
+            with torch.inference_mode():
+                features = extract_features(self.model, tensor)[0]
+            return features
+        finally:
+            del tensor
 
     # --- prediction ---
 
@@ -145,13 +158,16 @@ class InferenceService:
         started = time.perf_counter()
         tensor = to_tensor(image, self.image_size).to(self.device)
 
-        if with_gradcam:
-            result = self._predict_with_gradcam(image, tensor)
-        else:
-            with torch.no_grad():
-                logits = self.model(tensor)
-                probabilities = self._softmax(logits)
-            result = self._build_result(probabilities)
+        try:
+            if with_gradcam:
+                result = self._predict_with_gradcam(image, tensor)
+            else:
+                with torch.inference_mode():
+                    logits = self.model(tensor)
+                    probabilities = self._softmax(logits)
+                result = self._build_result(probabilities)
+        finally:
+            del tensor
 
         result.inference_ms = (time.perf_counter() - started) * 1000
         return result

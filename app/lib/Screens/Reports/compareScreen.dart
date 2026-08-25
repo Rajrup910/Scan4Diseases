@@ -128,6 +128,7 @@ class _CompareScreeningsScreenState extends State<CompareScreeningsScreen> {
                 children: [
                   Expanded(
                     child: _reportPicker(
+                      context,
                       'Baseline (Scan A)',
                       reportA,
                       allReports,
@@ -137,6 +138,7 @@ class _CompareScreeningsScreenState extends State<CompareScreeningsScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: _reportPicker(
+                      context,
                       'Follow-up (Scan B)',
                       reportB,
                       allReports,
@@ -165,19 +167,26 @@ class _CompareScreeningsScreenState extends State<CompareScreeningsScreen> {
   }
 
   Widget _reportPicker(
+    BuildContext context,
     String label,
     ScreeningReport selected,
     List<ScreeningReport> all,
     ValueChanged<ScreeningReport> onSelect,
   ) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Themes.inkSoft)),
+        Text(label, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: dark ? Themes.darkInkSoft : Themes.inkSoft)),
         const SizedBox(height: 4),
         DropdownButtonFormField<ScreeningReport>(
           initialValue: selected,
           isExpanded: true,
+          dropdownColor: dark ? const Color(0xF8161922) : const Color(0xF8FFFFFF),
+          borderRadius: BorderRadius.circular(16),
+          elevation: 10,
+          icon: Icon(Icons.keyboard_arrow_down_rounded, color: dark ? Themes.tealLight : Themes.brand, size: 20),
+          style: TextStyle(fontSize: 12.5, color: dark ? Themes.darkInk : Themes.ink, fontWeight: FontWeight.w600),
           decoration: const InputDecoration(
             contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           ),
@@ -187,7 +196,7 @@ class _CompareScreeningsScreenState extends State<CompareScreeningsScreen> {
                 value: r,
                 child: Text(
                   '${r.condition} (${_date(r.date)})',
-                  style: const TextStyle(fontSize: 12.5),
+                  style: TextStyle(fontSize: 12.5, color: dark ? Themes.darkInk : Themes.ink),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),

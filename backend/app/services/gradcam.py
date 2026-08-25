@@ -83,13 +83,20 @@ class GradCAM:
 
         activations = self._activations[0].detach()
         gradients = self._gradients[0].detach()
+        self._activations = None
+        self._gradients = None
+        self.model.zero_grad(set_to_none=True)
+        del x, logits
+
         weights = gradients.mean(dim=(1, 2))
         cam = F.relu((weights[:, None, None] * activations).sum(dim=0))
 
         cam_min, cam_max = cam.min(), cam.max()
         cam = (cam - cam_min) / (cam_max - cam_min) if cam_max > cam_min else torch.zeros_like(cam)
+        cam_np = cam.cpu().numpy().astype(np.float32)
+        del activations, gradients, weights, cam
 
-        return cam.cpu().numpy().astype(np.float32), class_index, probabilities
+        return cam_np, class_index, probabilities
 
 
 def overlay_heatmap(image: Image.Image, cam: np.ndarray, alpha: float = 0.45) -> Image.Image:

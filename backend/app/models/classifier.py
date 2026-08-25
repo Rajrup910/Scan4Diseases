@@ -75,7 +75,9 @@ def load_classifier(
 
     dropout = payload.get("config", {}).get("model", {}).get("dropout", 0.3)
     model = build_model(payload["arch"], payload["num_classes"], dropout=dropout)
-    model.load_state_dict(payload["state_dict"])
+    state_dict = payload.pop("state_dict")
+    model.load_state_dict(state_dict)
+    del state_dict
     model.to(device).eval()
 
     return model, payload

@@ -383,6 +383,26 @@ class Themes {
         }),
       ),
       dividerTheme: const DividerThemeData(color: border, thickness: 1, space: 1),
+      popupMenuTheme: PopupMenuThemeData(
+        color: const Color(0xF8FFFFFF),
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: const BorderSide(color: border, width: 1.1),
+        ),
+        elevation: 8,
+      ),
+      dropdownMenuTheme: DropdownMenuThemeData(
+        menuStyle: MenuStyle(
+          backgroundColor: const WidgetStatePropertyAll(Color(0xF8FFFFFF)),
+          surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+          shape: WidgetStatePropertyAll(RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(color: border, width: 1.1),
+          )),
+          elevation: const WidgetStatePropertyAll(8),
+        ),
+      ),
       pageTransitionsTheme: pageTransitionsTheme,
     );
   }
@@ -536,6 +556,26 @@ class Themes {
         ),
         trackColor: WidgetStateProperty.resolveWith(
           (s) => s.contains(WidgetState.selected) ? tealGlow.withValues(alpha: 0.35) : darkBorder,
+        ),
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: const Color(0xF5161922),
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: tealGlow.withValues(alpha: 0.28), width: 1.1),
+        ),
+        elevation: 12,
+      ),
+      dropdownMenuTheme: DropdownMenuThemeData(
+        menuStyle: MenuStyle(
+          backgroundColor: const WidgetStatePropertyAll(Color(0xF5161922)),
+          surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+          shape: WidgetStatePropertyAll(RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: tealGlow.withValues(alpha: 0.28), width: 1.1),
+          )),
+          elevation: const WidgetStatePropertyAll(12),
         ),
       ),
       pageTransitionsTheme: pageTransitionsTheme,

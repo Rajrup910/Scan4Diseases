@@ -366,6 +366,9 @@ async def predict(
         " [STUB]" if result.stub else "",
     )
 
+    import gc
+    gc.collect()
+
     return PredictionResponse(
         request_id=request_id,
         language=language,

@@ -1,12 +1,17 @@
 FROM python:3.11-slim
 
-# Prevent Python from writing .pyc files and buffer stdout/stderr
+# Prevent Python from writing .pyc files, buffer stdout/stderr, and constrain thread pools for minimal RAM
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PORT=7860 \
     APP_ENV=production \
     MODEL_DEVICE=cpu \
-    PYTHONPATH=/app
+    PYTHONPATH=/app \
+    OMP_NUM_THREADS=1 \
+    MKL_NUM_THREADS=1 \
+    OPENBLAS_NUM_THREADS=1 \
+    NUMEXPR_NUM_THREADS=1 \
+    MALLOC_ARENA_MAX=2
 
 WORKDIR /app
 

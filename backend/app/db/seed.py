@@ -199,17 +199,6 @@ def _get_vault_sample_tokens(vault: ImageVault) -> dict[str, tuple[str, str | No
     from backend.app.config import REPO_ROOT
     sample_dir = REPO_ROOT / "demo_test_samples"
 
-    # Lazy-load inference service if model weights exist
-    inf = None
-    try:
-        from backend.app.config import get_settings
-        from backend.app.services.inference import InferenceService
-        settings = get_settings()
-        inf = InferenceService(settings)
-        inf.load()
-    except Exception as exc:
-        logger.debug("Inference service not available during seed: %s", exc)
-
     import io
     from PIL import Image
 
@@ -223,18 +212,7 @@ def _get_vault_sample_tokens(vault: ImageVault) -> dict[str, tuple[str, str | No
             pil_img.save(buf, format="JPEG", quality=90)
             img_token = vault.store(buf.getvalue(), "image/jpeg")
 
-            cam_token = None
-            if inf and inf.is_loaded:
-                try:
-                    res = inf.predict(pil_img, with_gradcam=True)
-                    if res.overlay is not None:
-                        cam_buf = io.BytesIO()
-                        res.overlay.save(cam_buf, format="PNG")
-                        cam_token = vault.store(cam_buf.getvalue(), "image/png")
-                except Exception as cam_err:
-                    logger.debug("Grad-cam generation for seed skipped: %s", cam_err)
-
-            tokens[cls_name] = (img_token, cam_token)
+            tokens[cls_name] = (img_token, None)
         except Exception as err:
             logger.warning("Could not seed sample %s to vault: %s", filename, err)
 

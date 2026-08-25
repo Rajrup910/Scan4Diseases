@@ -11,107 +11,112 @@ class YouScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final dark = ThemeService.instance.isDark(context);
-    final ink = dark ? Themes.darkInk : Themes.ink;
-    final inkSoft = dark ? Themes.darkInkSoft : Themes.inkSoft;
-    final accent = dark ? Themes.tealLight : Themes.brand;
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: ThemeService.instance.mode,
+      builder: (context, _, __) {
+        final dark = ThemeService.instance.isDark(context);
+        final ink = dark ? Themes.darkInk : Themes.ink;
+        final inkSoft = dark ? Themes.darkInkSoft : Themes.inkSoft;
+        final accent = dark ? Themes.tealLight : Themes.brand;
 
-    return ValueListenableBuilder<AuthUser?>(
-      valueListenable: AuthService.instance.user,
-      builder: (_, user, __) => ValueListenableBuilder<List<ScreeningReport>>(
-        valueListenable: AppData.reports,
-        builder: (_, reports, __) => ListView(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-          children: [
-            Container(
-              padding: const EdgeInsets.all(18),
-              decoration: Themes.liquidGlassDecoration(radius: 20, dark: dark),
-              child: Row(children: [
+        return ValueListenableBuilder<AuthUser?>(
+          valueListenable: AuthService.instance.user,
+          builder: (_, user, __) => ValueListenableBuilder<List<ScreeningReport>>(
+            valueListenable: AppData.reports,
+            builder: (_, reports, __) => ListView(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+              children: [
                 Container(
-                  width: 54,
-                  height: 54,
-                  decoration: BoxDecoration(
-                    color: (dark ? Themes.darkBrandTint : Themes.brandTint).withValues(alpha: dark ? 0.9 : 0.70),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: dark ? Themes.tealGlow.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.85),
-                      width: 1.2,
-                    ),
-                  ),
-                  child: Icon(Icons.person_rounded, color: accent, size: 28),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        user?.displayName?.isNotEmpty == true ? user!.displayName! : 'Patient Profile',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: ink),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                  padding: const EdgeInsets.all(18),
+                  decoration: Themes.liquidGlassDecoration(radius: 20, dark: dark),
+                  child: Row(children: [
+                    Container(
+                      width: 54,
+                      height: 54,
+                      decoration: BoxDecoration(
+                        color: (dark ? Themes.darkBrandTint : Themes.brandTint).withValues(alpha: dark ? 0.9 : 0.70),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: dark ? Themes.tealGlow.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.85),
+                          width: 1.2,
+                        ),
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        user?.email ?? 'Not signed in',
-                        style: TextStyle(color: inkSoft, fontSize: 13),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                      child: Icon(Icons.person_rounded, color: accent, size: 28),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            user?.displayName?.isNotEmpty == true ? user!.displayName! : 'Patient Profile',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: ink),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            user?.email ?? 'Not signed in',
+                            style: TextStyle(color: inkSoft, fontSize: 13),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ]),
+                ),
+                const SizedBox(height: 20),
+                _section(context, 'Screening activity', dark, [
+                  _row(Icons.assignment_outlined, 'Total screenings', '${reports.length}', dark),
+                  const Divider(),
+                  _row(Icons.calendar_today_outlined, 'Latest screening',
+                      reports.isEmpty ? 'None yet' : _date(reports.first.date), dark),
+                ]),
+                const SizedBox(height: 16),
+                _section(context, 'App preferences', dark, [
+                  _themeRow(context, dark),
+                  const Divider(),
+                  _motionRow(context, dark),
+                  const Divider(),
+                  _languageRow(context, dark),
+                  const Divider(),
+                  _row(Icons.notifications_none_rounded, 'Monthly reminder', 'Active', dark),
+                  const Divider(),
+                  _row(Icons.privacy_tip_outlined, 'Privacy & consent', 'Managed per report', dark),
+                ]),
+                const SizedBox(height: 24),
+                Container(
+                  height: 48,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFEF4444).withValues(alpha: 0.10),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
                     ],
                   ),
-                ),
-              ]),
-            ),
-            const SizedBox(height: 20),
-            _section(context, 'Screening activity', dark, [
-              _row(Icons.assignment_outlined, 'Total screenings', '${reports.length}', dark),
-              const Divider(),
-              _row(Icons.calendar_today_outlined, 'Latest screening',
-                  reports.isEmpty ? 'None yet' : _date(reports.first.date), dark),
-            ]),
-            const SizedBox(height: 16),
-            _section(context, 'App preferences', dark, [
-              _themeRow(context, dark),
-              const Divider(),
-              _motionRow(context, dark),
-              const Divider(),
-              _languageRow(context, dark),
-              const Divider(),
-              _row(Icons.notifications_none_rounded, 'Monthly reminder', 'Active', dark),
-              const Divider(),
-              _row(Icons.privacy_tip_outlined, 'Privacy & consent', 'Managed per report', dark),
-            ]),
-            const SizedBox(height: 24),
-            Container(
-              height: 48,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: const Color(0xFFEF4444).withValues(alpha: 0.10),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+                  child: OutlinedButton.icon(
+                    onPressed: () => _confirmLogout(context),
+                    icon: const Icon(Icons.logout_rounded, color: Themes.danger, size: 18),
+                    label: const Text('Sign out',
+                        style: TextStyle(color: Themes.danger, fontWeight: FontWeight.w700, fontSize: 14)),
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: const Color(0xFFEF4444).withValues(alpha: 0.45), width: 1.2),
+                      backgroundColor: dark
+                          ? const Color(0xFF3A1B1B).withValues(alpha: 0.55)
+                          : const Color(0xFFFEF2F2).withValues(alpha: 0.85),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
                   ),
-                ],
-              ),
-              child: OutlinedButton.icon(
-                onPressed: () => _confirmLogout(context),
-                icon: const Icon(Icons.logout_rounded, color: Themes.danger, size: 18),
-                label: const Text('Sign out',
-                    style: TextStyle(color: Themes.danger, fontWeight: FontWeight.w700, fontSize: 14)),
-                style: OutlinedButton.styleFrom(
-                  side: BorderSide(color: const Color(0xFFEF4444).withValues(alpha: 0.45), width: 1.2),
-                  backgroundColor: dark
-                      ? const Color(0xFF3A1B1B).withValues(alpha: 0.55)
-                      : const Color(0xFFFEF2F2).withValues(alpha: 0.85),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -137,31 +142,27 @@ class YouScreen extends StatelessWidget {
   /// Dark / light appearance toggle. Moon/sun icon plus an adaptive switch that
   /// flips [ThemeService] between explicit light and dark; the whole app rebuilds
   /// through the root [ValueListenableBuilder] in `main.dart`.
-  Widget _themeRow(BuildContext context, bool dark) => ValueListenableBuilder<ThemeMode>(
-        valueListenable: ThemeService.instance.mode,
-        builder: (_, __, ___) {
-          final isDark = ThemeService.instance.isDark(context);
-          final accent = isDark ? Themes.tealLight : Themes.brand;
-          return ListTile(
-            leading: Icon(
-              isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
-              color: accent,
-              size: 20,
-            ),
-            title: Text('Dark mode',
-                style: TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w600, color: isDark ? Themes.darkInk : Themes.ink)),
-            subtitle: Text(isDark ? 'Glossy emerald theme' : 'Bright clinical theme',
-                style: TextStyle(fontSize: 12, color: isDark ? Themes.darkInkSoft : Themes.inkSoft)),
-            trailing: Switch.adaptive(
-              value: isDark,
-              activeThumbColor: Themes.tealGlow,
-              onChanged: (_) => ThemeService.instance.toggle(context),
-            ),
-            onTap: () => ThemeService.instance.toggle(context),
-          );
-        },
-      );
+  Widget _themeRow(BuildContext context, bool dark) {
+    final accent = dark ? Themes.tealLight : Themes.brand;
+    return ListTile(
+      leading: Icon(
+        dark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+        color: accent,
+        size: 20,
+      ),
+      title: Text('Dark mode',
+          style: TextStyle(
+              fontSize: 14, fontWeight: FontWeight.w600, color: dark ? Themes.darkInk : Themes.ink)),
+      subtitle: Text(dark ? 'Glossy emerald theme' : 'Bright clinical theme',
+          style: TextStyle(fontSize: 12, color: dark ? Themes.darkInkSoft : Themes.inkSoft)),
+      trailing: Switch.adaptive(
+        value: dark,
+        activeThumbColor: Themes.tealGlow,
+        onChanged: (_) => ThemeService.instance.toggle(context),
+      ),
+      onTap: () => ThemeService.instance.toggle(context),
+    );
+  }
 
   /// Ambient-motion toggle. Sits directly beneath the theme switch because the
   /// two are the same kind of choice: how the app presents itself. Freezes the

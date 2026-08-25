@@ -119,24 +119,76 @@ class _SymptomsListState extends State<SymptomsList> {
     required Map<T, String> items,
     required ValueChanged<T?> onChanged,
     required bool dark,
-  }) =>
-      DropdownButtonFormField<T>(
+  }) {
+    final accent = dark ? Themes.tealLight : Themes.brand;
+    final ink = dark ? Themes.darkInk : Themes.ink;
+    final inkSoft = dark ? Themes.darkInkSoft : Themes.inkSoft;
+    final menuBg = dark ? const Color(0xF8161922) : const Color(0xF8FFFFFF);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 2),
+      decoration: BoxDecoration(
+        color: dark ? const Color(0x661E2430) : Colors.white.withValues(alpha: 0.50),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: dark ? Themes.tealGlow.withValues(alpha: 0.20) : Colors.white.withValues(alpha: 0.85),
+          width: 1.2,
+        ),
+      ),
+      child: DropdownButtonFormField<T>(
         initialValue: value,
         isExpanded: true,
+        dropdownColor: menuBg,
+        borderRadius: BorderRadius.circular(16),
+        elevation: 12,
+        icon: Icon(Icons.keyboard_arrow_down_rounded, color: accent, size: 22),
+        style: TextStyle(fontSize: 13.5, color: ink, fontWeight: FontWeight.w600),
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: Icon(icon, color: dark ? Themes.tealLight : Themes.brand, size: 20),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          labelStyle: TextStyle(fontSize: 13, color: inkSoft, fontWeight: FontWeight.w500),
+          floatingLabelStyle: TextStyle(fontSize: 14, color: accent, fontWeight: FontWeight.w700),
+          prefixIcon: Icon(icon, color: accent, size: 20),
+          filled: false,
+          border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         ),
         items: [
           for (final e in items.entries)
             DropdownMenuItem<T>(
               value: e.key,
-              child: Text(e.value, style: const TextStyle(fontSize: 13.5)),
+              child: Row(
+                children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    margin: const EdgeInsets.only(right: 10),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: e.key == value ? accent : inkSoft.withValues(alpha: 0.35),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text(
+                      e.value,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: e.key == value ? FontWeight.w700 : FontWeight.w500,
+                        color: e.key == value ? accent : ink,
+                      ),
+                    ),
+                  ),
+                  if (e.key == value)
+                    Icon(Icons.check_rounded, color: accent, size: 16),
+                ],
+              ),
             ),
         ],
         onChanged: onChanged,
-      );
+      ),
+    );
+  }
 
   Widget _toggle(String label, bool? value, ValueChanged<bool?> onChanged, bool dark) => Container(
         margin: const EdgeInsets.only(bottom: 8),

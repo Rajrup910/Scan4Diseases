@@ -90,8 +90,8 @@ class MahalanobisOOD:
         meta: dict[str, Any] | None = None,
     ) -> None:
         # means: (C, D) class centroids; precision: (D, D) inverse tied covariance.
-        self.means = means.astype(np.float64)
-        self.precision = precision.astype(np.float64)
+        self.means = means.astype(np.float32)
+        self.precision = precision.astype(np.float32)
         self.threshold = float(threshold)
         self.meta = meta or {}
         self.feature_dim = int(means.shape[1])
@@ -129,7 +129,7 @@ class MahalanobisOOD:
 
     def score(self, features: np.ndarray) -> float:
         """Squared Mahalanobis distance to the nearest class mean. Higher = more OOD."""
-        feat = np.asarray(features, dtype=np.float64).reshape(-1)
+        feat = np.asarray(features, dtype=np.float32).reshape(-1)
         diffs = self.means - feat[None, :]  # (C, D)
         # (diff @ precision) . diff, per class, without forming a (C, D, D) tensor.
         left = diffs @ self.precision  # (C, D)

@@ -43,10 +43,10 @@ class LesionRouter:
         lesion_threshold: float,
         meta: dict[str, Any] | None = None,
     ) -> None:
-        self.w = np.asarray(w, dtype=np.float64)            # (K, D)
-        self.b = np.asarray(b, dtype=np.float64).reshape(-1)  # (K,)
-        self.mean = np.asarray(mean, dtype=np.float64).reshape(-1)
-        self.std = np.asarray(std, dtype=np.float64).reshape(-1)
+        self.w = np.asarray(w, dtype=np.float32)            # (K, D)
+        self.b = np.asarray(b, dtype=np.float32).reshape(-1)  # (K,)
+        self.mean = np.asarray(mean, dtype=np.float32).reshape(-1)
+        self.std = np.asarray(std, dtype=np.float32).reshape(-1)
         self.class_names = [str(c) for c in class_names]
         self.lesion_threshold = float(lesion_threshold)
         self.meta = meta or {}
@@ -88,7 +88,7 @@ class LesionRouter:
 
     def probabilities(self, features: np.ndarray) -> dict[str, float]:
         """Softmax probability for each category."""
-        feat = np.asarray(features, dtype=np.float64).reshape(-1)
+        feat = np.asarray(features, dtype=np.float32).reshape(-1)
         normed = (feat - self.mean) / self.std
         logits = self.w @ normed + self.b
         logits -= logits.max()
