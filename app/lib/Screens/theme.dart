@@ -54,9 +54,11 @@ class Themes {
 
   static const Color canvas = Color(0xFFF4F6F9);
   static const Color surface = Colors.white;
-  /// Toned-up frosted glass fill (~76% alpha) so the dynamic background video motion
-  /// is clearly visible underneath while all text, badges, and icons remain 100% sharp and readable.
-  static const Color glass = Color(0xC2FFFFFF); // ~76% alpha toned frosted glass
+  /// Toned frosted glass fill (~55% alpha) so the dynamic background video
+  /// clearly reads through every panel and cards feel like glass, not like
+  /// solid tiles. Reduced from the previous 76% based on device-side feedback
+  /// that the app had lost its glossy look after the dark-theme pass.
+  static const Color glass = Color(0x8CFFFFFF); // ~55% alpha frosted glass
   static const Color surfaceDim = Color(0xFFF0F2F5);
   static const Color border = Color(0xFFE2E6EC);
   static const Color borderSubtle = Color(0xFFEEF0F3);
@@ -73,50 +75,60 @@ class Themes {
 
   /// Liquid Glass decoration matching the iOS Liquid Glass UI kit & website portal:
   /// Frosted translucent body + glossy top specular sheen + bright luminous rim + dual depth shadows.
+  ///
+  /// Alpha defaults were reduced (light 0.68/0.44, dark 0.62/0.42) so the ambient
+  /// video/blueprint backdrop reads through every panel — the previous 0.84/0.65
+  /// values made cards feel like solid tiles, especially in dark mode where the
+  /// values were also hardcoded and ignored the parameters. The top specular
+  /// stripe was pushed brighter to keep the "glossy" impression at lower body
+  /// opacity: the eye reads gloss from the highlight, not the fill.
   static BoxDecoration liquidGlassDecoration({
     double radius = 20,
     bool dark = false,
     Color? customFill,
     BorderRadius? borderRadius,
-    double topAlpha = 0.84,
-    double bottomAlpha = 0.65,
-  }) =>
-      BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: dark
-              ? [
-                  const Color(0xFF1E2430).withValues(alpha: 0.85),
-                  const Color(0xFF141820).withValues(alpha: 0.70),
-                ]
-              : [
-                  (customFill ?? Colors.white).withValues(alpha: topAlpha),
-                  (customFill ?? Colors.white).withValues(alpha: bottomAlpha),
-                ],
-        ),
-        borderRadius: borderRadius ?? BorderRadius.circular(radius),
-        border: Border.all(
-          color: dark
-              ? Colors.white.withValues(alpha: 0.25)
-              : Colors.white.withValues(alpha: 0.85),
-          width: 1.2,
-        ),
-        boxShadow: [
-          // Specular luminous rim sparkle highlight
-          BoxShadow(
-            color: Colors.white.withValues(alpha: dark ? 0.08 : 0.55),
-            blurRadius: 4,
-            spreadRadius: 0.5,
-          ),
-          // Ambient soft depth shadow
-          BoxShadow(
-            color: Colors.black.withValues(alpha: dark ? 0.35 : 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
+    double? topAlpha,
+    double? bottomAlpha,
+  }) {
+    final tA = topAlpha ?? (dark ? 0.62 : 0.68);
+    final bA = bottomAlpha ?? (dark ? 0.42 : 0.44);
+    final baseTop = dark ? const Color(0xFF1E2430) : (customFill ?? Colors.white);
+    final baseBottom = dark ? const Color(0xFF141820) : (customFill ?? Colors.white);
+    return BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          baseTop.withValues(alpha: tA),
+          baseBottom.withValues(alpha: bA),
         ],
-      );
+      ),
+      borderRadius: borderRadius ?? BorderRadius.circular(radius),
+      border: Border.all(
+        color: dark
+            ? Themes.tealGlow.withValues(alpha: 0.22)
+            : Colors.white.withValues(alpha: 0.78),
+        width: 1.1,
+      ),
+      boxShadow: [
+        // Specular luminous rim sparkle highlight — pushed brighter to keep
+        // the glossy impression when the body is more translucent.
+        BoxShadow(
+          color: dark
+              ? Themes.tealGlow.withValues(alpha: 0.16)
+              : Colors.white.withValues(alpha: 0.65),
+          blurRadius: 6,
+          spreadRadius: 0.5,
+        ),
+        // Ambient soft depth shadow
+        BoxShadow(
+          color: Colors.black.withValues(alpha: dark ? 0.38 : 0.08),
+          blurRadius: 20,
+          offset: const Offset(0, 8),
+        ),
+      ],
+    );
+  }
 
   /// Legibility halo for text that floats directly on the dynamic video
   /// background — page titles, section labels, subtitles that sit on the clip
@@ -164,20 +176,23 @@ class Themes {
         padding: EdgeInsets.fromLTRB(icon == null ? 14 : 11, 7, 14, 8),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(999),
+          // Lowered from 0.72/0.58 (dark) and 0.66/0.48 (light) so the pill
+          // reads as a floating chip against the ambient video, not another
+          // solid tile competing with the panels it captions.
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: dark
-                ? [const Color(0xFF1E2430).withValues(alpha: 0.72), const Color(0xFF141820).withValues(alpha: 0.58)]
-                : [Colors.white.withValues(alpha: 0.66), Colors.white.withValues(alpha: 0.48)],
+                ? [const Color(0xFF1E2430).withValues(alpha: 0.52), const Color(0xFF141820).withValues(alpha: 0.36)]
+                : [Colors.white.withValues(alpha: 0.52), Colors.white.withValues(alpha: 0.34)],
           ),
           border: Border.all(
-            color: dark ? tealGlow.withValues(alpha: 0.22) : Colors.white.withValues(alpha: 0.85),
+            color: dark ? tealGlow.withValues(alpha: 0.22) : Colors.white.withValues(alpha: 0.72),
             width: 1.1,
           ),
           boxShadow: [
             BoxShadow(
-              color: dark ? tealGlow.withValues(alpha: 0.10) : Colors.white.withValues(alpha: 0.35),
+              color: dark ? tealGlow.withValues(alpha: 0.12) : Colors.white.withValues(alpha: 0.42),
               blurRadius: 10,
               spreadRadius: -1,
             ),
@@ -422,14 +437,15 @@ class Themes {
         ),
       ),
       cardTheme: CardThemeData(
-        // Dark glass: translucent #161920 so the dynamic backdrop still moves
-        // through, with a teal-tinted luminous rim.
-        color: const Color(0xF0161920),
+        // Dark glass at ~55% alpha (was 94%) so the ambient video / blueprint
+        // reads through the panel — matches the light theme's new glass value
+        // and stops raw Cards from looking like solid slabs.
+        color: const Color(0x8C161920),
         elevation: 0,
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: tealGlow.withValues(alpha: 0.16), width: 1.1),
+          side: BorderSide(color: tealGlow.withValues(alpha: 0.22), width: 1.1),
         ),
         shadowColor: Colors.black.withValues(alpha: 0.55),
       ),

@@ -200,7 +200,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(24),
                   child: BackdropFilter(
-                    filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                    // 12/12 (was 20/20) so the ambient video reads through the
+                    // glass instead of being blurred into a flat wash — matches
+                    // the lower panel alpha in liquidGlassDecoration.
+                    filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                     child: Container(
                       padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
                       // Glass panel preserved in both themes — dark variant
