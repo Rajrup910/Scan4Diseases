@@ -391,3 +391,32 @@ def test_demoted_doctor_loses_access_mid_session(web):
     after = web.client.get("/portal/patients", follow_redirects=False)
     assert after.status_code == 303
     assert after.headers["location"] == "/portal/login"
+
+
+def test_portal_search_endpoint(web):
+    """The /portal/search endpoint returns matching patients and reports for the logged-in doctor."""
+    doctor_id, patient_token, patient_id, report_id = _seed(web)
+
+    # Search for the condition "Melanoma"
+    resp = web.client.get("/portal/search?q=Melanoma")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "reports" in data
+    assert any(r["condition"] == "Melanoma" for r in data["reports"])
+
+    # Search for the patient email
+    resp_pat = web.client.get("/portal/search?q=pat@example.com")
+    assert resp_pat.status_code == 200
+    data_pat = resp_pat.json()
+    assert any("pat@example.com" in p["email"] for p in data_pat["patients"])
+
+
+def test_all_reports_table_in_worklist(web):
+    """The worklist page renders the All shared reports table with tabs and checkboxes."""
+    _seed(web)
+    resp = web.client.get("/portal/patients")
+    assert resp.status_code == 200
+    assert "All shared reports" in resp.text
+    assert "reports-data-table" in resp.text
+    assert "Melanoma" in resp.text
+

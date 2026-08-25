@@ -24,10 +24,11 @@
   </div>
 </div>
 
-<div class="table-wrap">
-  <table class="data">
+<div class="table-wrap reports-table-card">
+  <table class="data reports-data-table" data-reports-table>
     <thead>
       <tr>
+        <th class="th-cb"><label class="custom-cb"><input type="checkbox" data-select-all aria-label="Select all reports"><span class="cb-box"></span></label></th>
         <th>Date</th>
         <th>Condition</th>
         <th>Confidence</th>
@@ -39,20 +40,46 @@
     <tbody id="reports-body">
       {% for r in reports %}
       {% set _t = (r.triage or "")|lower %}
-      <tr data-status="{{ r.status }}" style="view-transition-name: report-{{ r.id }};">
-        <td class="nowrap">{{ r.created_at.strftime("%d %b %Y") }}</td>
-        <td>{{ r.condition }}</td>
-        <td>{% if r.confidence is not none %}{{ "%.0f%%"|format(r.confidence * 100) }}{% else %}—{% endif %}</td>
-        <td><span class="badge triage-{{ 'urgent' if 'urgent' in _t else ('soon' if 'prompt' in _t or 'soon' in _t else 'routine') }}">{{ r.triage }}</span></td>
+      {% set tone = 'urgent' if 'urgent' in _t else ('soon' if 'prompt' in _t or 'soon' in _t else 'routine') %}
+      <tr data-status="{{ r.status }}" data-search-text="{{ r.condition }} {{ r.triage }} {{ status_labels.get(r.status, r.status) }}" style="view-transition-name: report-{{ r.id }};">
+        <td class="td-cb">
+          <label class="custom-cb">
+            <input type="checkbox" class="row-cb" data-row-id="{{ r.id }}" aria-label="Select report {{ r.id }}">
+            <span class="cb-box"></span>
+          </label>
+        </td>
+        <td class="nowrap date-cell">{{ r.created_at.strftime("%d %b %Y") }}</td>
+        <td class="condition-cell">
+          <span class="condition-name">{{ r.condition }}</span>
+          {% if r.symptoms and r.symptoms.get('language') == 'hi' %}
+          <span class="lang-tag-hi" title="Generated in Hindi">
+            <span class="lang-icon">हि</span> हिन्दी
+          </span>
+          {% endif %}
+        </td>
+        <td class="conf-cell">
+          {% if r.confidence is not none %}
+          {% set pct = (r.confidence * 100)|round|int %}
+          <div class="conf-meter-wrap">
+            <span class="conf-pct mono">{{ pct }}%</span>
+            <div class="conf-bar" aria-hidden="true">
+              <div class="conf-bar-fill" style="width: {{ pct }}%"></div>
+            </div>
+          </div>
+          {% else %}
+          <span class="muted">—</span>
+          {% endif %}
+        </td>
+        <td><span class="badge triage-{{ tone }}">{{ r.triage }}</span></td>
         <td><span class="badge status-{{ r.status }}">{{ status_labels.get(r.status, r.status) }}</span></td>
         <td class="row-action">
-          <a class="btn btn-small" href="/portal/reports/{{ r.id }}">
+          <a class="btn btn-small btn-open" href="/portal/reports/{{ r.id }}">
             Open <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#arrow-right"/></svg>
           </a>
         </td>
       </tr>
       {% endfor %}
-      <tr class="no-match" hidden><td colspan="6" class="muted" style="text-align:center">No reports with this status.</td></tr>
+      <tr class="no-match" hidden><td colspan="7" class="muted empty-cell">No reports with this status.</td></tr>
     </tbody>
   </table>
 </div>

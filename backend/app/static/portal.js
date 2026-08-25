@@ -783,4 +783,373 @@
       }
     }
   } catch (err) {}
+
+  /* --- 9. command palette (⌘K / Ctrl+K) -------------------------------------------- */
+  var cmdk = document.querySelector("[data-cmdk]");
+  var cmdkInput = document.querySelector("[data-cmdk-input]");
+  var cmdkList = document.querySelector("[data-cmdk-list]");
+  var cmdkEmpty = document.querySelector("[data-cmdk-empty]");
+  var cmdkOpenBtns = document.querySelectorAll("[data-cmdk-open]");
+
+  if (cmdk && cmdkInput && cmdkList) {
+    var staticActions = [
+      {
+        id: "act-theme",
+        title: "Toggle Theme",
+        subtitle: "Switch between Dark and Light mode",
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>',
+        group: "Actions",
+        run: function () {
+          var btn = document.querySelector("[data-theme-toggle]");
+          if (btn) btn.click();
+        }
+      },
+      {
+        id: "act-worklist",
+        title: "Go to Worklist",
+        subtitle: "View clinical dashboard & shared caseload",
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+        group: "Navigation",
+        url: "/portal/patients"
+      },
+      {
+        id: "act-reports",
+        title: "All Shared Reports",
+        subtitle: "Scroll to full shared reports table",
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+        group: "Navigation",
+        run: function () {
+          var el = document.getElementById("worklist-tables");
+          if (el) el.scrollIntoView({ behavior: "smooth" });
+          else window.location.href = "/portal/patients#worklist-tables";
+        }
+      },
+      {
+        id: "act-refresh",
+        title: "Refresh Caseload",
+        subtitle: "Sync all incoming patient data",
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>',
+        group: "Actions",
+        run: function () {
+          var btn = document.querySelector("[data-dock-refresh]");
+          if (btn) btn.click();
+        }
+      },
+      {
+        id: "act-signout",
+        title: "Sign Out",
+        subtitle: "End clinician session securely",
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>',
+        group: "Account",
+        run: function () {
+          var form = document.querySelector('form[action="/portal/logout"]');
+          if (form) form.submit();
+        }
+      }
+    ];
+
+    var currentItems = [];
+    var selectedIndex = 0;
+    var searchTimer = null;
+
+    function openCmdk() {
+      if (typeof cmdk.showModal === "function") {
+        cmdk.showModal();
+      } else {
+        cmdk.setAttribute("open", "true");
+      }
+      cmdkInput.value = "";
+      renderResults("");
+      setTimeout(function () { cmdkInput.focus(); }, 50);
+    }
+
+    function closeCmdk() {
+      if (typeof cmdk.close === "function") {
+        cmdk.close();
+      } else {
+        cmdk.removeAttribute("open");
+      }
+    }
+
+    cmdkOpenBtns.forEach(function (b) {
+      b.addEventListener("click", openCmdk);
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        if (cmdk.open) closeCmdk();
+        else openCmdk();
+      }
+    });
+
+    cmdk.addEventListener("click", function (e) {
+      if (e.target === cmdk) closeCmdk();
+    });
+
+    function renderResults(q) {
+      var query = (q || "").trim().toLowerCase();
+      var groups = {};
+      currentItems = [];
+
+      // 1. Match static actions
+      staticActions.forEach(function (act) {
+        if (!query || act.title.toLowerCase().indexOf(query) !== -1 || act.subtitle.toLowerCase().indexOf(query) !== -1) {
+          if (!groups[act.group]) groups[act.group] = [];
+          groups[act.group].push(act);
+          currentItems.push(act);
+        }
+      });
+
+      // 2. Extract in-page patients & reports if present
+      document.querySelectorAll("table.reports-data-table tbody tr[data-status]").forEach(function (row) {
+        var pLink = row.querySelector(".patient-link");
+        var cName = row.querySelector(".condition-name");
+        var openBtn = row.querySelector(".btn-open");
+        var badge = row.querySelector(".badge");
+        if (cName && openBtn) {
+          var title = cName.textContent.trim();
+          var pText = pLink ? pLink.textContent.trim() : "";
+          var badgeText = badge ? badge.textContent.trim() : "";
+          var matchText = (title + " " + pText + " " + badgeText).toLowerCase();
+          if (!query || matchText.indexOf(query) !== -1) {
+            var item = {
+              id: "rep-" + openBtn.getAttribute("href"),
+              title: title + (pText ? " — " + pText : ""),
+              subtitle: badgeText ? "Status: " + badgeText : "Shared report",
+              icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+              group: "Reports",
+              url: openBtn.getAttribute("href")
+            };
+            if (!groups["Reports"]) groups["Reports"] = [];
+            if (groups["Reports"].length < 8) {
+              groups["Reports"].push(item);
+              currentItems.push(item);
+            }
+          }
+        }
+      });
+
+      // Render HTML
+      cmdkList.innerHTML = "";
+      var groupKeys = Object.keys(groups);
+      if (groupKeys.length === 0) {
+        if (cmdkEmpty) cmdkEmpty.hidden = false;
+        return;
+      }
+      if (cmdkEmpty) cmdkEmpty.hidden = true;
+
+      var flatIdx = 0;
+      groupKeys.forEach(function (grp) {
+        var gTitle = document.createElement("li");
+        gTitle.className = "cmdk-group-title";
+        gTitle.textContent = grp;
+        cmdkList.appendChild(gTitle);
+
+        groups[grp].forEach(function (item) {
+          var li = document.createElement("li");
+          li.className = "cmdk-item" + (flatIdx === selectedIndex ? " is-selected" : "");
+          li.dataset.index = flatIdx;
+          li.innerHTML =
+            '<div class="cmdk-item-left">' +
+              '<div class="cmdk-item-icon">' + item.icon + '</div>' +
+              '<div class="cmdk-item-text">' +
+                '<span class="cmdk-item-primary">' + item.title + '</span>' +
+                '<span class="cmdk-item-secondary">' + item.subtitle + '</span>' +
+              '</div>' +
+            '</div>' +
+            '<div class="cmdk-item-meta">' +
+              '<span class="cmdk-kbd"><span class="cmdk-kbd-mod">↵</span></span>' +
+            '</div>';
+
+          li.addEventListener("click", function () { executeItem(item); });
+          li.addEventListener("mousemove", function () {
+            selectedIndex = parseInt(li.dataset.index, 10);
+            updateSelection();
+          });
+          cmdkList.appendChild(li);
+          flatIdx++;
+        });
+      });
+      if (selectedIndex >= currentItems.length) selectedIndex = 0;
+      updateSelection();
+    }
+
+    function updateSelection() {
+      var all = cmdkList.querySelectorAll(".cmdk-item");
+      all.forEach(function (el, idx) {
+        el.classList.toggle("is-selected", idx === selectedIndex);
+        if (idx === selectedIndex) {
+          el.scrollIntoView({ block: "nearest" });
+        }
+      });
+    }
+
+    function executeItem(item) {
+      closeCmdk();
+      if (!item) return;
+      if (item.url) {
+        window.location.href = item.url;
+      } else if (typeof item.run === "function") {
+        item.run();
+      }
+    }
+
+    cmdkInput.addEventListener("input", function () {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(function () {
+        var val = cmdkInput.value;
+        selectedIndex = 0;
+        renderResults(val);
+        if (val.trim().length > 1) {
+          fetch("/portal/search?q=" + encodeURIComponent(val.trim()))
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+              if (!data) return;
+              var apiPatients = data.patients || [];
+              var apiReports = data.reports || [];
+              if (apiPatients.length || apiReports.length) {
+                apiPatients.forEach(function (p) {
+                  var exists = currentItems.some(function (x) { return x.url === p.url; });
+                  if (!exists) {
+                    currentItems.push({
+                      id: "pat-" + p.id,
+                      title: p.name,
+                      subtitle: p.email,
+                      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+                      group: "Patients",
+                      url: p.url
+                    });
+                  }
+                });
+                apiReports.forEach(function (r) {
+                  var exists = currentItems.some(function (x) { return x.url === r.url; });
+                  if (!exists) {
+                    currentItems.push({
+                      id: "rep-" + r.id,
+                      title: r.condition + " (" + r.patient + ")",
+                      subtitle: (r.triage || "") + " · " + (r.status || ""),
+                      icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+                      group: "Reports",
+                      url: r.url
+                    });
+                  }
+                });
+              }
+            })
+            .catch(function () {});
+        }
+      }, 100);
+    });
+
+    cmdkInput.addEventListener("keydown", function (e) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        if (currentItems.length > 0) {
+          selectedIndex = (selectedIndex + 1) % currentItems.length;
+          updateSelection();
+        }
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        if (currentItems.length > 0) {
+          selectedIndex = (selectedIndex - 1 + currentItems.length) % currentItems.length;
+          updateSelection();
+        }
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (currentItems[selectedIndex]) {
+          executeItem(currentItems[selectedIndex]);
+        }
+      } else if (e.key === "Escape") {
+        closeCmdk();
+      }
+    });
+  }
+
+  /* --- 10. quickfilter & table live filter ------------------------------------------ */
+  var qf = document.querySelector("[data-quickfilter]");
+  var qfInput = document.querySelector("[data-quickfilter-input]");
+  var qfClear = document.querySelector("[data-quickfilter-clear]");
+  var tableSearchInput = document.querySelector("[data-table-filter]");
+
+  var tables = document.querySelectorAll("table.reports-data-table");
+  if (tables.length > 0 && qf) {
+    qf.hidden = false;
+  }
+
+  function applyFilterText(text) {
+    var q = (text || "").trim().toLowerCase();
+    if (qfClear) qfClear.hidden = !q;
+    
+    if (qfInput && qfInput.value !== text) qfInput.value = text;
+    if (tableSearchInput && tableSearchInput.value !== text) tableSearchInput.value = text;
+
+    tables.forEach(function (table) {
+      var rows = table.querySelectorAll("tbody tr[data-status]");
+      var shown = 0;
+      var activeFilterSeg = document.querySelector('[data-segmented] .seg[aria-pressed="true"]');
+      var activeFilter = activeFilterSeg ? activeFilterSeg.getAttribute("data-filter") : "all";
+
+      rows.forEach(function (row) {
+        var status = row.getAttribute("data-status");
+        var statusMatch = activeFilter === "all" || status === activeFilter;
+        var searchMatch = !q || (row.textContent || "").toLowerCase().indexOf(q) !== -1;
+        var on = statusMatch && searchMatch;
+        row.hidden = !on;
+        if (on) shown++;
+      });
+      var noMatch = table.querySelector(".no-match");
+      if (noMatch) noMatch.hidden = shown !== 0;
+    });
+  }
+
+  if (qfInput) {
+    qfInput.addEventListener("input", function () { applyFilterText(qfInput.value); });
+  }
+  if (tableSearchInput) {
+    tableSearchInput.addEventListener("input", function () { applyFilterText(tableSearchInput.value); });
+  }
+  if (qfClear) {
+    qfClear.addEventListener("click", function () {
+      applyFilterText("");
+      if (qfInput) qfInput.focus();
+    });
+  }
+
+  /* --- 11. floating bottom dock & refresh action ----------------------------------- */
+  var dockRefresh = document.querySelector("[data-dock-refresh]");
+  if (dockRefresh) {
+    dockRefresh.addEventListener("click", function () {
+      dockRefresh.classList.add("is-spinning");
+      setTimeout(function () {
+        dockRefresh.classList.remove("is-spinning");
+        if (window.s4dToast) {
+          window.s4dToast("Worklist updated", "Latest screening results synchronized", false);
+        }
+      }, 700);
+    });
+  }
+
+  /* --- 12. table selection & checkboxes -------------------------------------------- */
+  document.querySelectorAll("[data-select-all]").forEach(function (masterCb) {
+    var table = masterCb.closest("table");
+    if (!table) return;
+    masterCb.addEventListener("change", function () {
+      var isChecked = masterCb.checked;
+      table.querySelectorAll(".row-cb").forEach(function (cb) {
+        cb.checked = isChecked;
+        var tr = cb.closest("tr");
+        if (tr) tr.classList.toggle("is-selected", isChecked);
+      });
+    });
+
+    table.querySelectorAll(".row-cb").forEach(function (cb) {
+      cb.addEventListener("change", function () {
+        var tr = cb.closest("tr");
+        if (tr) tr.classList.toggle("is-selected", cb.checked);
+        var allChecked = Array.prototype.every.call(table.querySelectorAll(".row-cb"), function (c) { return c.checked; });
+        masterCb.checked = allChecked;
+      });
+    });
+  });
 })();

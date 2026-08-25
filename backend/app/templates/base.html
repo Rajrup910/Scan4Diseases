@@ -57,6 +57,24 @@
         </svg>
         <span class="brand-text">Scan4Disease <em>Clinician Portal</em></span>
       </a>
+
+      {% if doctor %}
+      {# Command-palette trigger — click opens the palette. Clean search affordance. #}
+      <button class="cmdk-trigger" type="button" data-cmdk-open
+              aria-label="Search patients, actions">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#search"/></svg>
+        <span class="cmdk-trigger-label">Search patients, actions…</span>
+      </button>
+
+      {# Persistent disclaimer chip in the chrome — the model output on every
+         report is screening, not diagnosis; make that promise structural, not
+         only footer-tucked. #}
+      <span class="screening-chip" role="note" aria-label="Screening only, not a diagnosis">
+        <span class="screening-beacon" aria-hidden="true"><span class="beacon-core"></span><span class="beacon-ring"></span></span>
+        <span class="screening-chip-text">Screening only <span class="dotsep">·</span> <b>not a diagnosis</b></span>
+      </span>
+      {% endif %}
+
       <nav class="header-nav">
         <button class="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode"
                 data-theme-toggle>
@@ -111,6 +129,98 @@
       </p>
     </div>
   </footer>
+
+  {% if doctor %}
+  {# Floating quick-filter — live-filters the primary data table on the page
+     (rows carrying data-status). Persistent, so a doctor can keep typing while
+     scrolling. Hidden automatically on pages that have no such table. #}
+  <div class="quickfilter" data-quickfilter hidden>
+    <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#search"/></svg>
+    <input type="search" placeholder="Search by patient, condition…"
+           aria-label="Filter shown rows" autocomplete="off"
+           data-quickfilter-input>
+    <button type="button" class="quickfilter-clear" data-quickfilter-clear
+            aria-label="Clear filter" hidden>×</button>
+  </div>
+
+  {# Floating bottom dock — the two-way pivot between the worklist, the current
+     patient, and the current report; center pill is a refresh, right pill is
+     the current report id (when on one). Pages set body[data-view]. #}
+  <nav class="dock" data-dock aria-label="Section navigation">
+    <a class="dock-item {% if request.url.path == '/portal/patients' %}is-active{% endif %}"
+       href="/portal/patients" data-dock-worklist>
+      <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#users"/></svg>
+      <span>Worklist</span>
+    </a>
+    {% if patient %}
+    <a class="dock-item is-active" href="/portal/patients/{{ patient.id }}">
+      <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#user"/></svg>
+      <span>{{ (patient.display_name or patient.email).split('@')[0][:16] }}</span>
+    </a>
+    {% else %}
+    <span class="dock-item is-disabled" aria-disabled="true" title="Open a patient to enable">
+      <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#user"/></svg>
+      <span>Patient</span>
+    </span>
+    {% endif %}
+
+    <button class="dock-refresh" type="button" data-dock-refresh
+            aria-label="Refresh current view" title="Refresh">
+      <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 12a9 9 0 0 1 15.5-6.3L21 8"/>
+        <path d="M21 3v5h-5"/>
+        <path d="M21 12a9 9 0 0 1-15.5 6.3L3 16"/>
+        <path d="M3 21v-5h5"/>
+      </svg>
+    </button>
+
+    {% if report %}
+    <a class="dock-item is-active" href="/portal/reports/{{ report.id }}">
+      <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#file-text"/></svg>
+      <span>Report</span>
+      <span class="dock-report-id mono">#{{ report.id }}</span>
+    </a>
+    {% else %}
+    <span class="dock-item is-disabled" aria-disabled="true" title="Open a report to enable">
+      <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#file-text"/></svg>
+      <span>Report</span>
+    </span>
+    {% endif %}
+  </nav>
+
+  {# "All shared reports" jump-pill — top-left floating chip that quickly
+     scrolls to the primary table on the current page (or navigates back to
+     the worklist if there is none in view). #}
+  <a class="reports-jump" href="/portal/patients#worklist-tables" data-reports-jump>
+    <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#file-text"/></svg>
+    <span>All shared reports</span>
+  </a>
+
+  {# Command palette — hidden until data-cmdk-open triggers it. Uses <dialog>
+     for native modal semantics with a JS enhancement layer for typeahead. #}
+  <dialog class="cmdk" data-cmdk aria-label="Command palette">
+    <div class="cmdk-panel" role="document">
+      <div class="cmdk-input-row">
+        <svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#search"/></svg>
+        <input class="cmdk-input" type="search" data-cmdk-input
+               placeholder="Search patients, reports, actions…"
+               aria-label="Command palette search"
+               autocomplete="off" spellcheck="false">
+        <kbd class="cmdk-kbd cmdk-kbd-esc">Esc</kbd>
+      </div>
+      <div class="cmdk-body">
+        <ul class="cmdk-list" data-cmdk-list role="listbox"></ul>
+        <p class="cmdk-empty" data-cmdk-empty hidden>No matches — try a patient name, condition, or "Sign out".</p>
+      </div>
+      <p class="cmdk-hint">
+        <span><kbd>↑</kbd><kbd>↓</kbd> Navigate</span>
+        <span><kbd>↵</kbd> Open</span>
+        <span><kbd>Esc</kbd> Close</span>
+      </p>
+    </div>
+  </dialog>
+  {% endif %}
 
   <script src="/portal/static/portal.js" defer></script>
   {% block scripts %}{% endblock %}

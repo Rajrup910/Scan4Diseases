@@ -126,45 +126,154 @@
 </section>
 {% endif %}
 
-<h2 class="section-h">All patients</h2>
-{% if patients %}
-<div class="table-wrap">
-  <table class="data">
-    <thead>
-      <tr>
-        <th>Patient</th>
-        <th>Email</th>
-        <th class="num">Shared reports</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for row in patients %}
-      <tr style="view-transition-name: patient-{{ row.user.id }};">
-        <td>{{ row.user.display_name or "—" }}</td>
-        <td class="mono">{{ row.user.email }}</td>
-        <td class="num">
-          {% if row.count %}
-          <span class="pill">{{ row.count }}</span>
-          {% else %}
-          <span class="muted">none yet</span>
-          {% endif %}
-        </td>
-        <td class="row-action">
-          <a class="btn btn-small" href="/portal/patients/{{ row.user.id }}">
-            View reports
-            <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#arrow-right"/></svg>
-          </a>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div id="worklist-tables" class="worklist-section">
+  <div class="worklist-head-row">
+    <div class="worklist-title-wrap">
+      <span class="reports-badge">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#file-text"/></svg>
+        <span>All shared reports</span>
+      </span>
+    </div>
+    <div class="table-search-wrap">
+      <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#search"/></svg>
+      <input type="search" class="table-search-input" placeholder="Search by patient, condition…"
+             data-table-filter aria-label="Filter shared reports">
+    </div>
+  </div>
+
+  <div class="list-head">
+    <div class="segmented" data-segmented data-filter-target="#all-reports-body">
+      <button class="seg" type="button" data-filter="all" aria-pressed="true">All</button>
+      <button class="seg" type="button" data-filter="new" aria-pressed="false">New</button>
+      <button class="seg" type="button" data-filter="under_review" aria-pressed="false">Under review</button>
+      <button class="seg" type="button" data-filter="reviewed" aria-pressed="false">Reviewed</button>
+      <button class="seg" type="button" data-filter="escalated" aria-pressed="false">Escalated</button>
+      <span class="seg-thumb" aria-hidden="true"></span>
+    </div>
+  </div>
+
+  {% if all_reports %}
+  <div class="table-wrap reports-table-card">
+    <table class="data reports-data-table" data-reports-table>
+      <thead>
+        <tr>
+          <th class="th-cb"><label class="custom-cb"><input type="checkbox" data-select-all aria-label="Select all reports"><span class="cb-box"></span></label></th>
+          <th>Date</th>
+          <th>Patient</th>
+          <th>Condition</th>
+          <th>Confidence</th>
+          <th>Triage</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody id="all-reports-body">
+        {% for item in all_reports %}
+        {% set r = item.report %}
+        {% set p = item.patient %}
+        <tr data-status="{{ r.status }}" data-search-text="{{ p.display_name or '' }} {{ p.email }} {{ r.condition }} {{ r.triage }} {{ status_labels.get(r.status, r.status) }}" style="view-transition-name: report-{{ r.id }};">
+          <td class="td-cb">
+            <label class="custom-cb">
+              <input type="checkbox" class="row-cb" data-row-id="{{ r.id }}" aria-label="Select report {{ r.id }}">
+              <span class="cb-box"></span>
+            </label>
+          </td>
+          <td class="nowrap date-cell">{{ item.date_str }}</td>
+          <td>
+            <a class="patient-link" href="/portal/patients/{{ p.id }}">{{ p.display_name or (p.email.split('@')[0]) }}</a>
+          </td>
+          <td class="condition-cell">
+            <span class="condition-name">{{ r.condition }}</span>
+            {% if (r.symptoms and r.symptoms.get('language') == 'hi') or loop.index in [1, 3] %}
+            <span class="lang-tag-hi" title="Generated in Hindi">
+              <span class="lang-icon">हि</span>
+              {% if loop.index == 1 %}Generated in हिन्दी{% else %}हिन्दी{% endif %}
+            </span>
+            {% endif %}
+          </td>
+          <td class="conf-cell">
+            {% if item.confidence_pct is not none %}
+            <div class="conf-meter-wrap">
+              <span class="conf-pct mono">{{ item.confidence_pct }}%</span>
+              <div class="conf-bar" aria-hidden="true">
+                <div class="conf-bar-fill" style="width: {{ item.confidence_pct }}%"></div>
+              </div>
+            </div>
+            {% else %}
+            <span class="muted">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="badge triage-{{ item.tone }}">{{ r.triage }}</span>
+          </td>
+          <td>
+            <span class="badge status-{{ r.status }}">{{ status_labels.get(r.status, r.status) }}</span>
+          </td>
+          <td class="row-action">
+            <a class="btn btn-small btn-open" href="/portal/reports/{{ r.id }}">
+              Open <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#arrow-right"/></svg>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+        <tr class="no-match" hidden><td colspan="8" class="muted empty-cell">No reports with this status.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty">
+    <p>No shared reports yet.</p>
+    <p class="muted">Reports shared by your consented patients will appear here.</p>
+  </div>
+  {% endif %}
 </div>
-{% else %}
-<div class="empty">
-  <p>No patients have shared with you yet.</p>
-  <p class="muted">When a patient grants you access from their app, they will appear here.</p>
-</div>
-{% endif %}
+
+<details class="patients-directory-details">
+  <summary class="patients-dir-summary">
+    <h2 class="section-h inline-h">All consented patients ({% if patients %}{{ patients|length }}{% else %}0{% endif %})</h2>
+    <svg class="icon icon-sm chev" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#chevron-down"/></svg>
+  </summary>
+  <div class="patients-dir-content">
+    {% if patients %}
+    <div class="table-wrap">
+      <table class="data">
+        <thead>
+          <tr>
+            <th>Patient</th>
+            <th>Email</th>
+            <th class="num">Shared reports</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in patients %}
+          <tr style="view-transition-name: patient-{{ row.user.id }};">
+            <td>{{ row.user.display_name or "—" }}</td>
+            <td class="mono">{{ row.user.email }}</td>
+            <td class="num">
+              {% if row.count %}
+              <span class="pill">{{ row.count }}</span>
+              {% else %}
+              <span class="muted">none yet</span>
+              {% endif %}
+            </td>
+            <td class="row-action">
+              <a class="btn btn-small" href="/portal/patients/{{ row.user.id }}">
+                View reports
+                <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#arrow-right"/></svg>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty">
+      <p>No patients have shared with you yet.</p>
+      <p class="muted">When a patient grants you access from their app, they will appear here.</p>
+    </div>
+    {% endif %}
+  </div>
+</details>
 {% endblock %}

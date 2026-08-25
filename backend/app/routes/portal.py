@@ -336,6 +336,17 @@ def patients_page(
         "escalated": status_counts[REPORT_ESCALATED],
     }
 
+    all_reports = [
+        {
+            "report": report,
+            "patient": patient,
+            "tone": triage_tone(report.triage),
+            "date_str": report.created_at.strftime("%d %b %Y"),
+            "confidence_pct": round(report.confidence * 100) if report.confidence is not None else None,
+        }
+        for report, patient in report_rows
+    ]
+
     return templates.TemplateResponse(
         request,
         "patients.html",
@@ -349,9 +360,85 @@ def patients_page(
             "total_reports": total_reports,
             "needs_attention": needs_attention[:6],
             "recent": report_rows[:6],
+            "all_reports": all_reports,
             "status_labels": STATUS_LABELS,
         },
     )
+
+
+@router.get("/search")
+def portal_search(
+    request: Request,
+    q: str = "",
+    doctor: User = Depends(get_portal_doctor),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Fast search endpoint for the Command Palette (Ctrl+K / Cmd+K)."""
+    q_str = q.strip().lower()
+    consented = (
+        (DoctorPatient.patient_id == User.id)
+        & (DoctorPatient.doctor_id == doctor.id)
+        & (DoctorPatient.status == LINK_ACTIVE)
+        & (DoctorPatient.consented_at.is_not(None))
+    )
+
+    patients = db.scalars(
+        select(User)
+        .join(DoctorPatient, consented)
+        .order_by(User.display_name, User.email)
+    ).all()
+
+    report_rows = db.execute(
+        select(Report, User)
+        .join(User, User.id == Report.user_id)
+        .join(DoctorPatient, consented)
+        .where(Report.shared_at.is_not(None))
+        .order_by(Report.created_at.desc())
+    ).all()
+
+    matching_patients = []
+    for p in patients:
+        name = p.display_name or ""
+        email = p.email or ""
+        if not q_str or q_str in name.lower() or q_str in email.lower():
+            matching_patients.append({
+                "id": p.id,
+                "name": name or email.split("@")[0],
+                "email": email,
+                "url": f"/portal/patients/{p.id}",
+            })
+
+    matching_reports = []
+    for r, p in report_rows:
+        cond = r.condition or ""
+        p_name = p.display_name or p.email
+        triage = r.triage or ""
+        status = STATUS_LABELS.get(r.status, r.status)
+        if (
+            not q_str
+            or q_str in cond.lower()
+            or q_str in p_name.lower()
+            or q_str in triage.lower()
+            or q_str in status.lower()
+            or q_str == f"#{r.id}"
+            or q_str == str(r.id)
+        ):
+            matching_reports.append({
+                "id": r.id,
+                "condition": cond,
+                "patient": p_name,
+                "confidence": round(r.confidence * 100) if r.confidence is not None else None,
+                "triage": triage,
+                "status": status,
+                "tone": triage_tone(r.triage),
+                "date": r.created_at.strftime("%d %b %Y"),
+                "url": f"/portal/reports/{r.id}",
+            })
+
+    return JSONResponse({
+        "patients": matching_patients[:10],
+        "reports": matching_reports[:25],
+    })
 
 
 @router.get("/patients/{patient_id}", response_class=HTMLResponse)
