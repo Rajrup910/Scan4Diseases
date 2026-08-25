@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../app_data.dart';
 import '../Upload/ResultData.dart';
+import '../../services/theme_service.dart';
 import 'compareScreen.dart';
 import 'reportSummarySheet.dart';
 
@@ -19,10 +20,16 @@ class _ReportScreenState extends State<ReportScreen> {
   String _filterTriage = 'all'; // 'all' | 'urgent' | 'prompt' | 'routine'
 
   @override
-  Widget build(BuildContext context) =>
-      ValueListenableBuilder<List<ScreeningReport>>(
+  Widget build(BuildContext context) => ValueListenableBuilder<ThemeMode>(
+        valueListenable: ThemeService.instance.mode,
+        builder: (_, __, ___) => ValueListenableBuilder<List<ScreeningReport>>(
         valueListenable: AppData.reports,
         builder: (_, reports, __) {
+          final dark = ThemeService.instance.isDark(context);
+          final ink = dark ? Themes.darkInk : Themes.ink;
+          final inkSoft = dark ? Themes.darkInkSoft : Themes.inkSoft;
+          final onMedia = dark ? Themes.onMediaDark : Themes.onMedia;
+          final accent = dark ? Themes.tealLight : Themes.brand;
           final filtered = reports.where((r) {
             final matchesQuery = _searchQuery.isEmpty ||
                 r.condition.toLowerCase().contains(_searchQuery.toLowerCase()) ||
@@ -41,37 +48,46 @@ class _ReportScreenState extends State<ReportScreen> {
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
             children: [
               Row(children: [
-                const Expanded(
+                Expanded(
                   child: Text('My screenings',
-                      style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Themes.ink, letterSpacing: -0.01, shadows: Themes.onMedia)),
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        color: ink,
+                        letterSpacing: -0.01,
+                        shadows: onMedia,
+                      )),
                 ),
                 if (reports.length >= 2)
                   Container(
                     height: 36,
                     margin: const EdgeInsets.only(right: 8),
-                    decoration: Themes.liquidGlassDecoration(radius: 10),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(10),
-                      onTap: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const CompareScreeningsScreen()),
-                      ),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 12),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.compare_arrows_rounded, size: 16, color: Themes.brand),
-                            SizedBox(width: 5),
-                            Text(
-                              'Compare 2',
-                              style: TextStyle(
-                                color: Themes.brand,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12.5,
+                    decoration: _glass(dark, radius: 10),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(10),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const CompareScreeningsScreen()),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.compare_arrows_rounded, size: 16, color: accent),
+                              const SizedBox(width: 5),
+                              Text(
+                                'Compare 2',
+                                style: TextStyle(
+                                  color: accent,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 12.5,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -80,14 +96,18 @@ class _ReportScreenState extends State<ReportScreen> {
                   Container(
                     height: 36,
                     width: 36,
-                    decoration: Themes.liquidGlassDecoration(radius: 10),
+                    decoration: _glass(dark, radius: 10),
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
                         borderRadius: BorderRadius.circular(10),
                         onTap: () => _confirmClearAll(context, reports.length),
-                        child: const Center(
-                          child: Icon(Icons.delete_sweep_outlined, color: Themes.danger, size: 18),
+                        child: Center(
+                          child: Icon(
+                            Icons.delete_sweep_outlined,
+                            color: dark ? const Color(0xFFF87171) : Themes.danger,
+                            size: 18,
+                          ),
                         ),
                       ),
                     ),
@@ -95,29 +115,37 @@ class _ReportScreenState extends State<ReportScreen> {
               ]),
               const SizedBox(height: 2),
               Text('${reports.length} saved report${reports.length == 1 ? '' : 's'}',
-                  style: const TextStyle(color: Themes.ink, fontSize: 13, shadows: Themes.onMedia)),
+                  style: TextStyle(color: ink, fontSize: 13, shadows: onMedia)),
               const SizedBox(height: 14),
               if (reports.isNotEmpty) ...[
-                // Search field
+                // Search field — dark glass fill with teal-tinted border to match the
+                // Reports mockup, no white-on-dark contrast issue.
                 TextField(
                   onChanged: (v) => setState(() => _searchQuery = v),
+                  style: TextStyle(color: ink),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: const Color(0x66FFFFFF),
+                    fillColor: dark ? const Color(0x99232A36) : const Color(0x66FFFFFF),
                     hintText: 'Search by condition or triage…',
-                    prefixIcon: const Icon(Icons.search_rounded, size: 20, color: Themes.inkSoft),
+                    hintStyle: TextStyle(color: inkSoft),
+                    prefixIcon: Icon(Icons.search_rounded, size: 20, color: inkSoft),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.85), width: 1.2),
+                      borderSide: BorderSide(
+                        color: dark
+                            ? Themes.tealGlow.withValues(alpha: 0.18)
+                            : Colors.white.withValues(alpha: 0.85),
+                        width: 1.2,
+                      ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: Themes.brand, width: 1.5),
+                      borderSide: BorderSide(color: accent, width: 1.5),
                     ),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(Icons.clear_rounded, size: 18),
+                            icon: Icon(Icons.clear_rounded, size: 18, color: inkSoft),
                             onPressed: () => setState(() => _searchQuery = ''),
                           )
                         : null,
@@ -129,57 +157,69 @@ class _ReportScreenState extends State<ReportScreen> {
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      _filterChip('All', 'all', reports.length),
+                      _filterChip('All', 'all', reports.length, dark),
                       const SizedBox(width: 8),
                       _filterChip('Urgent', 'urgent',
-                          reports.where((r) => r.triage.toLowerCase().contains('urgent')).length),
+                          reports.where((r) => r.triage.toLowerCase().contains('urgent')).length, dark),
                       const SizedBox(width: 8),
                       _filterChip('Prompt', 'prompt',
-                          reports.where((r) => r.triage.toLowerCase().contains('prompt') || r.triage.toLowerCase().contains('soon')).length),
+                          reports.where((r) => r.triage.toLowerCase().contains('prompt') || r.triage.toLowerCase().contains('soon')).length, dark),
                       const SizedBox(width: 8),
                       _filterChip('Routine', 'routine',
-                          reports.where((r) => !r.triage.toLowerCase().contains('urgent') && !r.triage.toLowerCase().contains('prompt')).length),
+                          reports.where((r) => !r.triage.toLowerCase().contains('urgent') && !r.triage.toLowerCase().contains('prompt')).length, dark),
                     ],
                   ),
                 ),
                 const SizedBox(height: 14),
               ],
               if (reports.isEmpty)
-                _empty()
+                _empty(dark)
               else if (filtered.isEmpty)
                 Container(
                   padding: const EdgeInsets.all(24),
                   alignment: Alignment.center,
-                  child: const Text('No screenings matched your search or filter.',
-                      style: TextStyle(color: Themes.inkSoft, fontSize: 13)),
+                  child: Text('No screenings matched your search or filter.',
+                      style: TextStyle(color: inkSoft, fontSize: 13)),
                 )
               else ...[
-                const Text('Swipe a card left to delete, or tap to view full screening analysis.',
-                    style: TextStyle(color: Themes.ink, fontSize: 12.5, shadows: Themes.onMedia)),
+                Text('Swipe a card left to delete, or tap to view full screening analysis.',
+                    style: TextStyle(color: ink, fontSize: 12.5, shadows: onMedia)),
                 const SizedBox(height: 12),
-                ...filtered.map((r) => _reportCard(context, r)),
+                ...filtered.map((r) => _reportCard(context, r, dark)),
               ],
             ],
           );
         },
-      );
+      ));
 
-  Widget _filterChip(String label, String value, int count) {
+  /// Central glass helper so every card on this screen shares one look.
+  /// Kept private so it never leaks its `dark` argument outside this state.
+  BoxDecoration _glass(bool dark, {double radius = 18}) => dark
+      ? Themes.liquidGlassDecoration(radius: radius, dark: true, topAlpha: 0.85, bottomAlpha: 0.70)
+      : Themes.liquidGlassDecoration(radius: radius);
+
+  Widget _filterChip(String label, String value, int count, bool dark) {
     final active = _filterTriage == value;
+    final activeText = dark ? Themes.tealLight : Themes.brand;
+    final inactiveText = dark ? Themes.darkInkSoft : Themes.inkSoft;
+    final activeBg = dark ? Themes.darkBrandTint : Themes.brandTint.withValues(alpha: 0.70);
+    final inactiveBg = dark ? const Color(0x991C212B) : const Color(0x80FFFFFF);
+    final activeBorder = dark ? Themes.tealGlow : Themes.brand;
+    final inactiveBorder = dark ? Themes.darkBorder : Colors.white.withValues(alpha: 0.85);
     return ChoiceChip(
       label: Text('$label ($count)'),
       selected: active,
-      selectedColor: Themes.brandTint.withValues(alpha: 0.70),
-      backgroundColor: const Color(0x80FFFFFF),
+      selectedColor: activeBg,
+      backgroundColor: inactiveBg,
       labelStyle: TextStyle(
-        color: active ? Themes.brand : Themes.inkSoft,
+        color: active ? activeText : inactiveText,
         fontWeight: active ? FontWeight.w700 : FontWeight.w500,
         fontSize: 12,
       ),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: active ? Themes.brand : Colors.white.withValues(alpha: 0.85),
+          color: active ? activeBorder : inactiveBorder,
           width: 1.2,
         ),
       ),
@@ -258,35 +298,69 @@ class _ReportScreenState extends State<ReportScreen> {
 
   // --- list items ------------------------------------------------------------
 
-  Widget _empty() => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
-        decoration: Themes.liquidGlassDecoration(radius: 20),
-        child: Column(children: [
-          Container(
-            padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(
-              color: Themes.brandTint,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white.withValues(alpha: 0.85), width: 1.2),
+  Widget _empty(bool dark) {
+    final ink = dark ? Themes.darkInk : Themes.ink;
+    final inkSoft = dark ? Themes.darkInkSoft : Themes.inkSoft;
+    final accent = dark ? Themes.tealLight : Themes.brand;
+    final tile = dark ? Themes.darkBrandTint : Themes.brandTint;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
+      decoration: _glass(dark, radius: 20),
+      child: Column(children: [
+        Container(
+          padding: const EdgeInsets.all(18),
+          decoration: BoxDecoration(
+            color: tile,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: dark
+                  ? Themes.tealGlow.withValues(alpha: 0.27)
+                  : Colors.white.withValues(alpha: 0.85),
+              width: 1.2,
             ),
-            child: const Icon(Icons.assignment_outlined, size: 38, color: Themes.brand),
           ),
-          const SizedBox(height: 16),
-          const Text('No screenings yet',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Themes.ink)),
-          const SizedBox(height: 6),
-          const Text('Your completed AI-assisted screening reports will appear here.',
-              textAlign: TextAlign.center, style: TextStyle(color: Themes.inkSoft, fontSize: 13, height: 1.4)),
-        ]),
-      );
+          child: Icon(Icons.assignment_outlined, size: 38, color: accent),
+        ),
+        const SizedBox(height: 16),
+        Text('No screenings yet',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: ink)),
+        const SizedBox(height: 6),
+        Text('Your completed AI-assisted screening reports will appear here.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: inkSoft, fontSize: 13, height: 1.4)),
+      ]),
+    );
+  }
 
-  Widget _reportCard(BuildContext context, ScreeningReport r) {
+  Widget _reportCard(BuildContext context, ScreeningReport r, bool dark) {
     final triageLower = r.triage.toLowerCase();
-    final (triageColor, triageBg, triageIcon) = triageLower.contains('urgent')
-        ? (Themes.urgent, Themes.urgentBg, Icons.priority_high_rounded)
-        : triageLower.contains('prompt') || triageLower.contains('soon')
-            ? (Themes.soon, Themes.soonBg, Icons.schedule_rounded)
-            : (Themes.routine, Themes.routineBg, Icons.check_circle_outline_rounded);
+    // Triage tones split into (text, background, icon) — each also has a dark
+    // counterpart so the badge reads as a proper glass pill on the dark canvas
+    // rather than a chalky pastel rectangle.
+    late final Color triageColor;
+    late final Color triageBg;
+    late final Color triageBorder;
+    late final IconData triageIcon;
+    if (triageLower.contains('urgent')) {
+      triageColor = dark ? const Color(0xFFF87171) : Themes.urgent;
+      triageBg = dark ? const Color(0xFF2A1010) : Themes.urgentBg;
+      triageBorder = triageColor.withValues(alpha: dark ? 0.55 : 0.3);
+      triageIcon = Icons.priority_high_rounded;
+    } else if (triageLower.contains('prompt') || triageLower.contains('soon')) {
+      triageColor = dark ? const Color(0xFFE0B463) : Themes.soon;
+      triageBg = dark ? const Color(0xFF2A2411) : Themes.soonBg;
+      triageBorder = triageColor.withValues(alpha: dark ? 0.55 : 0.3);
+      triageIcon = Icons.schedule_rounded;
+    } else {
+      triageColor = dark ? const Color(0xFF5FD6AD) : Themes.routine;
+      triageBg = dark ? const Color(0xFF0D2B23) : Themes.routineBg;
+      triageBorder = triageColor.withValues(alpha: dark ? 0.55 : 0.3);
+      triageIcon = Icons.check_circle_outline_rounded;
+    }
+
+    final ink = dark ? Themes.darkInk : Themes.ink;
+    final inkSoft = dark ? Themes.darkInkSoft : Themes.inkSoft;
+    final accent = dark ? Themes.tealLight : Themes.brand;
 
     // Dismissible carries `ObjectKey(r)` so Flutter identity-tracks each row
     // across filter changes; the TweenAnimationBuilder inside can therefore
@@ -319,84 +393,85 @@ class _ReportScreenState extends State<ReportScreen> {
           opacity: t,
           child: Transform.translate(offset: Offset(0, 6 * (1 - t)), child: child),
         ),
-        child: Card(
+        child: Container(
         margin: const EdgeInsets.only(bottom: 12),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.85), width: 1.2),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: () => Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => DiagnosisResultsUI(
-                diagnosisData: {
-                  'predicted_class': r.condition,
-                  'confidence': r.confidence,
-                  'triage': r.triage,
-                  'explanation': r.explanation,
-                },
-                report: r,
+        clipBehavior: Clip.antiAlias,
+        decoration: _glass(dark, radius: 18),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(18),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => DiagnosisResultsUI(
+                  diagnosisData: {
+                    'predicted_class': r.condition,
+                    'confidence': r.confidence,
+                    'triage': r.triage,
+                    'explanation': r.explanation,
+                  },
+                  report: r,
+                ),
               ),
             ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
-            child: Row(children: [
-              _lesionThumb(r),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(r.condition,
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Themes.ink)),
-                  const SizedBox(height: 4),
-                  Text(_date(r.date), style: const TextStyle(color: Themes.inkSoft, fontSize: 12.5)),
-                  const SizedBox(height: 6),
-                  Container(
-                    height: 24,
-                    constraints: const BoxConstraints(maxWidth: 185),
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
-                    decoration: BoxDecoration(
-                      color: triageBg,
-                      borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: triageColor.withValues(alpha: 0.3)),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(triageIcon, size: 12, color: triageColor),
-                        const SizedBox(width: 5),
-                        Flexible(
-                          child: _MarqueeText(
-                            text: r.triage,
-                            style: TextStyle(
-                              color: triageColor,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 11,
-                              height: 1.1,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
+              child: Row(children: [
+                _lesionThumb(r, dark),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(r.condition,
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: ink)),
+                    const SizedBox(height: 4),
+                    Text(_date(r.date), style: TextStyle(color: inkSoft, fontSize: 12.5)),
+                    const SizedBox(height: 6),
+                    Container(
+                      height: 24,
+                      constraints: const BoxConstraints(maxWidth: 185),
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      decoration: BoxDecoration(
+                        color: triageBg,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: triageBorder),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(triageIcon, size: 12, color: triageColor),
+                          const SizedBox(width: 5),
+                          Flexible(
+                            child: _MarqueeText(
+                              text: r.triage,
+                              style: TextStyle(
+                                color: triageColor,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11,
+                                height: 1.1,
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                ]),
-              ),
-              IconButton(
-                tooltip: 'Clinical summary',
-                onPressed: () => showReportSummarySheet(context, r),
-                icon: const Icon(Icons.summarize_outlined, color: Themes.brand, size: 20),
-              ),
-              IconButton(
-                tooltip: 'Delete',
-                onPressed: () => _confirmDelete(context, r),
-                icon: const Icon(Icons.delete_outline_rounded, color: Themes.inkSoft, size: 20),
-              ),
-            ]),
+                  ]),
+                ),
+                IconButton(
+                  tooltip: 'Clinical summary',
+                  onPressed: () => showReportSummarySheet(context, r),
+                  icon: Icon(Icons.summarize_outlined, color: accent, size: 20),
+                ),
+                IconButton(
+                  tooltip: 'Delete',
+                  onPressed: () => _confirmDelete(context, r),
+                  icon: Icon(Icons.delete_outline_rounded, color: inkSoft, size: 20),
+                ),
+              ]),
+            ),
           ),
         ),
-      ),
+        ),
       ),
     );
   }
@@ -407,19 +482,24 @@ class _ReportScreenState extends State<ReportScreen> {
   ///
   /// The Hero is only attached when the report has an id — an unsaved result
   /// has no stable tag, and a duplicate/missing tag would break the flight.
-  Widget _lesionThumb(ScreeningReport r) {
+  Widget _lesionThumb(ScreeningReport r, bool dark) {
     const size = 48.0;
     final path = r.imagePath ?? '';
     final hasPhoto = path.isNotEmpty && File(path).existsSync();
+    final accent = dark ? Themes.tealLight : Themes.brand;
+    final tileBg = dark ? Themes.darkBrandTint : Themes.brandTint.withValues(alpha: 0.70);
+    final tileEdge = dark
+        ? Themes.tealGlow.withValues(alpha: 0.27)
+        : Colors.white.withValues(alpha: 0.85);
 
     final tile = Container(
       width: size,
       height: size,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: Themes.brandTint.withValues(alpha: 0.70),
+        color: tileBg,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.85)),
+        border: Border.all(color: tileEdge),
       ),
       child: hasPhoto
           ? Image.file(
@@ -430,9 +510,9 @@ class _ReportScreenState extends State<ReportScreen> {
               // If the file vanishes between the check and the decode, fall
               // back rather than showing a broken-image glyph.
               errorBuilder: (_, __, ___) =>
-                  const Icon(Icons.health_and_safety_outlined, color: Themes.brand, size: 24),
+                  Icon(Icons.health_and_safety_outlined, color: accent, size: 24),
             )
-          : const Icon(Icons.health_and_safety_outlined, color: Themes.brand, size: 24),
+          : Icon(Icons.health_and_safety_outlined, color: accent, size: 24),
     );
 
     if (!hasPhoto || r.id == null) return tile;

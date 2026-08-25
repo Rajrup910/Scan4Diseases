@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 
 import '../../config.dart';
 import '../../services/auth_service.dart';
+import '../../services/motion_service.dart';
+import '../../services/theme_service.dart';
 import '../theme.dart';
 import '../widgets/video_background.dart';
 import '../widgets/app_logo_mark.dart';
@@ -150,19 +152,41 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Rebuild when the theme flips so both the form chrome and the new
+    // top-right chip re-tint together. isDark uses the app's own preference
+    // when set and the OS setting when it isn't.
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: ThemeService.instance.mode,
+      builder: (context, __, ___) {
+        final dark = ThemeService.instance.isDark(context);
+        final ink = dark ? Themes.darkInk : Themes.ink;
+        final inkSoft = dark ? Themes.darkInkSoft : Themes.inkSoft;
+        final accent = dark ? Themes.tealLight : Themes.brand;
+        final onMedia = dark ? Themes.onMediaDark : Themes.onMedia;
     return VideoBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         body: SafeArea(
           child: Stack(
             children: [
+              // Server-settings icon (kept where it was — tucked into a corner
+              // for advanced use).
               Align(
-                alignment: Alignment.topRight,
+                alignment: Alignment.topLeft,
                 child: IconButton(
                   tooltip: 'Server settings',
-                  icon: const Icon(Icons.settings_ethernet, color: Themes.muted),
+                  icon: Icon(Icons.settings_ethernet, color: dark ? Themes.darkInkSoft : Themes.muted),
                   onPressed: _loading ? null : _serverSettings,
                 ),
+              ),
+              // Top-right frosted chip: theme + motion, both live-updating via
+              // ValueListenableBuilder — visible BEFORE sign-in so a user
+              // arriving in the wrong theme can flip it without hunting for
+              // Profile. Matches the mockup's new "chip" in login-dark.
+              Positioned(
+                top: 6,
+                right: 12,
+                child: _PreloginChip(dark: dark),
               ),
               Center(
             child: SingleChildScrollView(
@@ -179,7 +203,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     filter: ui.ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                     child: Container(
                       padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-                      decoration: Themes.liquidGlassDecoration(radius: 24),
+                      // Glass panel preserved in both themes — dark variant
+                      // gets the teal-tinted rim from the shared helper.
+                      decoration: Themes.liquidGlassDecoration(radius: 24, dark: dark),
                       child: Form(
                 key: _formKey,
                 child: Column(
@@ -233,7 +259,13 @@ class _LoginScreenState extends State<LoginScreen> {
                     Text(
                       _register ? 'Create your patient account' : 'Patient sign in',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: Themes.ink, letterSpacing: -0.01, shadows: Themes.onMedia),
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        color: ink,
+                        letterSpacing: -0.01,
+                        shadows: onMedia,
+                      ),
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -241,7 +273,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ? 'Sign up to securely save, sync, and share your screenings.'
                           : 'Sign in to access your screening history and reports.',
                       textAlign: TextAlign.center,
-                      style: const TextStyle(color: Themes.ink, fontSize: 13.5, shadows: Themes.onMedia),
+                      style: TextStyle(color: ink, fontSize: 13.5, shadows: onMedia),
                     ),
                     const SizedBox(height: 26),
                     if (_register) ...[
@@ -249,9 +281,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         controller: _name,
                         textInputAction: TextInputAction.next,
                         autocorrect: false,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Full name (optional)',
-                          prefixIcon: Icon(Icons.person_outline, color: Themes.brand),
+                          prefixIcon: Icon(Icons.person_outline, color: accent),
                         ),
                       ),
                       const SizedBox(height: 14),
@@ -263,9 +295,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       autofillHints: const [AutofillHints.email],
                       autocorrect: false,
                       enableSuggestions: false,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         labelText: 'Email address',
-                        prefixIcon: Icon(Icons.mail_outline, color: Themes.brand),
+                        prefixIcon: Icon(Icons.mail_outline, color: accent),
                       ),
                       validator: (v) {
                         final value = (v ?? '').trim();
@@ -286,9 +318,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       onFieldSubmitted: (_) => _loading ? null : _submit(),
                       decoration: InputDecoration(
                         labelText: 'Password',
-                        prefixIcon: const Icon(Icons.lock_outline, color: Themes.brand),
+                        prefixIcon: Icon(Icons.lock_outline, color: accent),
                         suffixIcon: IconButton(
-                          icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: Themes.inkSoft),
+                          icon: Icon(_obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: inkSoft),
                           onPressed: () => setState(() => _obscure = !_obscure),
                         ),
                       ),
@@ -323,10 +355,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'AI-assisted screening tool — not a medical diagnosis.',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 11.5, color: Themes.inkSoft),
+                      style: TextStyle(fontSize: 11.5, color: inkSoft),
                     ),
                   ],
                 ),
@@ -342,6 +374,116 @@ class _LoginScreenState extends State<LoginScreen> {
     ),
   ),
 );
+      },
+    );
+  }
+}
+
+/// Frosted mini-panel that sits at the top-right of the login screen. Exposes
+/// the theme toggle and the reduce-ambient-motion toggle BEFORE sign-in so a
+/// user arriving in the wrong appearance can flip it without hunting through
+/// Profile. Both bindings are live: tap flips the shared service and every
+/// listener across the app rebuilds — including this chip's own icons.
+class _PreloginChip extends StatelessWidget {
+  const _PreloginChip({required this.dark});
+  final bool dark;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: dark
+              ? [const Color(0xFF1E2430).withValues(alpha: 0.72),
+                 const Color(0xFF141820).withValues(alpha: 0.58)]
+              : [Colors.white.withValues(alpha: 0.72),
+                 Colors.white.withValues(alpha: 0.54)],
+        ),
+        border: Border.all(
+          color: dark ? Themes.tealGlow.withValues(alpha: 0.22) : Colors.white.withValues(alpha: 0.85),
+          width: 1.1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: dark ? Themes.tealGlow.withValues(alpha: 0.10) : Colors.white.withValues(alpha: 0.35),
+            blurRadius: 10,
+            spreadRadius: -1,
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: dark ? 0.30 : 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Theme toggle — icon flips with the current mode.
+          _ChipButton(
+            icon: dark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+            tooltip: dark ? 'Switch to light theme' : 'Switch to dark theme',
+            dark: dark,
+            onTap: () => ThemeService.instance.toggle(context),
+          ),
+          const SizedBox(width: 2),
+          // Motion toggle — the "waves" icon means "ambient motion is on".
+          ValueListenableBuilder<bool>(
+            valueListenable: MotionService.instance.reduced,
+            builder: (_, reduced, __) {
+              final forcedByOs = MediaQuery.maybeDisableAnimationsOf(context) == true;
+              final held = reduced || forcedByOs;
+              return _ChipButton(
+                icon: held ? Icons.motion_photos_off_rounded : Icons.waves_rounded,
+                tooltip: held
+                    ? (forcedByOs ? 'Reduced by device setting' : 'Enable ambient motion')
+                    : 'Reduce ambient motion',
+                dark: dark,
+                onTap: forcedByOs ? null : () => MotionService.instance.toggle(),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ChipButton extends StatelessWidget {
+  const _ChipButton({
+    required this.icon,
+    required this.tooltip,
+    required this.dark,
+    required this.onTap,
+  });
+  final IconData icon;
+  final String tooltip;
+  final bool dark;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tint = dark ? Themes.tealLight : Themes.brand;
+    return Tooltip(
+      message: tooltip,
+      child: InkResponse(
+        onTap: onTap,
+        radius: 22,
+        child: SizedBox(
+          width: 30,
+          height: 30,
+          child: Icon(
+            icon,
+            size: 16,
+            color: onTap == null ? tint.withValues(alpha: 0.45) : tint,
+          ),
+        ),
+      ),
+    );
   }
 }
 

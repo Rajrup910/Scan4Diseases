@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 
 import '../../services/find_doctor.dart';
+import '../../services/theme_service.dart';
 import '../Chat/chatScreen.dart';
 import '../Guide/skinGuideScreen.dart';
 import '../Reports/reportSummarySheet.dart';
@@ -49,10 +50,22 @@ class DiagnosisResultsUI extends StatelessWidget {
     final confidence = isLesion ? _double('confidence') : null;
     final stub = diagnosisData['stub'] == true;
 
+    // Wraps the whole screen so a theme flip mid-visit rebuilds every
+    // card. Individual card helpers below still return their existing
+    // widget trees; Card + the shared themeData supply their surface and
+    // default text colors, so the visible chrome (headline, glass, ring)
+    // switches without a per-line rewrite.
+    return ValueListenableBuilder<ThemeMode>(
+      valueListenable: ThemeService.instance.mode,
+      builder: (context, __, ___) {
+        final dark = ThemeService.instance.isDark(context);
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        backgroundColor: Colors.white.withValues(alpha: 0.85),
+        backgroundColor: dark
+            ? const Color(0xFF161920).withValues(alpha: 0.72)
+            : Colors.white.withValues(alpha: 0.85),
+        foregroundColor: dark ? Themes.darkInk : Themes.ink,
         elevation: 0,
         scrolledUnderElevation: 1,
         title: const Text('Screening result'),
@@ -111,6 +124,8 @@ class DiagnosisResultsUI extends StatelessWidget {
           ),
         ],
       ),
+    );
+      },
     );
   }
 
