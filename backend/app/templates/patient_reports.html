@@ -7,7 +7,7 @@
   <span>{{ patient.display_name or patient.email }}</span>
 </nav>
 
-<div class="page-head">
+<div class="page-head" style="view-transition-name: patient-{{ patient.id }};">
   <h1>{{ patient.display_name or "Patient" }}</h1>
   <p class="muted mono">{{ patient.email }}</p>
 </div>

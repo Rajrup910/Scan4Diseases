@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import '../Doctors/nearbyDoctorsScreen.dart';
 import '../Guide/skinGuideScreen.dart';
@@ -19,9 +20,12 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return ValueListenableBuilder<List<ScreeningReport>>(
       valueListenable: AppData.reports,
-      builder: (_, reports, __) => ListView(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-        children: [
+      builder: (_, reports, __) {
+        // Build the top-level list as raw widgets, then wrap each in a small
+        // stagger-in helper so the home shell settles gently rather than
+        // snapping in as one flat block. 30ms per row → the whole shell is in
+        // place under ~350ms.
+        final rawChildren = <Widget>[
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
@@ -74,8 +78,20 @@ class HomeScreen extends StatelessWidget {
           _uvAdvisoryCard(context),
           const SizedBox(height: 20),
           const _SafetyCard(),
-        ],
-      ),
+        ];
+        // Preserve spacer SizedBoxes as-is (no animation needed for empty
+        // spans), but stagger substantive children by their content index.
+        var contentIndex = 0;
+        final staggered = <Widget>[
+          for (final w in rawChildren)
+            if (w is SizedBox) w
+            else _StaggerIn(index: contentIndex++, child: w),
+        ];
+        return ListView(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+          children: staggered,
+        );
+      },
     );
   }
 
@@ -332,6 +348,57 @@ class HomeScreen extends StatelessWidget {
       ),
     ),
   );
+}
+
+/// Fades and glides a widget in with a per-index delay. Used to stagger the
+/// home shell's top-level rows so nothing snaps in as one flat block. Cheap:
+/// one AnimationController per row, disposed on unmount, and no-op once done.
+class _StaggerIn extends StatefulWidget {
+  const _StaggerIn({required this.index, required this.child});
+  final int index;
+  final Widget child;
+  @override
+  State<_StaggerIn> createState() => _StaggerInState();
+}
+
+class _StaggerInState extends State<_StaggerIn> with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+  Timer? _kick;
+
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 220),
+    );
+    _kick = Timer(Duration(milliseconds: 30 * widget.index), () {
+      if (mounted) _c.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _kick?.cancel();
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: _c,
+        builder: (_, child) {
+          final t = Curves.easeOutCubic.transform(_c.value);
+          return Opacity(
+            opacity: t,
+            child: Transform.translate(
+              offset: Offset(0, 10 * (1 - t)),
+              child: child,
+            ),
+          );
+        },
+        child: widget.child,
+      );
 }
 
 class _SafetyCard extends StatelessWidget {

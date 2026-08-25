@@ -7,8 +7,6 @@ import '../../services/auth_service.dart';
 import '../theme.dart';
 import '../widgets/video_background.dart';
 import '../widgets/app_logo_mark.dart';
-import '../widgets/slide_to_start.dart';
-import '../widgets/expanding_orbs_painter.dart';
 import '../widgets/emerald_waves.dart';
 
 /// Combined sign-in / create-account screen. Shown whenever there is no
@@ -429,9 +427,16 @@ class _LogoAuthHaloState extends State<_LogoAuthHalo>
           opacity = (1.0 - (t - 0.88) / 0.12).clamp(0.0, 1.0);
         }
 
-        final scale = 0.5 + 0.55 * Curves.easeOutBack.transform((t / 0.40).clamp(0.0, 1.0));
+        // easeOutCubic (0.95→1.0) instead of easeOutBack: the previous
+        // overshoot bounce clashed with the app's restrained page transition
+        // and read as marketing pop. Scale range narrowed so the disc lands
+        // calmly.
+        final scale = 0.95 + 0.05 * Curves.easeOutCubic.transform((t / 0.35).clamp(0.0, 1.0));
 
         if (opacity <= 0.01) return const SizedBox.shrink();
+
+        final accent = isErr ? const Color(0xFFEF4444) : Themes.brand;
+        final rim    = isErr ? const Color(0xFFFCA5A5) : const Color(0xFF6EE7B7);
 
         return Positioned.fill(
           child: Center(
@@ -459,21 +464,21 @@ class _LogoAuthHaloState extends State<_LogoAuthHalo>
                               Color(0xFF064E3B),
                             ],
                     ),
-                    border: Border.all(
-                      color: isErr ? const Color(0xFFFCA5A5) : const Color(0xFF6EE7B7),
-                      width: 2.6,
-                    ),
+                    border: Border.all(color: rim.withValues(alpha: 0.7), width: 1.6),
+                    // Restrained: a soft brand-tinted ambient shadow + a hairline
+                    // luminous rim, no 36-blur neon bloom. Matches the "no AI-slop
+                    // neon glows" language on cards elsewhere in the app.
                     boxShadow: [
                       BoxShadow(
-                        color: (isErr ? const Color(0xFFEF4444) : const Color(0xFF10B981))
-                            .withValues(alpha: 0.85),
-                        blurRadius: 36,
-                        spreadRadius: 3,
+                        color: accent.withValues(alpha: 0.32),
+                        blurRadius: 12,
+                        spreadRadius: 0,
+                        offset: const Offset(0, 6),
                       ),
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.35),
-                        blurRadius: 14,
-                        offset: const Offset(0, 6),
+                        color: Colors.black.withValues(alpha: 0.20),
+                        blurRadius: 10,
+                        offset: const Offset(0, 3),
                       ),
                     ],
                   ),

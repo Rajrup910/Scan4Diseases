@@ -20,6 +20,124 @@
     });
   });
 
+  /* --- 1b. toasts ------------------------------------------------------------------ */
+  // Completion feedback for actions that POST and redirect. Because the page
+  // reloads, the toast is stashed in sessionStorage on submit and drained on
+  // the next load. showToast() can also be called directly for same-page
+  // actions (e.g. a failed fetch in the chat).
+  var TOAST_KEY = "s4d-pending-toast";
+  var toastLayer = null;
+
+  function ensureToastLayer() {
+    if (toastLayer && document.body.contains(toastLayer)) return toastLayer;
+    toastLayer = document.createElement("div");
+    toastLayer.className = "toast-layer";
+    // Announce politely: these are confirmations, never interruptions.
+    toastLayer.setAttribute("role", "status");
+    toastLayer.setAttribute("aria-live", "polite");
+    document.body.appendChild(toastLayer);
+    return toastLayer;
+  }
+
+  function showToast(title, sub, isError) {
+    var layer = ensureToastLayer();
+    var el = document.createElement("div");
+    el.className = "toast" + (isError ? " is-error" : "");
+
+    var disc = document.createElement("span");
+    disc.className = "toast-disc";
+    disc.setAttribute("aria-hidden", "true");
+    disc.innerHTML = isError
+      ? '<svg viewBox="0 0 52 52"><path class="toast-tick" d="M17 17l18 18M35 17L17 35"/></svg>'
+      : '<svg viewBox="0 0 52 52"><path class="toast-tick" d="M14.5 27.5l7.5 7.5 16-16"/></svg>';
+
+    var body = document.createElement("div");
+    body.className = "toast-body";
+    var t = document.createElement("div");
+    t.className = "toast-title";
+    t.textContent = title;
+    body.appendChild(t);
+    if (sub) {
+      var s = document.createElement("div");
+      s.className = "toast-sub";
+      s.textContent = sub;
+      body.appendChild(s);
+    }
+
+    el.appendChild(disc);
+    el.appendChild(body);
+    layer.appendChild(el);
+
+    // Auto-dismiss after 3s, with a short leave animation.
+    var life = setTimeout(function () { dismiss(); }, 3000);
+    function dismiss() {
+      clearTimeout(life);
+      if (!el.parentNode) return;
+      el.classList.add("is-leaving");
+      if (reduce) { el.remove(); return; }
+      setTimeout(function () { if (el.parentNode) el.remove(); }, 220);
+    }
+    // Click to dismiss early.
+    el.addEventListener("click", dismiss);
+    return el;
+  }
+
+  // Queue a toast to appear after the next navigation/redirect.
+  function queueToast(title, sub, isError) {
+    try {
+      sessionStorage.setItem(TOAST_KEY, JSON.stringify({ title: title, sub: sub, error: !!isError }));
+    } catch (e) {}
+  }
+
+  // Drain any queued toast on load.
+  (function drainToast() {
+    var raw = null;
+    try {
+      raw = sessionStorage.getItem(TOAST_KEY);
+      if (raw) sessionStorage.removeItem(TOAST_KEY);
+    } catch (e) { return; }
+    if (!raw) return;
+    try {
+      var d = JSON.parse(raw);
+      if (d && d.title) showToast(d.title, d.sub, d.error);
+    } catch (e) {}
+  })();
+
+  // Wire the redirecting forms. Each queues its toast at submit time; the
+  // server redirect then reloads the page and drainToast() renders it.
+  document.querySelectorAll("form.status-form").forEach(function (form) {
+    form.addEventListener("submit", function (e) {
+      // The status value lives on the clicked submit button.
+      var btn = e.submitter;
+      var label = btn ? (btn.querySelector(".menu-item-label") || {}).textContent : null;
+      queueToast("Review status updated", label ? ("Set to " + label.trim()) : null, false);
+    });
+  });
+  document.querySelectorAll("form.note-form").forEach(function (form) {
+    form.addEventListener("submit", function () {
+      queueToast("Note added", "Saved to this report", false);
+    });
+  });
+
+  // Expose for other blocks in this file (and for inline callers).
+  window.s4dToast = showToast;
+
+  /* --- 1c. imagery skeletons -------------------------------------------------------- */
+  // The lesion photo and Grad-CAM overlay are lazy-loaded from the API after
+  // first paint. CSS holds a shimmering placeholder until the image decodes;
+  // marking the figure .is-loaded retires it and cross-fades the shot in.
+  document.querySelectorAll(".imagery-display .shot-full").forEach(function (fig) {
+    var img = fig.querySelector("img");
+    if (!img) { fig.classList.add("is-loaded"); return; }
+    function done() { fig.classList.add("is-loaded"); }
+    // Cache hits may already be complete before this runs.
+    if (img.complete && img.naturalWidth > 0) { done(); return; }
+    img.addEventListener("load", done);
+    // The inline onerror swaps in an empty-state panel; clear the skeleton too
+    // so the placeholder never outlives the image it was standing in for.
+    img.addEventListener("error", done);
+  });
+
   /* --- 2. shared morph primitive (R5) ---------------------------------------------- */
   // Runs mutate(), animating the size change of `el`. Every in-place swap uses this, so
   // all "switching" in the app shares one timing — that consistency is the point.
@@ -420,7 +538,14 @@
       });
     }
 
-    function scroll() { log.scrollTop = log.scrollHeight; }
+    function scroll() {
+      // Smooth-scroll the transcript to bottom on every append. On the first
+      // paint (log height ≈ scrollTop) the smoothing degrades to instant
+      // naturally, so no special case needed. Falls back to instant when the
+      // viewer prefers reduced motion.
+      if (reduce) { log.scrollTop = log.scrollHeight; return; }
+      log.scrollTo({ top: log.scrollHeight, behavior: "smooth" });
+    }
     function bubble(role, text, isError) {
       var wrap = document.createElement("div");
       wrap.className = "ai-msg " + (role === "user" ? "ai-msg-user" : "ai-msg-bot");
@@ -486,6 +611,8 @@
       }).catch(function () {
         t.remove();
         bubble("bot", "Couldn’t reach the assistant. Check your connection and try again.", true);
+        // Same-page failure, so show the toast directly rather than queueing.
+        showToast("Assistant unreachable", "Check your connection", true);
       }).finally(function () {
         busy = false;
         if (send) send.disabled = false;

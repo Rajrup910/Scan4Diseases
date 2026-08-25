@@ -10,16 +10,16 @@ import '../widgets/app_logo_mark.dart';
 /// A full-screen overlay played AFTER a successful [AuthService.login] or
 /// [AuthService.register] returns. Three phases (jade → mint brand palette):
 ///
-///   0 ─ 2200 ms  scan     — a jade reticle sweeps around the app logo, a soft
-///                           glow pulses, "Scanning credentials…" pulses below.
-///   2200 ─ 2600 ms morph  — the reticle contracts into a filled brand disc and
-///                           a checkmark strokes on (400 ms cubic-easeOut).
-///   2600 ─ 3400 ms burst  — a jade/mint particle ring bursts outward and fades.
+///   0 ─ 1400 ms  scan     — a jade reticle sweeps ONCE around the app logo,
+///                           "Scanning credentials…" pulses below.
+///   1400 ─ 1750 ms morph  — the reticle contracts into a filled brand disc and
+///                           a checkmark strokes on (350 ms cubic-easeOut).
+///   1750 ─ 2200 ms settle — a single soft rim pulse ripples outward and fades.
 ///
-/// Once the burst settles, the success card fades in with the user's name, email
-/// and an optional short session token. Tapping "Launch AI Screening Portal"
-/// dismisses the overlay — the [AuthGate] has already swapped the screen behind
-/// it to the home shell, so the user lands directly on the app.
+/// Once the settle finishes, the success card fades in. Redesigned from the
+/// original 3.4s theatrical version: single revolution instead of two, one rim
+/// pulse instead of a 22-particle burst, calmer logo breath — matches the
+/// app's restrained motion language.
 ///
 /// Push via a root navigator so the overlay survives the AuthGate rebuild:
 ///
@@ -75,34 +75,21 @@ class Scan4DiseaseSuccess extends StatefulWidget {
 
 class _Scan4DiseaseSuccessState extends State<Scan4DiseaseSuccess>
     with SingleTickerProviderStateMixin {
-  // Whole sequence = scan + morph + burst + a small tail so the card lands calmly.
-  static const Duration _total = Duration(milliseconds: 3400);
-  static const double _scanEnd = 2200 / 3400;
-  static const double _morphEnd = 2600 / 3400;
-  static const double _burstEnd = 1.0;
+  // Whole sequence = scan + morph + settle. Cut from 3.4s to 2.2s and the
+  // 22-particle burst removed so the moment reads as calm confirmation, not
+  // fireworks.
+  static const Duration _total = Duration(milliseconds: 2200);
+  static const double _scanEnd = 1400 / 2200;
+  static const double _morphEnd = 1750 / 2200;
+  static const double _settleEnd = 1.0;
 
   late final AnimationController _c;
-  late final List<_Particle> _particles;
   bool _cardShown = false;
 
   @override
   void initState() {
     super.initState();
     _c = AnimationController(vsync: this, duration: _total)..forward();
-    // Deterministic particle spread so hot-reload doesn't jitter, per-instance
-    // seed so two openings in one session look natural.
-    final rng = math.Random(DateTime.now().microsecondsSinceEpoch & 0xFFFF);
-    _particles = List.generate(22, (i) {
-      final baseAngle = (i / 22) * math.pi * 2;
-      return _Particle(
-        angle: baseAngle + rng.nextDouble() * 0.25 - 0.125,
-        distance: 90 + rng.nextDouble() * 60,
-        size: 3.5 + rng.nextDouble() * 3.5,
-        // Mix of brand jade and lighter mint.
-        color: rng.nextBool() ? Themes.brand : Themes.mint,
-        delay: rng.nextDouble() * 0.12,
-      );
-    });
     _c.addStatusListener((s) {
       if (s == AnimationStatus.completed && mounted) {
         setState(() => _cardShown = true);
@@ -157,8 +144,7 @@ class _Scan4DiseaseSuccessState extends State<Scan4DiseaseSuccess>
                               progress: _c.value,
                               scanEnd: _scanEnd,
                               morphEnd: _morphEnd,
-                              burstEnd: _burstEnd,
-                              particles: _particles,
+                              settleEnd: _settleEnd,
                             ),
                             child: Center(
                               child: _CenterMark(progress: _c.value),
@@ -217,7 +203,7 @@ class _BrandBackdrop extends StatelessWidget {
             center: const Alignment(0, -0.25),
             radius: 1.1,
             colors: [
-              Themes.mint.withOpacity(0.06),
+              Themes.mint.withValues(alpha: 0.06),
               Themes.canvas,
             ],
             stops: const [0.0, 0.78],
@@ -255,21 +241,22 @@ class _CenterMark extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Themes.brand,
+                // Restrained ambient shadow, not a spread-radius bloom.
                 boxShadow: [
                   BoxShadow(
-                    color: Themes.brand.withOpacity(0.4),
-                    blurRadius: 24,
-                    spreadRadius: 2,
+                    color: Themes.brand.withValues(alpha: 0.28),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
                   ),
                 ],
               ),
             ),
           ),
-          // App logo — clean frameless vector emblem, gently pulses during scanning.
+          // App logo — one gentle breath while scanning, not a 6-cycle pulse.
           Opacity(
             opacity: logoOpacity,
             child: Transform.scale(
-              scale: 0.98 + 0.04 * math.sin(progress * math.pi * 6),
+              scale: 0.98 + 0.02 * math.sin(progress * math.pi * 2),
               child: const AppLogoMark(size: 96),
             ),
           ),
@@ -305,36 +292,19 @@ class _PhaseLabel extends StatelessWidget {
   }
 }
 
-/* ─── painter: reticle + checkmark + particle burst ──────────────────────── */
-
-class _Particle {
-  const _Particle({
-    required this.angle,
-    required this.distance,
-    required this.size,
-    required this.color,
-    required this.delay,
-  });
-  final double angle;
-  final double distance; // px from center at full expansion
-  final double size;
-  final Color color;
-  final double delay; // 0..0.2 of burst phase
-}
+/* ─── painter: reticle + checkmark + rim pulse ──────────────────────────── */
 
 class _ScanCheckPainter extends CustomPainter {
   _ScanCheckPainter({
     required this.progress,
     required this.scanEnd,
     required this.morphEnd,
-    required this.burstEnd,
-    required this.particles,
+    required this.settleEnd,
   });
   final double progress;
   final double scanEnd;
   final double morphEnd;
-  final double burstEnd;
-  final List<_Particle> particles;
+  final double settleEnd;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -346,7 +316,7 @@ class _ScanCheckPainter extends CustomPainter {
     final ring = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 2
-      ..color = Themes.brand.withOpacity(0.18);
+      ..color = Themes.brand.withValues(alpha: 0.18);
     canvas.drawCircle(center, ringR, ring);
 
     if (progress < scanEnd) {
@@ -354,15 +324,16 @@ class _ScanCheckPainter extends CustomPainter {
     } else if (progress < morphEnd) {
       _paintMorph(canvas, center, ringR);
     } else {
-      _paintCheckAndBurst(canvas, center, ringR);
+      _paintCheckAndSettle(canvas, center, ringR);
     }
   }
 
   void _paintScan(Canvas canvas, Offset center, double r) {
     final t = progress / scanEnd;
-    // Rotating jade sweep — one bright arc that goes twice around during scan.
+    // Rotating jade sweep — a single revolution during scan, not two. The
+    // previous 2× rotation felt too eager for the "calm confirmation" tone.
     final sweep = math.pi * 0.55;
-    final startAngle = -math.pi / 2 + t * math.pi * 4;
+    final startAngle = -math.pi / 2 + t * math.pi * 2;
     final rect = Rect.fromCircle(center: center, radius: r);
     final grad = SweepGradient(
       startAngle: startAngle,
@@ -374,13 +345,13 @@ class _ScanCheckPainter extends CustomPainter {
       ..shader = grad.createShader(rect)
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
-      ..strokeWidth = 4;
+      ..strokeWidth = 3.2;
     canvas.drawArc(rect, startAngle, sweep, false, arc);
 
     // Four small brand ticks at the cardinal points — nods to the horizontal
     // brandmark's reticle without duplicating it.
     final tick = Paint()
-      ..color = Themes.brand.withOpacity(0.55)
+      ..color = Themes.brand.withValues(alpha: 0.55)
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
     for (var i = 0; i < 4; i++) {
@@ -395,22 +366,22 @@ class _ScanCheckPainter extends CustomPainter {
     // Contract the sweep into a bright rim + start stroking the check.
     final t = ((progress - scanEnd) / (morphEnd - scanEnd)).clamp(0.0, 1.0);
     final rim = Paint()
-      ..color = Color.lerp(Themes.brand, Themes.mint, t)!.withOpacity(0.85)
+      ..color = Color.lerp(Themes.brand, Themes.mint, t)!.withValues(alpha: 0.85)
       ..strokeWidth = 3 + 2 * (1 - t)
       ..style = PaintingStyle.stroke;
     canvas.drawCircle(center, r, rim);
     _paintCheck(canvas, center, Curves.easeOutCubic.transform(t));
   }
 
-  void _paintCheckAndBurst(Canvas canvas, Offset center, double r) {
+  void _paintCheckAndSettle(Canvas canvas, Offset center, double r) {
     // Steady rim.
     final rim = Paint()
-      ..color = Themes.brand.withOpacity(0.55)
+      ..color = Themes.brand.withValues(alpha: 0.55)
       ..strokeWidth = 2
       ..style = PaintingStyle.stroke;
     canvas.drawCircle(center, r, rim);
     _paintCheck(canvas, center, 1.0);
-    _paintBurst(canvas, center);
+    _paintRimPulse(canvas, center, r);
   }
 
   /// Two-segment checkmark, stroked in with a length-along-path clip.
@@ -447,21 +418,19 @@ class _ScanCheckPainter extends CustomPainter {
     canvas.drawPath(path, paint);
   }
 
-  void _paintBurst(Canvas canvas, Offset center) {
-    final tGlobal =
-        ((progress - morphEnd) / (burstEnd - morphEnd)).clamp(0.0, 1.0);
-    for (final p in particles) {
-      final local = ((tGlobal - p.delay) / (1.0 - p.delay)).clamp(0.0, 1.0);
-      if (local <= 0) continue;
-      final ease = Curves.easeOutCubic.transform(local);
-      final pos = center +
-          Offset(math.cos(p.angle), math.sin(p.angle)) * (p.distance * ease);
-      final fade = (1.0 - local).clamp(0.0, 1.0);
-      final paint = Paint()
-        ..color = p.color.withOpacity(0.9 * fade)
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.5);
-      canvas.drawCircle(pos, p.size * (0.6 + 0.4 * fade), paint);
-    }
+  /// A single soft rim pulse — one expanding ring that fades — replacing the
+  /// 22-particle burst. Same visual beat "something just resolved," calmer.
+  void _paintRimPulse(Canvas canvas, Offset center, double baseR) {
+    final t = ((progress - morphEnd) / (settleEnd - morphEnd)).clamp(0.0, 1.0);
+    final ease = Curves.easeOutCubic.transform(t);
+    // Ring travels outward from the base rim by ~14px and fades to zero.
+    final radius = baseR + 14 * ease;
+    final alpha = (1.0 - ease) * 0.5;
+    final pulse = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.4
+      ..color = Themes.mint.withValues(alpha: alpha);
+    canvas.drawCircle(center, radius, pulse);
   }
 
   @override

@@ -1,9 +1,18 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
+import '../../services/motion_service.dart';
+
 /// An elegant, living surface for clinical green panels and buttons that displays
 /// smooth, organic undulating sine waves of bright emerald, mint, and deep dark green.
 /// Supports [reverse] to run waves in opposite directions across adjacent widgets.
+///
+/// Several of these are alive at once (home hero, sign-in button, slide track,
+/// floating action button), each repainting a full-canvas gradient every frame.
+/// When [MotionService] reports reduced ambient motion — either because the
+/// user asked for it in Profile or because the platform accessibility setting
+/// is on — the ticker stops and the surface holds a still frame. The painting
+/// is identical; only the animation stops, so nothing about the design is lost.
 class EmeraldWaves extends StatefulWidget {
   final Widget? child;
   final BorderRadius borderRadius;
@@ -32,6 +41,10 @@ class _EmeraldWavesState extends State<EmeraldWaves>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
 
+  /// Phase held when ambient motion is paused. Picked so the crest sits in a
+  /// flattering position rather than at the flat t=0 start of the sine.
+  static const double _restingPhase = 0.22;
+
   @override
   void initState() {
     super.initState();
@@ -39,7 +52,19 @@ class _EmeraldWavesState extends State<EmeraldWaves>
     _ctrl = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: durationMs),
-    )..repeat();
+    );
+  }
+
+  /// Start or stop the ticker to match the current preference. Stopping the
+  /// controller is what actually reclaims the per-frame repaint cost — merely
+  /// ignoring its value would keep the whole widget rebuilding at 60fps.
+  void _syncTicker(bool hold) {
+    if (hold) {
+      if (_ctrl.isAnimating) _ctrl.stop();
+      _ctrl.value = _restingPhase;
+    } else if (!_ctrl.isAnimating) {
+      _ctrl.repeat();
+    }
   }
 
   @override
@@ -50,25 +75,35 @@ class _EmeraldWavesState extends State<EmeraldWaves>
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _ctrl,
-      builder: (context, _) {
-        return ClipRRect(
-          borderRadius: widget.borderRadius,
-          child: CustomPaint(
-            painter: EmeraldWavesPainter(
-              progress: _ctrl.value,
+    return ValueListenableBuilder<bool>(
+      valueListenable: MotionService.instance.reduced,
+      builder: (context, prefersReduced, __) {
+        final hold = MotionService.shouldHold(context, prefersReduced);
+        // Applied after this frame so the ticker is never mutated mid-build.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _syncTicker(hold);
+        });
+        return AnimatedBuilder(
+          animation: _ctrl,
+          builder: (context, _) {
+            return ClipRRect(
               borderRadius: widget.borderRadius,
-              border: widget.border,
-              reverse: widget.reverse,
-            ),
-            child: Container(
-              height: widget.height,
-              width: widget.width,
-              alignment: Alignment.center,
-              child: widget.child,
-            ),
-          ),
+              child: CustomPaint(
+                painter: EmeraldWavesPainter(
+                  progress: hold ? _restingPhase : _ctrl.value,
+                  borderRadius: widget.borderRadius,
+                  border: widget.border,
+                  reverse: widget.reverse,
+                ),
+                child: Container(
+                  height: widget.height,
+                  width: widget.width,
+                  alignment: Alignment.center,
+                  child: widget.child,
+                ),
+              ),
+            );
+          },
         );
       },
     );

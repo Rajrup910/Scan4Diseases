@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../app_data.dart';
@@ -286,6 +288,10 @@ class _ReportScreenState extends State<ReportScreen> {
             ? (Themes.soon, Themes.soonBg, Icons.schedule_rounded)
             : (Themes.routine, Themes.routineBg, Icons.check_circle_outline_rounded);
 
+    // Dismissible carries `ObjectKey(r)` so Flutter identity-tracks each row
+    // across filter changes; the TweenAnimationBuilder inside can therefore
+    // animate exactly once per report — new rows fade+glide in when the
+    // active filter first surfaces them, existing rows stay put.
     return Dismissible(
       key: ObjectKey(r),
       direction: DismissDirection.endToStart,
@@ -305,7 +311,15 @@ class _ReportScreenState extends State<ReportScreen> {
               style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
         ]),
       ),
-      child: Card(
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0.0, end: 1.0),
+        duration: const Duration(milliseconds: 220),
+        curve: Curves.easeOutCubic,
+        builder: (_, t, child) => Opacity(
+          opacity: t,
+          child: Transform.translate(offset: Offset(0, 6 * (1 - t)), child: child),
+        ),
+        child: Card(
         margin: const EdgeInsets.only(bottom: 12),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
@@ -330,16 +344,7 @@ class _ReportScreenState extends State<ReportScreen> {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 14, 8, 14),
             child: Row(children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: Themes.brandTint.withValues(alpha: 0.70),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.85)),
-                ),
-                child: const Icon(Icons.health_and_safety_outlined, color: Themes.brand, size: 24),
-              ),
+              _lesionThumb(r),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -392,7 +397,46 @@ class _ReportScreenState extends State<ReportScreen> {
           ),
         ),
       ),
+      ),
     );
+  }
+
+  /// The row's leading tile. When the saved lesion photo is still on disk it
+  /// becomes the thumbnail and the shared [Hero] source for the flight into
+  /// [DiagnosisResultsUI]; otherwise it falls back to the original brand icon.
+  ///
+  /// The Hero is only attached when the report has an id — an unsaved result
+  /// has no stable tag, and a duplicate/missing tag would break the flight.
+  Widget _lesionThumb(ScreeningReport r) {
+    const size = 48.0;
+    final path = r.imagePath ?? '';
+    final hasPhoto = path.isNotEmpty && File(path).existsSync();
+
+    final tile = Container(
+      width: size,
+      height: size,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: Themes.brandTint.withValues(alpha: 0.70),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.85)),
+      ),
+      child: hasPhoto
+          ? Image.file(
+              File(path),
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+              // If the file vanishes between the check and the decode, fall
+              // back rather than showing a broken-image glyph.
+              errorBuilder: (_, __, ___) =>
+                  const Icon(Icons.health_and_safety_outlined, color: Themes.brand, size: 24),
+            )
+          : const Icon(Icons.health_and_safety_outlined, color: Themes.brand, size: 24),
+    );
+
+    if (!hasPhoto || r.id == null) return tile;
+    return Hero(tag: 'lesion-${r.id}', child: tile);
   }
 
   String _date(DateTime d) =>
@@ -428,11 +472,12 @@ class _MarqueeTextState extends State<_MarqueeText> {
   bool _animating = false;
   bool _disposed = false;
 
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _startAnimationLoop());
-  }
+  /// True once the label has been measured as wider than the space it was
+  /// given. Most triage strings ("Routine", "See a doctor soon") fit outright,
+  /// and scrolling those was pure distraction — with four or five cards on
+  /// screen the list never sat still. The loop now only ever runs for labels
+  /// that genuinely need it.
+  bool _overflows = false;
 
   @override
   void didUpdateWidget(covariant _MarqueeText oldWidget) {
@@ -444,11 +489,25 @@ class _MarqueeTextState extends State<_MarqueeText> {
     }
   }
 
+  /// Starts the scroll loop on the next frame, once and only once.
+  void _ensureLoop() {
+    if (_animating || _disposed) return;
+    _animating = true; // claim immediately so a rebuild can't double-start
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || _disposed) return;
+      _animating = false; // _startAnimationLoop re-claims it
+      _startAnimationLoop();
+    });
+  }
+
   Future<void> _startAnimationLoop() async {
     if (_animating || !mounted) return;
     _animating = true;
 
-    while (mounted && !_disposed) {
+    // `_overflows` is set from the measured layout in build(); if the label
+    // stops overflowing (rotation, a shorter triage string) the loop exits on
+    // its next pass rather than idling forever.
+    while (mounted && !_disposed && _overflows) {
       // 1. Initial pause at start (offset 0) so the user reads the beginning of the text
       await Future.delayed(const Duration(milliseconds: 1400));
       if (!mounted || _disposed) break;
@@ -492,16 +551,44 @@ class _MarqueeTextState extends State<_MarqueeText> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      controller: _scrollController,
-      scrollDirection: Axis.horizontal,
-      physics: const NeverScrollableScrollPhysics(),
-      child: Text(
-        widget.text,
-        maxLines: 1,
-        softWrap: false,
-        style: widget.style,
-      ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Measure the label at its natural width and compare against the space
+        // actually available. An unbounded width (no constraint to overflow)
+        // reads as "fits", which is the safe default.
+        final painter = TextPainter(
+          text: TextSpan(text: widget.text, style: widget.style),
+          maxLines: 1,
+          textDirection: Directionality.of(context),
+        )..layout();
+
+        _overflows = constraints.maxWidth.isFinite &&
+            painter.width > constraints.maxWidth + 0.5;
+
+        if (!_overflows) {
+          // Static label — no controller, no loop, no repaint.
+          return Text(
+            widget.text,
+            maxLines: 1,
+            softWrap: false,
+            overflow: TextOverflow.clip,
+            style: widget.style,
+          );
+        }
+
+        _ensureLoop();
+        return SingleChildScrollView(
+          controller: _scrollController,
+          scrollDirection: Axis.horizontal,
+          physics: const NeverScrollableScrollPhysics(),
+          child: Text(
+            widget.text,
+            maxLines: 1,
+            softWrap: false,
+            style: widget.style,
+          ),
+        );
+      },
     );
   }
 }

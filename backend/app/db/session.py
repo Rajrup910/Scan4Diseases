@@ -30,18 +30,40 @@ def _build_engine():
     db_file.parent.mkdir(parents=True, exist_ok=True)
     is_sqlite = settings.database_url.startswith("sqlite")
     connect_args = {"check_same_thread": False, "timeout": 30.0} if is_sqlite else {}
+    # A small bounded connection pool. FastAPI runs the sync DB handlers in its
+    # threadpool, so several requests can want a connection at once; QueuePool
+    # (the default for a file-backed SQLite URL) hands them out and recycles
+    # them. pool_pre_ping drops any connection that has gone stale before it is
+    # reused, and pool_recycle caps connection age so long-lived workers do not
+    # accumulate half-dead handles under sustained traffic.
+    pool_kwargs = (
+        {"pool_size": 10, "max_overflow": 20, "pool_recycle": 1800}
+        if is_sqlite
+        else {}
+    )
     eng = create_engine(
         settings.database_url,
         connect_args=connect_args,
         pool_pre_ping=True,
         future=True,
+        **pool_kwargs,
     )
     if is_sqlite:
         @event.listens_for(eng, "connect")
         def set_sqlite_pragma(dbapi_connection, connection_record):
             cursor = dbapi_connection.cursor()
+            # WAL lets readers run concurrently with a single writer, which is
+            # what a read-heavy portal + screening workload needs.
             cursor.execute("PRAGMA journal_mode=WAL")
+            # NORMAL is durable under WAL and much faster than FULL.
             cursor.execute("PRAGMA synchronous=NORMAL")
+            # Under WAL, concurrent writers still serialise; without a busy
+            # timeout the second writer fails immediately with "database is
+            # locked". Wait up to 30s (matching the connect timeout) so bursts
+            # of writes queue gracefully instead of erroring under load.
+            cursor.execute("PRAGMA busy_timeout=30000")
+            # Enforce declared foreign keys (off by default in SQLite).
+            cursor.execute("PRAGMA foreign_keys=ON")
             cursor.close()
     return eng
 

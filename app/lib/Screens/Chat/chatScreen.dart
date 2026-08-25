@@ -212,8 +212,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _bubble(_Msg m) {
     final isUser = m.role == 'user';
+    Widget wrap(Widget child) => _BubbleEnter(fromRight: isUser, child: child);
     if (m.system) {
-      return Container(
+      return wrap(Container(
         margin: const EdgeInsets.symmetric(vertical: 6),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -226,9 +227,9 @@ class _ChatScreenState extends State<ChatScreen> {
           const SizedBox(width: 8),
           Expanded(child: Text(m.content, style: const TextStyle(height: 1.35, color: Themes.ink, fontSize: 13))),
         ]),
-      );
+      ));
     }
-    return Align(
+    return wrap(Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 6),
@@ -279,7 +280,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 ],
               ),
       ),
-    );
+    ));
   }
 
   Widget _disclaimerStrip() => Container(
@@ -520,4 +521,43 @@ class _SnakeLoader3x3State extends State<SnakeLoader3x3>
       ),
     );
   }
+}
+
+/// One-shot fade + horizontal glide for a chat bubble the first time it
+/// mounts. User bubbles glide in from the right, assistant bubbles from the
+/// left — same feel the portal chat now uses. State is retained after the
+/// forward pass so scrolling / rebuilds don't retrigger it.
+class _BubbleEnter extends StatefulWidget {
+  const _BubbleEnter({required this.fromRight, required this.child});
+  final bool fromRight;
+  final Widget child;
+  @override
+  State<_BubbleEnter> createState() => _BubbleEnterState();
+}
+
+class _BubbleEnterState extends State<_BubbleEnter> with SingleTickerProviderStateMixin {
+  late final AnimationController _c;
+  @override
+  void initState() {
+    super.initState();
+    _c = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 260),
+    )..forward();
+  }
+  @override
+  void dispose() { _c.dispose(); super.dispose(); }
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+        animation: _c,
+        builder: (_, child) {
+          final t = Curves.easeOutCubic.transform(_c.value);
+          final dx = (widget.fromRight ? 8.0 : -8.0) * (1 - t);
+          return Opacity(
+            opacity: t,
+            child: Transform.translate(offset: Offset(dx, 4 * (1 - t)), child: child),
+          );
+        },
+        child: widget.child,
+      );
 }

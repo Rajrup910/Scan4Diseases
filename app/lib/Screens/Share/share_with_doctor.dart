@@ -290,33 +290,39 @@ class ShareSuccessDialog extends StatefulWidget {
 class _ShareSuccessDialogState extends State<ShareSuccessDialog>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  late final Animation<double> _scaleAnimation;
-  late final Animation<double> _glowAnimation;
+  late final Animation<double> _discScale;
+  late final Animation<double> _haloOpacity;
   late final Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
+    // Calmed from 900ms elastic bounce → 620ms ease-out settle. The disc no
+    // longer springs into place; a soft brand-tint halo fades up around it
+    // once (no expanding wave loop) so success reads as a confirmation, not a
+    // celebration.
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: const Duration(milliseconds: 620),
     );
 
-    _scaleAnimation = CurvedAnimation(
-      parent: _controller,
-      curve: const Interval(0.0, 0.65, curve: Curves.elasticOut),
-    );
-
-    _glowAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+    _discScale = Tween<double>(begin: 0.94, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.2, 0.8, curve: Curves.easeInOut),
+        curve: const Interval(0.0, 0.55, curve: Curves.easeOutCubic),
+      ),
+    );
+
+    _haloOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.10, 0.70, curve: Curves.easeOut),
       ),
     );
 
     _fadeAnimation = CurvedAnimation(
       parent: _controller,
-      curve: const Interval(0.4, 1.0, curve: Curves.easeOut),
+      curve: const Interval(0.35, 1.0, curve: Curves.easeOut),
     );
 
     _controller.forward();
@@ -340,27 +346,34 @@ class _ShareSuccessDialogState extends State<ShareSuccessDialog>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Animated Pulse & Checkmark Badge
+            // Static jade check disc with a single soft brand halo.
             AnimatedBuilder(
               animation: _controller,
               builder: (context, child) {
                 return Stack(
                   alignment: Alignment.center,
                   children: [
-                    // Outer glow wave
-                    Container(
-                      width: 96 + (16 * _glowAnimation.value),
-                      height: 96 + (16 * _glowAnimation.value),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Themes.primary.withValues(
-                          alpha: 0.12 * (1.0 - _glowAnimation.value * 0.5),
+                    // Static brand-tint halo — fades up once, no expansion.
+                    Opacity(
+                      opacity: 0.55 * _haloOpacity.value,
+                      child: Container(
+                        width: 108,
+                        height: 108,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              Themes.primary.withValues(alpha: 0.18),
+                              Themes.primary.withValues(alpha: 0.0),
+                            ],
+                            stops: const [0.35, 1.0],
+                          ),
                         ),
                       ),
                     ),
-                    // Inner emerald core
+                    // Emerald core disc with a restrained ambient shadow.
                     ScaleTransition(
-                      scale: _scaleAnimation,
+                      scale: _discScale,
                       child: Container(
                         width: 80,
                         height: 80,
@@ -371,11 +384,15 @@ class _ShareSuccessDialogState extends State<ShareSuccessDialog>
                             end: Alignment.bottomRight,
                             colors: [Color(0xFF106E5A), Color(0xFF0B4639)],
                           ),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.30),
+                            width: 1.2,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: Themes.primary.withValues(alpha: 0.35),
-                              blurRadius: 18,
-                              offset: const Offset(0, 8),
+                              color: Themes.primary.withValues(alpha: 0.22),
+                              blurRadius: 10,
+                              offset: const Offset(0, 6),
                             ),
                           ],
                         ),

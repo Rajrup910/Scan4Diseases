@@ -118,7 +118,45 @@ class _MyLandingPageState extends State<MyLandingPage> {
                 const SizedBox(width: 8),
               ],
             ),
-            body: SafeArea(bottom: false, child: IndexedStack(index: _currentIndex, children: children)),
+            // Fade-through between tabs instead of a hard IndexedStack swap.
+            //
+            // Every child stays mounted, so state survives the switch (scroll
+            // offsets, form input, chat history, the running video backdrop).
+            // Rather than a plain crossfade — where both tabs are half-visible
+            // in the middle and the content muddles — this follows the Material
+            // fade-through shape: the outgoing tab clears out over the first
+            // ~35% of the 300ms, then the incoming one rises over the
+            // remainder while scaling 0.97 → 1.0. Hand-rolled with interval
+            // curves so the app takes no extra package dependency.
+            body: SafeArea(
+              bottom: false,
+              child: Stack(
+                children: List.generate(children.length, (i) {
+                  final isActive = i == _currentIndex;
+                  return IgnorePointer(
+                    ignoring: !isActive,
+                    child: AnimatedOpacity(
+                      opacity: isActive ? 1.0 : 0.0,
+                      duration: const Duration(milliseconds: 300),
+                      // Incoming waits out the outgoing tab's exit; outgoing
+                      // leaves promptly. The two intervals are what turn a
+                      // crossfade into a fade-through.
+                      curve: isActive
+                          ? const Interval(0.35, 1.0, curve: Curves.easeOutCubic)
+                          : const Interval(0.0, 0.35, curve: Curves.easeInCubic),
+                      child: AnimatedScale(
+                        scale: isActive ? 1.0 : 0.97,
+                        duration: const Duration(milliseconds: 300),
+                        curve: isActive
+                            ? const Interval(0.35, 1.0, curve: Curves.easeOutCubic)
+                            : const Interval(0.0, 0.35, curve: Curves.easeInCubic),
+                        child: children[i],
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
             bottomNavigationBar: FloatingTabBar(
               currentIndex: _currentIndex,
               onSelect: (i) => setState(() => _currentIndex = i),

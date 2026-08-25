@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../../services/find_doctor.dart';
@@ -74,6 +76,9 @@ class DiagnosisResultsUI extends StatelessWidget {
                 if (stub) _stubBanner(),
                 _headline(name, code, confidence),
                 const SizedBox(height: 16),
+                // The screened photograph itself. Also the Hero landing point
+                // for the thumbnail on the Reports list.
+                _lesionCard(),
                 _triageCard(),
                 const SizedBox(height: 14),
                 // Send this screening to a verified doctor for review (patient-initiated sharing).
@@ -397,6 +402,46 @@ class DiagnosisResultsUI extends StatelessWidget {
     );
   }
 
+  // --- screened photograph ---------------------------------------------------
+
+  /// The lesion photo this result was produced from, when the device-local file
+  /// is still present. Doubles as the Hero destination for the thumbnail on the
+  /// Reports list, so opening a saved report flies the photo up into place
+  /// instead of cutting to a new screen.
+  ///
+  /// Returns an empty box when there is no local file (an older report whose
+  /// image has been cleared, or a result opened straight from a scan before the
+  /// report is saved) — the Hero on the list side is likewise suppressed there,
+  /// so the tags always pair up.
+  Widget _lesionCard() {
+    final path = report?.imagePath ?? '';
+    if (path.isEmpty) return const SizedBox.shrink();
+    final file = File(path);
+    if (!file.existsSync()) return const SizedBox.shrink();
+
+    final image = ClipRRect(
+      borderRadius: BorderRadius.circular(14),
+      child: Image.file(
+        file,
+        height: 220,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+      ),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: _section(
+        'Screened photograph',
+        report?.id == null
+            ? image
+            // Matches `_lesionThumb` in reportScreen.dart. Keep the tags in sync.
+            : Hero(tag: 'lesion-${report!.id}', child: image),
+      ),
+    );
+  }
+
   // --- Grad-CAM overlay ------------------------------------------------------
 
   Widget _gradcamCard() {
@@ -421,6 +466,19 @@ class DiagnosisResultsUI extends StatelessWidget {
                 loadingBuilder: (c, child, progress) => progress == null
                     ? child
                     : const SizedBox(height: 220, child: Center(child: CircularProgressIndicator())),
+                // Fade the heatmap in once the bytes have arrived instead of a
+                // hard cut. `frameBuilder` fires with `wasSynchronouslyLoaded`
+                // true for cached images — skip the animation in that case so
+                // it doesn't dip on rebuilds.
+                frameBuilder: (_, child, frame, wasSync) {
+                  if (wasSync) return child;
+                  return AnimatedOpacity(
+                    opacity: frame == null ? 0 : 1,
+                    duration: const Duration(milliseconds: 260),
+                    curve: Curves.easeOutCubic,
+                    child: child,
+                  );
+                },
                 errorBuilder: (c, e, s) => const SizedBox(
                   height: 100,
                   child: Center(child: Text('Heatmap unavailable (temporary asset expired).', style: TextStyle(color: Themes.inkSoft, fontSize: 12))),

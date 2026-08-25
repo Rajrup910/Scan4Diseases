@@ -140,7 +140,7 @@
     </thead>
     <tbody>
       {% for row in patients %}
-      <tr>
+      <tr style="view-transition-name: patient-{{ row.user.id }};">
         <td>{{ row.user.display_name or "—" }}</td>
         <td class="mono">{{ row.user.email }}</td>
         <td class="num">

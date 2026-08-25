@@ -12,6 +12,11 @@
      otherwise the OS preference drives it (handled in CSS). #}
   <script>
     (function () {
+      // Marks that scripting is available, before first paint. Progressive
+      // enhancements that would otherwise strand content (e.g. the image
+      // skeleton, which hides the <img> until its load event) are gated on
+      // .js so a no-JS visitor still sees everything.
+      document.documentElement.classList.add("js");
       try {
         var t = localStorage.getItem("s4d-theme");
         if (t === "light" || t === "dark") {

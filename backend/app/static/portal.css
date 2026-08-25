@@ -45,7 +45,10 @@
   --brand-soft:   #2f8a78;
   --brand-tint:   #e6f2ef;
   --brand-glow:   rgba(18, 105, 90, .35);
-  --mint:         #2f8a78;
+  /* Luminous mint used as the top stop of the 404 glow digits. Deliberately a
+     bright, high-luminance teal so the "404" reads as a lit metallic glow
+     against the light glass card instead of collapsing into flat brand green. */
+  --mint:         #34cfb4;
 
   /* surfaces — four tiers, so panels read as different sheets */
   --bg:          #eef1f5;
@@ -106,6 +109,20 @@
   --shadow-1: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 3px rgba(16, 24, 40, .04);
   --shadow-2: 0 4px 12px rgba(16, 24, 40, .08), 0 2px 4px rgba(16, 24, 40, .04);
   --shadow-sticky: 0 12px 32px rgba(16, 24, 40, .16), 0 2px 8px rgba(16, 24, 40, .08);
+  /* Lifted panel (expanded chat) + the full-viewport scrim behind it. Both were
+     hardcoded dark and slammed to near-black over the light theme. */
+  --shadow-modal: 0 25px 80px rgba(16, 24, 40, .28);
+  --scrim-heavy:  rgba(20, 28, 38, .38);
+
+  /* Emerald data cards (stat row + dashboard trio). Tokenised so the dark theme
+     can drop them below the page surface instead of rendering the same bright
+     emerald it uses on white — which flattened the tier hierarchy. */
+  --dash-card-grad:   linear-gradient(145deg, #0f766e 0%, #0d544e 55%, #064e3b 100%);
+  --dash-card-hi:     rgba(45, 212, 191, .38);
+  --dash-card-lo:     rgba(6, 78, 59, .55);
+  --dash-card-edge:   rgba(255, 255, 255, .24);
+  --dash-card-gloss:  rgba(255, 255, 255, .40);
+  --dash-card-shadow: 0 10px 28px rgba(6, 78, 59, .28);
 
   /* type — grotesque everywhere, monospace for tags/labels (Neurotrace system) */
   --font-display: "Archivo", "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
@@ -169,6 +186,18 @@
   --shadow-1: 0 1px 2px rgba(0, 0, 0, .4);
   --shadow-2: 0 6px 18px rgba(0, 0, 0, .5), 0 2px 6px rgba(0, 0, 0, .4);
   --shadow-sticky: 0 16px 40px rgba(0, 0, 0, .6), 0 4px 12px rgba(0, 0, 0, .5);
+  --shadow-modal: 0 25px 80px rgba(0, 0, 0, .75);
+  --scrim-heavy:  rgba(5, 10, 16, .65);
+
+  /* Deep, desaturated emerald so the data cards sit ABOVE the #0d0f14 page but
+     below the light-theme brightness — the tier hierarchy survives the theme
+     swap instead of every card reading identical. */
+  --dash-card-grad:   linear-gradient(145deg, #12433d 0%, #0e332f 55%, #091f1e 100%);
+  --dash-card-hi:     rgba(47, 185, 163, .22);
+  --dash-card-lo:     rgba(3, 20, 19, .60);
+  --dash-card-edge:   rgba(255, 255, 255, .10);
+  --dash-card-gloss:  rgba(255, 255, 255, .14);
+  --dash-card-shadow: 0 10px 28px rgba(0, 0, 0, .55);
 
   --grain-opacity: .04;
 
@@ -220,6 +249,15 @@
     --shadow-1: 0 1px 2px rgba(0, 0, 0, .4);
     --shadow-2: 0 6px 18px rgba(0, 0, 0, .5), 0 2px 6px rgba(0, 0, 0, .4);
     --shadow-sticky: 0 16px 40px rgba(0, 0, 0, .6), 0 4px 12px rgba(0, 0, 0, .5);
+    --shadow-modal: 0 25px 80px rgba(0, 0, 0, .75);
+    --scrim-heavy:  rgba(5, 10, 16, .65);
+
+    --dash-card-grad:   linear-gradient(145deg, #12433d 0%, #0e332f 55%, #091f1e 100%);
+    --dash-card-hi:     rgba(47, 185, 163, .22);
+    --dash-card-lo:     rgba(3, 20, 19, .60);
+    --dash-card-edge:   rgba(255, 255, 255, .10);
+    --dash-card-gloss:  rgba(255, 255, 255, .14);
+    --dash-card-shadow: 0 10px 28px rgba(0, 0, 0, .55);
 
     --grain-opacity: .04;
 
@@ -484,60 +522,83 @@ main.wrap { flex: 1 0 auto; padding-top: var(--s-6); padding-bottom: var(--s-7);
               box-shadow var(--dur-1) var(--ease-out);
 }
 .btn:hover { background: var(--glass-sheen), var(--glass-fill-strong); transform: translateY(-1px); }
-/* Animated organic waves of bright and dark green */
-@keyframes emeraldWaves {
-  0% {
-    background-position: 0% 40%, 100% 60%, 50% 50%;
-  }
-  33% {
-    background-position: 100% 70%, 10% 20%, 75% 85%;
-  }
-  66% {
-    background-position: 40% 10%, 85% 90%, 20% 65%;
-  }
-  100% {
-    background-position: 0% 40%, 100% 60%, 50% 50%;
-  }
-}
 
-/* Primary action — dynamic organic waves of bright and dark green */
+/* Primary action — static clinical emerald gradient with a one-shot sheen sweep
+   on hover. The old 7s infinite background-position drift read as marketing
+   motion on every screen; a single 650ms specular sweep on hover feels
+   glossy without being restless. */
+@keyframes btn-sheen-sweep {
+  from { transform: translateX(-140%) skewX(-18deg); opacity: 0; }
+  25%  { opacity: .85; }
+  to   { transform: translateX(240%)  skewX(-18deg); opacity: 0; }
+}
 .btn-primary {
   position: relative;
   overflow: hidden;
   background-color: var(--brand-strong);
   background-image:
-    radial-gradient(ellipse 130% 90% at 20% 30%, rgba(45, 212, 191, 0.48) 0%, transparent 65%),
+    radial-gradient(ellipse 130% 90% at 20% 30%, rgba(45, 212, 191, 0.42) 0%, transparent 65%),
     radial-gradient(ellipse 120% 100% at 80% 70%, rgba(6, 78, 59, 0.85) 0%, transparent 70%),
     linear-gradient(135deg, #15B79E 0%, #0F766E 45%, #064E3B 100%);
-  background-size: 220% 220%, 240% 240%, 100% 100%;
-  animation: emeraldWaves 7s ease-in-out infinite alternate;
   border: 1px solid rgba(255, 255, 255, 0.50);
   color: #ffffff;
   box-shadow:
     inset 0 1px 0 var(--glass-gloss),
     0 2px 10px rgba(18, 105, 90, 0.22);
+  isolation: isolate;
+}
+.btn-primary::after {
+  content: "";
+  position: absolute; inset: 0;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 32%, rgba(255,255,255,.32) 50%, transparent 68%);
+  transform: translateX(-140%) skewX(-18deg);
+  opacity: 0;
+  z-index: 1;
+}
+/* Dwell gate: the 180ms delay means a pointer merely travelling across a row
+   of primary CTAs (report_detail has eight) never triggers the sweep — leaving
+   before the delay elapses ends :hover and cancels the animation before its
+   first frame. Only a deliberate rest on the button plays it. `backwards`
+   holds the off-screen start state during the delay. */
+.btn-primary:hover::after {
+  animation: btn-sheen-sweep 650ms var(--ease-out) 180ms 1 backwards;
 }
 .btn-primary:hover {
-  background-image:
-    radial-gradient(ellipse 130% 90% at 20% 30%, rgba(45, 212, 191, 0.60) 0%, transparent 65%),
-    radial-gradient(ellipse 120% 100% at 80% 70%, rgba(6, 78, 59, 0.90) 0%, transparent 70%),
-    linear-gradient(135deg, #2DD4BF 0%, #0F766E 45%, #064E3B 100%);
-  border-color: rgba(255, 255, 255, 0.75);
+  border-color: rgba(255, 255, 255, 0.72);
   box-shadow:
     inset 0 1px 0 var(--glass-gloss),
     0 4px 14px rgba(18, 105, 90, 0.32);
 }
 @media (prefers-reduced-motion: reduce) {
-  .btn-primary { animation: none; }
+  .btn-primary::after { display: none; }
 }
 .btn-ghost { border-color: transparent; background: transparent; color: var(--ink-soft); backdrop-filter: none; -webkit-backdrop-filter: none; box-shadow: none; }
 .btn-ghost:hover { background: var(--surface-3); color: var(--ink); }
 .btn-small { padding: .35rem .7rem; font-size: .85rem; }
 
-:where(a, button, input, select, textarea, [tabindex]):focus-visible {
-  outline: 2px solid var(--focus);
+:where(a, button, summary, input, select, textarea, [tabindex]) {
+  /* Ease the ring in/out so keyboard focus matches the 120ms hover language
+     used on every other piece of chrome, instead of snapping. Declared on the
+     base selector (not :focus-visible) so the transition also runs on blur.
+     The width stays at 2px throughout and only colour/offset animate — going
+     `none` → `2px` would step instead of easing. Transparent by default, so
+     nothing is visible until focus. Outline never affects layout, so this is
+     inert for every unfocused element.
+     Note: inputs keep their own brand box-shadow ring (they set outline:none
+     at higher specificity); this governs links, buttons, and summaries. */
+  outline: 2px solid transparent;
   outline-offset: 2px;
+  transition: outline-color var(--dur-1) var(--ease-out),
+              outline-offset var(--dur-1) var(--ease-out);
+}
+:where(a, button, summary, input, select, textarea, [tabindex]):focus-visible {
+  outline-color: var(--focus);
+  outline-offset: 3px;
   border-radius: var(--r-1);
+}
+@media (prefers-reduced-motion: reduce) {
+  :where(a, button, summary, input, select, textarea, [tabindex]) { transition: none; }
 }
 
 /* --- forms --- */
@@ -844,7 +905,7 @@ table.data tbody tr:hover { background: var(--surface-3); }
   border-radius: var(--r-1);
 }
 .menu-wrap > summary::-webkit-details-marker { display: none; }
-.menu-wrap > summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.menu-wrap > summary:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 .menu-trigger .chev { color: var(--ink-soft); transition: transform var(--dur-2) var(--ease-out); }
 .menu-wrap[open] .chev { transform: rotate(180deg); }
 .menu {
@@ -971,7 +1032,13 @@ table.data tbody tr:hover { background: var(--surface-3); }
 /* ============================================================ AI ASSISTANT CHAT */
 .ai-chat {
   margin-top: var(--s-4);
-  transition: all var(--dur-2) var(--ease-out);
+  /* Property-scoped: `all` here fought the expand-in animation because
+     .is-expanded also switches to position: fixed, which triggered a layout
+     transition on every property at once. */
+  transition:
+    box-shadow var(--dur-2) var(--ease-out),
+    border-color var(--dur-2) var(--ease-out),
+    background var(--dur-2) var(--ease-out);
 }
 .ai-chat-head {
   display: flex;
@@ -1038,7 +1105,10 @@ table.data tbody tr:hover { background: var(--surface-3); }
   border-radius: var(--r-3);
   background: var(--surface-1) !important;
   border: 1px solid var(--border-strong);
-  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.75), 0 0 0 100vmax rgba(5, 10, 16, 0.65);
+  /* Tokenised: the lifted-panel shadow and the full-viewport scrim were both
+     dark-tuned, so over the light theme the whole page slammed to near-black
+     the moment the chat expanded. */
+  box-shadow: var(--shadow-modal), 0 0 0 100vmax var(--scrim-heavy);
   animation: expand-in 0.22s var(--ease-out);
   padding: var(--s-4) var(--s-5) var(--s-3);
   box-sizing: border-box;
@@ -1071,6 +1141,17 @@ body.has-expanded-chat .site-footer {
 .ai-msg { display: flex; }
 .ai-msg-user { justify-content: flex-end; }
 .ai-msg-bot { justify-content: flex-start; }
+/* Bubbles slide in from their own side with a soft fade — user bubbles glide
+   from the right, bot bubbles from the left, both settling in ~260ms. Matches
+   the app's page-transition easing so chat rhythm and navigation rhythm feel
+   like the same product. */
+@keyframes bubble-in-right { from { opacity: 0; transform: translate(6px, 4px); } to { opacity: 1; transform: none; } }
+@keyframes bubble-in-left  { from { opacity: 0; transform: translate(-6px, 4px); } to { opacity: 1; transform: none; } }
+.ai-msg-user .ai-bubble { animation: bubble-in-right 260ms cubic-bezier(0.2, 0.8, 0.25, 1) both; }
+.ai-msg-bot  .ai-bubble { animation: bubble-in-left  260ms cubic-bezier(0.2, 0.8, 0.25, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .ai-msg-user .ai-bubble, .ai-msg-bot .ai-bubble { animation: none; }
+}
 .ai-bubble {
   max-width: 94%;
   padding: .45rem .8rem;
@@ -1442,90 +1523,47 @@ body.has-expanded-chat .site-footer {
   margin-bottom: var(--s-4);
 }
 @media (max-width: 720px) { .stat-row { grid-template-columns: repeat(2, 1fr); } }
-/* Animated multi-pole orbital emerald wave layers */
-@keyframes emeraldWaveOrbit1 {
-  0% {
-    transform: rotate(0deg) scale(1) translate(0%, 0%);
-  }
-  33% {
-    transform: rotate(120deg) scale(1.15) translate(4%, -3%);
-  }
-  66% {
-    transform: rotate(240deg) scale(0.95) translate(-3%, 4%);
-  }
-  100% {
-    transform: rotate(360deg) scale(1) translate(0%, 0%);
-  }
-}
-
-@keyframes emeraldWaveOrbit2 {
-  0% {
-    transform: rotate(360deg) scale(1.1) translate(0%, 0%);
-  }
-  33% {
-    transform: rotate(240deg) scale(0.92) translate(-4%, 3%);
-  }
-  66% {
-    transform: rotate(120deg) scale(1.18) translate(3%, -4%);
-  }
-  100% {
-    transform: rotate(0deg) scale(1.1) translate(0%, 0%);
-  }
-}
-
+/* Stat + dashboard cards: static emerald depth. The previous two pseudo-layers
+   rotated continuously (10s / 14s) behind every card — pretty in isolation but
+   the whole grid became a slow lava-lamp that competed with the data. Both
+   layers are now static radial halos: same richness, no motion. */
 .stat,
 .dash-grid .card {
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  background: linear-gradient(145deg, #0F766E 0%, #0D544E 55%, #064E3B 100%);
-  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: var(--dash-card-grad);
+  border: 1px solid var(--dash-card-edge);
   border-radius: var(--r-3);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.40),
-    0 10px 28px rgba(6, 78, 59, 0.28);
+    inset 0 1px 0 var(--dash-card-gloss),
+    var(--dash-card-shadow);
   color: #ffffff;
 }
-
-/* Wave Layer 1: Bright Emerald / Mint Undulating Fluid Orbit */
+/* Static mint highlight — top-left glow that gives the card a lit shoulder. */
 .stat::before,
 .dash-grid .card::before {
   content: "";
   position: absolute;
-  inset: -60%;
-  width: 220%;
-  height: 220%;
+  inset: 0;
   pointer-events: none;
   z-index: -2;
-  border-radius: 42%;
   background:
-    radial-gradient(ellipse 48% 44% at 32% 38%, rgba(45, 212, 191, 0.72) 0%, rgba(56, 225, 194, 0.35) 45%, transparent 72%),
-    radial-gradient(ellipse 52% 48% at 75% 68%, rgba(4, 47, 44, 0.92) 0%, rgba(13, 84, 78, 0.45) 52%, transparent 78%);
-  animation: emeraldWaveOrbit1 10s ease-in-out infinite;
-  filter: blur(14px);
-  will-change: transform;
+    radial-gradient(ellipse 55% 60% at 22% 18%, var(--dash-card-hi) 0%, transparent 62%);
 }
-
-/* Wave Layer 2: Secondary Sea-Green Ripple and Deep Emerald Counter-Orbit */
+/* Static deep-emerald wash — bottom-right shadow for contrast against the highlight. */
 .stat::after,
 .dash-grid .card::after {
   content: "";
   position: absolute;
-  inset: -60%;
-  width: 220%;
-  height: 220%;
+  inset: 0;
   pointer-events: none;
   z-index: -1;
-  border-radius: 38%;
   background:
-    radial-gradient(ellipse 42% 48% at 70% 32%, rgba(111, 224, 205, 0.55) 0%, transparent 62%),
-    radial-gradient(ellipse 46% 46% at 28% 72%, rgba(6, 78, 59, 0.88) 0%, transparent 68%);
-  animation: emeraldWaveOrbit2 14s ease-in-out infinite;
-  filter: blur(16px);
-  will-change: transform;
+    radial-gradient(ellipse 60% 55% at 82% 88%, var(--dash-card-lo) 0%, transparent 68%);
 }
 
-/* Keep all content crystal clear above wave layers */
+/* Keep all content crystal clear above the static wash layers */
 .stat > *,
 .dash-grid .card > * {
   position: relative;
@@ -1612,7 +1650,7 @@ body.has-expanded-chat .site-footer {
 .dot.seg-urgent, .tone-dot.seg-urgent, .tl-dot.seg-urgent { background: var(--danger); }
 .dot.seg-soon, .tone-dot.seg-soon, .tl-dot.seg-soon { background: var(--warn); }
 .dot.seg-routine, .tone-dot.seg-routine, .tl-dot.seg-routine { background: var(--brand); }
-.dash-grid .card .dot.seg-routine { background: #2DD4BF; box-shadow: 0 0 6px rgba(45, 212, 191, 0.45); }
+.dash-grid .card .dot.seg-routine { background: #2DD4BF; }
 .dash-grid .card .dot.seg-soon { background: #FBBF24; }
 .dash-grid .card .dot.seg-urgent { background: #F87171; }
 
@@ -1703,13 +1741,6 @@ body.has-expanded-chat .site-footer {
 .tl-meta { font-size: .78rem; color: var(--ink-soft); }
 .dash-grid .card .tl-meta { color: rgba(255, 255, 255, 0.75); }
 
-@media (prefers-reduced-motion: reduce) {
-  .stat,
-  .dash-grid .card {
-    animation: none;
-  }
-}
-
 /* --- empty state --- */
 .empty {
   background: var(--glass-sheen), var(--glass-fill);
@@ -1770,6 +1801,23 @@ body.has-expanded-chat .site-footer {
 
 /* cross-document view transitions — the row→detail morph (progressive; no-ops if unsupported) */
 @view-transition { navigation: auto; }
+
+/* Default cross-document morph. Chromium's spec animation is a hard crossfade;
+   soften with the same fade+glide easing the app uses on page transitions. */
+::view-transition-group(root) { animation-duration: 320ms; animation-timing-function: cubic-bezier(0.2, 0.8, 0.25, 1); }
+::view-transition-old(root),
+::view-transition-new(root) { animation-duration: 320ms; animation-timing-function: cubic-bezier(0.2, 0.8, 0.25, 1); }
+
+/* Patient row → detail header morph and report row → detail hero: give the
+   named groups a hair longer so the growing bounds read as motion rather than
+   a jump. */
+::view-transition-group(*) { animation-duration: 380ms; animation-timing-function: cubic-bezier(0.2, 0.8, 0.25, 1); }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) { animation-duration: .001ms !important; }
+}
 
 /* Sign-in — a SINGLE unified glass panel. Two halves inside it (brand | form)
    share one card, one border, one gloss; no internal divider, no nested tiles.
@@ -1976,8 +2024,11 @@ body.has-expanded-chat .site-footer {
 .on-login .bg-video { filter: saturate(.6) brightness(.6) contrast(1.05) blur(1px); }
 :root:not([data-theme="dark"]) .on-login .bg-video { filter: saturate(.5) brightness(1.02) contrast(1.03) blur(1px); }
 
-/* Success handoff — multiple expanding circular green orbs, concentric rings, particle sparks & verified sign
-   Matches the mobile app's lush clinical jade & deep teal screen wash. */
+/* Sign-in handoff. Redesigned: the old fireworks (4 growing orbs + 3 concentric
+   rings + 8 particle sparks) belonged on a marketing site, not a clinician
+   portal. We keep the DOM portal.js emits — orbs, rings, particles are neutered
+   in CSS — and let a calm radial jade wash carry the transition behind a static
+   disc + drawn tick. The whole event is now ~1.1s instead of 2.2s. */
 .flow-takeover {
   position: fixed !important;
   top: 0 !important;
@@ -1994,10 +2045,12 @@ body.has-expanded-chat .site-footer {
   justify-content: center;
   overflow: hidden;
   opacity: 0;
-  background: #062822;
-  backdrop-filter: blur(24px) saturate(1.3);
-  -webkit-backdrop-filter: blur(24px) saturate(1.3);
-  transition: opacity 450ms cubic-bezier(0.2, 0.8, 0.25, 1);
+  background:
+    radial-gradient(circle at 50% 45%, rgba(21, 183, 158, 0.28) 0%, transparent 55%),
+    #062822;
+  backdrop-filter: blur(24px) saturate(1.15);
+  -webkit-backdrop-filter: blur(24px) saturate(1.15);
+  transition: opacity 350ms cubic-bezier(0.2, 0.8, 0.25, 1);
   pointer-events: none;
 }
 body.is-transitioning .flow-takeover,
@@ -2006,120 +2059,14 @@ body.is-transitioning .flow-takeover,
   pointer-events: auto;
 }
 
-.orb-backdrop {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
+/* Hide the legacy fireworks DOM entirely — the calm wash replaces them. */
+.orb-backdrop,
+.orb-particles { display: none; }
 
-.flow-takeover .orb {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  border-radius: 50%;
-}
-.flow-takeover .orb-1 {
-  width: 140vmax;
-  height: 140vmax;
-  background: radial-gradient(circle, #A7F3D0 0%, #34D399 35%, #10B981 70%, transparent 100%);
-  animation: orb-escalation-cycle 2100ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-.flow-takeover .orb-2 {
-  width: 175vmax;
-  height: 175vmax;
-  margin-top: -3vh;
-  margin-left: -5vw;
-  background: radial-gradient(circle, #10B981 0%, #14B8A6 45%, #0D9488 75%, transparent 100%);
-  animation: orb-escalation-cycle 2100ms cubic-bezier(0.22, 1, 0.36, 1) 80ms forwards;
-}
-
-.flow-takeover .orb-3 {
-  width: 215vmax;
-  height: 215vmax;
-  margin-top: 4vh;
-  margin-left: 6vw;
-  background: radial-gradient(circle, #059669 0%, #0F766E 45%, #047857 75%, transparent 100%);
-  animation: orb-escalation-cycle 2100ms cubic-bezier(0.22, 1, 0.36, 1) 160ms forwards;
-}
-
-.flow-takeover .orb-4 {
-  width: 260vmax;
-  height: 260vmax;
-  margin-top: -5vh;
-  margin-left: 4vw;
-  background: radial-gradient(circle, #064E3B 0%, #134E4A 50%, #022C22 80%, transparent 100%);
-  animation: orb-escalation-cycle 2100ms cubic-bezier(0.22, 1, 0.36, 1) 240ms forwards;
-}
-
-.flow-takeover .orb-ring {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  border-radius: 50%;
-  border: 2px solid rgba(111, 224, 205, 0.65);
-  transform: translate(-50%, -50%) scale(0.06);
-  pointer-events: none;
-  box-shadow: 0 0 35px rgba(21, 183, 158, 0.5), inset 0 0 25px rgba(21, 183, 158, 0.35);
-  will-change: transform, opacity;
-}
-
-.flow-takeover .ring-1 {
-  width: 130vmax;
-  height: 130vmax;
-  animation: ring-expand 2000ms cubic-bezier(0.22, 1, 0.36, 1) 80ms forwards;
-}
-
-.flow-takeover .ring-2 {
-  width: 170vmax;
-  height: 170vmax;
-  border-color: rgba(62, 168, 147, 0.55);
-  animation: ring-expand 2050ms cubic-bezier(0.22, 1, 0.36, 1) 160ms forwards;
-}
-
-.flow-takeover .ring-3 {
-  width: 210vmax;
-  height: 210vmax;
-  border-color: rgba(18, 105, 90, 0.45);
-  animation: ring-expand 2100ms cubic-bezier(0.22, 1, 0.36, 1) 240ms forwards;
-}
-
-/* Floating particle sparks */
-.orb-particles {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-.orb-particles .particle {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  border-radius: 50%;
-  background: #6FE0CD;
-  box-shadow: 0 0 14px #15B79E;
-  opacity: 0;
-  will-change: transform, opacity;
-}
-.orb-particles .p-1 { width: 8px; height: 8px; animation: particle-fly-1 2.0s cubic-bezier(0.22, 1, 0.36, 1) 300ms forwards; }
-.orb-particles .p-2 { width: 6px; height: 6px; animation: particle-fly-2 2.0s cubic-bezier(0.22, 1, 0.36, 1) 350ms forwards; }
-.orb-particles .p-3 { width: 10px; height: 10px; animation: particle-fly-3 2.1s cubic-bezier(0.22, 1, 0.36, 1) 400ms forwards; }
-.orb-particles .p-4 { width: 7px; height: 7px; animation: particle-fly-4 2.0s cubic-bezier(0.22, 1, 0.36, 1) 450ms forwards; }
-.orb-particles .p-5 { width: 8px; height: 8px; animation: particle-fly-5 2.1s cubic-bezier(0.22, 1, 0.36, 1) 320ms forwards; }
-.orb-particles .p-6 { width: 6px; height: 6px; animation: particle-fly-6 2.0s cubic-bezier(0.22, 1, 0.36, 1) 380ms forwards; }
-.orb-particles .p-7 { width: 9px; height: 9px; animation: particle-fly-7 2.1s cubic-bezier(0.22, 1, 0.36, 1) 420ms forwards; }
-.orb-particles .p-8 { width: 7px; height: 7px; animation: particle-fly-8 2.0s cubic-bezier(0.22, 1, 0.36, 1) 480ms forwards; }
-
-@keyframes particle-fly-1 { 0% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; } 100% { transform: translate(calc(-50% + 160px), calc(-50% - 130px)) scale(1.1); opacity: 0; } }
-@keyframes particle-fly-2 { 0% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; } 100% { transform: translate(calc(-50% - 170px), calc(-50% - 110px)) scale(1.2); opacity: 0; } }
-@keyframes particle-fly-3 { 0% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; } 100% { transform: translate(calc(-50% + 190px), calc(-50% + 120px)) scale(1.3); opacity: 0; } }
-@keyframes particle-fly-4 { 0% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; } 100% { transform: translate(calc(-50% - 180px), calc(-50% + 140px)) scale(1.1); opacity: 0; } }
-@keyframes particle-fly-5 { 0% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; } 100% { transform: translate(calc(-50% + 10px), calc(-50% - 210px)) scale(1.2); opacity: 0; } }
-@keyframes particle-fly-6 { 0% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; } 100% { transform: translate(calc(-50% - 220px), calc(-50% + 10px)) scale(1.1); opacity: 0; } }
-@keyframes particle-fly-7 { 0% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; } 100% { transform: translate(calc(-50% + 220px), calc(-50% - 10px)) scale(1.2); opacity: 0; } }
-@keyframes particle-fly-8 { 0% { transform: translate(-50%, -50%) scale(0.2); opacity: 1; } 100% { transform: translate(calc(-50% - 20px), calc(-50% + 210px)) scale(1.1); opacity: 0; } }
-
-/* --- Central Successful Sign & Checkmark --- */
+/* --- Central Successful Sign & Checkmark ---
+   Softer entrance (no overshoot), single ring pulse instead of infinite loop,
+   and the disc glow reduced from a 36px neon bloom to a restrained brand-tint
+   shadow that reads calm on both themes. */
 .flow-success-sign {
   position: relative;
   z-index: 10;
@@ -2128,7 +2075,7 @@ body.is-transitioning .flow-takeover,
   align-items: center;
   text-align: center;
   gap: 1.15rem;
-  animation: sign-enter 600ms cubic-bezier(0.34, 1.3, 0.5, 1) 120ms both;
+  animation: sign-enter 420ms cubic-bezier(0.2, 0.8, 0.25, 1) 120ms both;
 }
 
 .success-emblem-wrap {
@@ -2141,11 +2088,12 @@ body.is-transitioning .flow-takeover,
 
 .success-halo {
   position: absolute;
-  inset: -20px;
+  inset: -16px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(111, 224, 205, 0.75) 0%, rgba(21, 183, 158, 0.35) 55%, transparent 75%);
-  filter: blur(16px);
-  animation: halo-pulse 2s ease-in-out infinite;
+  background: radial-gradient(circle, rgba(111, 224, 205, 0.42) 0%, rgba(21, 183, 158, 0.18) 55%, transparent 75%);
+  filter: blur(14px);
+  /* One soft breath, then hold. No loop. */
+  animation: halo-settle 900ms cubic-bezier(0.2, 0.8, 0.25, 1) 100ms both;
 }
 
 .success-disc {
@@ -2154,8 +2102,11 @@ body.is-transitioning .flow-takeover,
   height: 90px;
   border-radius: 50%;
   background: linear-gradient(135deg, #15B79E 0%, #12695A 50%, #0D4F44 100%);
-  box-shadow: 0 0 36px rgba(21, 183, 158, 0.75), 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 2px 4px rgba(255, 255, 255, 0.4);
-  border: 2.5px solid rgba(111, 224, 205, 0.9);
+  box-shadow:
+    0 10px 22px rgba(6, 78, 59, 0.42),
+    0 0 0 1px rgba(111, 224, 205, 0.35),
+    inset 0 2px 4px rgba(255, 255, 255, 0.35);
+  border: 1.5px solid rgba(111, 224, 205, 0.7);
   display: grid;
   place-items: center;
 }
@@ -2177,15 +2128,16 @@ body.is-transitioning .flow-takeover,
   stroke-linejoin: round;
   stroke-dasharray: 42;
   stroke-dashoffset: 42;
-  animation: check-draw 450ms cubic-bezier(0.2, 0.8, 0.25, 1) 250ms forwards;
+  animation: check-draw 420ms cubic-bezier(0.2, 0.8, 0.25, 1) 220ms forwards;
 }
 
 .success-pulse-ring {
   position: absolute;
   inset: -8px;
   border-radius: 50%;
-  border: 2px solid rgba(111, 224, 205, 0.75);
-  animation: ring-pulse 1.8s cubic-bezier(0.22, 1, 0.36, 1) 450ms infinite;
+  border: 1.5px solid rgba(111, 224, 205, 0.5);
+  /* One single ripple that resolves — not an infinite loop. */
+  animation: ring-pulse 900ms cubic-bezier(0.22, 1, 0.36, 1) 380ms 1 forwards;
 }
 
 .success-text-group {
@@ -2214,68 +2166,25 @@ body.is-transitioning .flow-takeover,
 }
 
 @keyframes sign-enter {
-  0% {
-    opacity: 0;
-    transform: scale(0.6) translateY(20px);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
+  0%   { opacity: 0; transform: scale(0.94) translateY(8px); }
+  100% { opacity: 1; transform: scale(1)    translateY(0);   }
 }
 
 @keyframes check-draw {
-  0% { stroke-dashoffset: 42; }
-  100% { stroke-dashoffset: 0; }
+  0%   { stroke-dashoffset: 42; }
+  100% { stroke-dashoffset: 0;  }
 }
 
-@keyframes halo-pulse {
-  0%, 100% { transform: scale(1); opacity: 0.7; }
-  50% { transform: scale(1.18); opacity: 1; }
+/* Single settle — bloom then rest, no infinite pulse. */
+@keyframes halo-settle {
+  0%   { opacity: 0;   transform: scale(0.92); }
+  60%  { opacity: 1;   transform: scale(1.06); }
+  100% { opacity: 0.72; transform: scale(1);    }
 }
 
 @keyframes ring-pulse {
-  0% { transform: scale(0.95); opacity: 0.9; }
-  100% { transform: scale(1.45); opacity: 0; }
-}
-
-@keyframes orb-escalation-cycle {
-  0% {
-    transform: translate(-50%, -50%) scale(0.04);
-    opacity: 0;
-  }
-  18% {
-    opacity: 0.9;
-  }
-  52% {
-    /* Full escalation peak: darkest rich shades flood the screen */
-    transform: translate(-50%, -50%) scale(1.45);
-    opacity: 1;
-  }
-  75% {
-    /* De-escalation start: shades soften and begin receding */
-    transform: translate(-50%, -50%) scale(1.58);
-    opacity: 0.85;
-  }
-  100% {
-    /* De-escalation complete: softly washes out */
-    transform: translate(-50%, -50%) scale(1.7);
-    opacity: 0.35;
-  }
-}
-
-@keyframes ring-expand {
-  0% {
-    transform: translate(-50%, -50%) scale(0.06);
-    opacity: 0.95;
-  }
-  50% {
-    opacity: 0.75;
-  }
-  100% {
-    transform: translate(-50%, -50%) scale(1.35);
-    opacity: 0;
-  }
+  0%   { transform: scale(0.95); opacity: 0.7; }
+  100% { transform: scale(1.35); opacity: 0;   }
 }
 
 .alert-shake {
@@ -2307,43 +2216,23 @@ body.is-transitioning .flow-takeover,
   transition: opacity 550ms cubic-bezier(0.2, 0.8, 0.25, 1) !important;
 }
 
-/* Unsuccessful Login Takeover — Red / Rose / Ruby / Crimson / Wine Palette */
+/* Unsuccessful sign-in — ruby wash instead of jade, same restrained treatment.
+   Orb/ring/particle overrides removed with the fireworks. */
 .flow-takeover.is-error {
-  background: #250606;
-}
-.flow-takeover.is-error .orb-1 {
-  background: radial-gradient(circle, #FDA4AF 0%, #F87171 35%, #EF4444 70%, transparent 100%);
-}
-.flow-takeover.is-error .orb-2 {
-  background: radial-gradient(circle, #EF4444 0%, #E11D48 45%, #DC2626 75%, transparent 100%);
-}
-.flow-takeover.is-error .orb-3 {
-  background: radial-gradient(circle, #B91C1C 0%, #991B1B 45%, #BE123C 75%, transparent 100%);
-}
-.flow-takeover.is-error .orb-4 {
-  background: radial-gradient(circle, #7F1D1D 0%, #4C0519 50%, #450A0A 80%, transparent 100%);
-}
-.flow-takeover.is-error .orb-ring {
-  border-color: rgba(248, 113, 113, 0.65);
-  box-shadow: 0 0 35px rgba(239, 68, 68, 0.5), inset 0 0 25px rgba(220, 38, 38, 0.35);
-}
-.flow-takeover.is-error .ring-2 {
-  border-color: rgba(220, 38, 38, 0.55);
-}
-.flow-takeover.is-error .ring-3 {
-  border-color: rgba(185, 28, 28, 0.45);
-}
-.flow-takeover.is-error .orb-particles .particle {
-  background: #FCA5A5;
-  box-shadow: 0 0 14px #EF4444;
+  background:
+    radial-gradient(circle at 50% 45%, rgba(239, 68, 68, 0.26) 0%, transparent 55%),
+    #250606;
 }
 .flow-takeover.is-error .success-halo {
-  background: radial-gradient(circle, rgba(248, 113, 113, 0.75) 0%, rgba(220, 38, 38, 0.35) 55%, transparent 75%);
+  background: radial-gradient(circle, rgba(248, 113, 113, 0.42) 0%, rgba(220, 38, 38, 0.18) 55%, transparent 75%);
 }
 .flow-takeover.is-error .success-disc {
   background: linear-gradient(135deg, #EF4444 0%, #B3261E 50%, #7F1D1D 100%);
-  border-color: rgba(248, 113, 113, 0.9);
-  box-shadow: 0 0 36px rgba(239, 68, 68, 0.75), 0 8px 24px rgba(0, 0, 0, 0.35), inset 0 2px 4px rgba(255, 255, 255, 0.4);
+  border-color: rgba(248, 113, 113, 0.75);
+  box-shadow:
+    0 10px 22px rgba(127, 29, 29, 0.42),
+    0 0 0 1px rgba(248, 113, 113, 0.35),
+    inset 0 2px 4px rgba(255, 255, 255, 0.35);
 }
 .flow-takeover.is-error .failure-cross-line-1,
 .flow-takeover.is-error .failure-cross-line-2 {
@@ -2469,11 +2358,13 @@ body.is-transitioning .flow-takeover,
   line-height: 1;
   letter-spacing: -0.04em;
   color: var(--brand);
-  background: linear-gradient(180deg, var(--mint, #2f8a78) 0%, var(--brand) 60%, var(--brand-strong) 100%);
+  background: linear-gradient(175deg, var(--mint, #34cfb4) 0%, var(--brand) 52%, var(--brand-strong) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 4px 20px var(--brand-glow));
+  /* Dual drop-shadow: a tight bright mint core glow plus a wider brand halo, so
+     the digits stay high-contrast and luminous in both light and dark themes. */
+  filter: drop-shadow(0 1px 6px rgba(52, 207, 180, .55)) drop-shadow(0 6px 24px var(--brand-glow));
 }
 .glow-emblem-wrap {
   width: 64px;
@@ -2488,11 +2379,14 @@ body.is-transitioning .flow-takeover,
   height: 100%;
   color: var(--brand);
   filter: drop-shadow(0 2px 12px var(--brand-glow));
-  animation: emblem-pulse 3.5s ease-in-out infinite alternate;
+  /* One-shot settle on load — a soft breath into place rather than an
+     eternal pulse on an error page. */
+  animation: emblem-settle 820ms cubic-bezier(0.2, 0.8, 0.25, 1) both;
 }
-@keyframes emblem-pulse {
-  0% { transform: scale(0.95); opacity: 0.85; }
-  100% { transform: scale(1.05); opacity: 1; filter: drop-shadow(0 4px 18px var(--brand-glow)); }
+@keyframes emblem-settle {
+  0%   { transform: scale(0.9);  opacity: 0; }
+  60%  { transform: scale(1.03); opacity: 1; filter: drop-shadow(0 4px 18px var(--brand-glow)); }
+  100% { transform: scale(1);    opacity: 1; }
 }
 .card-404-body h1 {
   font-size: 1.65rem;
@@ -2512,5 +2406,139 @@ body.is-transitioning .flow-takeover,
   justify-content: center;
   flex-wrap: wrap;
   gap: var(--s-3);
+}
+
+/* ============================================================ TOASTS
+   Completion feedback for actions that POST and redirect (status change, note
+   add, share). The portal previously reloaded silently, so the user had no
+   confirmation beat. Reuses the login flow's disc + drawn-tick language at
+   small scale. Fired from portal.js, which survives the redirect by stashing
+   a pending toast in sessionStorage. */
+.toast-layer {
+  position: fixed;
+  right: var(--s-4);
+  bottom: var(--s-4);
+  z-index: 99999;
+  display: flex;
+  flex-direction: column-reverse;   /* newest sits nearest the corner */
+  gap: var(--s-2);
+  pointer-events: none;
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-width: 240px;
+  max-width: min(380px, calc(100vw - 2 * var(--s-4)));
+  padding: .7rem .9rem;
+  border-radius: var(--r-2);
+  border: 1px solid var(--border);
+  background: var(--glass-sheen), var(--glass-fill-strong);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: inset 0 1px 0 var(--glass-gloss), var(--shadow-2);
+  color: var(--ink);
+  font-size: .88rem;
+  pointer-events: auto;
+  animation: toast-in 260ms var(--ease-out) both;
+}
+.toast.is-leaving { animation: toast-out 220ms var(--ease-out) both; }
+
+/* Small jade disc + tick — the compact cousin of the sign-in emblem. */
+.toast-disc {
+  flex: 0 0 auto;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--brand-soft) 0%, var(--brand) 55%, var(--brand-strong) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35);
+}
+.toast-disc svg { width: 15px; height: 15px; }
+.toast-tick {
+  stroke: #fff;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  stroke-dasharray: 42;
+  stroke-dashoffset: 42;
+  animation: check-draw 380ms cubic-bezier(0.2, 0.8, 0.25, 1) 140ms forwards;
+}
+.toast-body { flex: 1 1 auto; line-height: 1.35; }
+.toast-title { font-weight: 650; }
+.toast-sub { color: var(--ink-soft); font-size: .8rem; }
+
+/* Error variant — ruby disc, cross instead of tick. */
+.toast.is-error .toast-disc {
+  background: linear-gradient(135deg, var(--danger) 0%, #b3261e 100%);
+}
+.toast.is-error { border-color: var(--danger-line); }
+
+@keyframes toast-in  { from { opacity: 0; transform: translateX(14px) translateY(4px); } to { opacity: 1; transform: none; } }
+@keyframes toast-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(14px); } }
+
+@media (max-width: 520px) {
+  .toast-layer { left: var(--s-4); right: var(--s-4); }
+  .toast { min-width: 0; max-width: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .toast, .toast.is-leaving { animation: none; }
+  .toast-tick { animation: none; stroke-dashoffset: 0; }
+}
+
+/* ============================================================ IMAGE SKELETON
+   The worklist and report tables are server-rendered, so they arrive with their
+   data and never flash empty — no skeleton needed there. The real gap is the
+   two lazy-loaded shots on a report (lesion photo + Grad-CAM), which are fetched
+   from /portal/reports/{id}/image and /gradcam after first paint. Until they
+   decode, the panel held blank space; now it holds a shimmering placeholder
+   that the image cross-fades over.
+
+   `.is-loaded` is applied by portal.js on the img's load event (and immediately
+   for cache hits, via img.complete). */
+.imagery-display .shot-full {
+  position: relative;
+}
+.imagery-display .shot-full::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: var(--surface-3);
+}
+.imagery-display .shot-full::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--surface) 55%, transparent) 50%,
+    transparent 100%);
+  transform: translateX(-100%);
+  animation: skeleton-shimmer 1.2s var(--ease-out) infinite;
+}
+/* Once loaded, retire the placeholder entirely so it costs nothing. */
+.imagery-display .shot-full.is-loaded::before,
+.imagery-display .shot-full.is-loaded::after { content: none; }
+
+.imagery-display .shot-full img {
+  position: relative;
+  z-index: 2;
+  transition: opacity var(--dur-3) var(--ease-out), transform var(--dur-2) var(--ease-out);
+}
+/* Only hide the image when scripting is present to reveal it again. */
+.js .imagery-display .shot-full img { opacity: 0; }
+.js .imagery-display .shot-full.is-loaded img { opacity: 1; }
+/* figcaption must sit above the placeholder too. */
+.imagery-display .shot-full figcaption { position: relative; z-index: 2; }
+
+@keyframes skeleton-shimmer { to { transform: translateX(100%); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .imagery-display .shot-full::after { animation: none; opacity: 0; }
+  .imagery-display .shot-full img { transition: none; }
 }
 
