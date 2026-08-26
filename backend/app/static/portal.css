@@ -133,7 +133,7 @@
   --s-1: .25rem;  --s-2: .5rem;   --s-3: .75rem;  --s-4: 1rem;
   --s-5: 1.5rem;  --s-6: 2rem;    --s-7: 3rem;    --s-8: 4rem;
 
-  --maxw: 1120px;
+  --maxw: min(1360px, 96vw);
 
   /* grain visibility (dialled per theme) */
   --grain-opacity: .025;
@@ -423,13 +423,15 @@ table.data thead th { font-family: var(--font-mono); }
   min-height: 56px;
 }
 /* brand lockup — its own glass tab, same treatment as the account panel */
+/* Brand pill is deliberately larger than the neighbouring header chips so
+   the identity of the portal reads first at a glance. */
 .brand {
   display: flex;
   align-items: center;
-  gap: .55rem;
+  gap: .65rem;
   text-decoration: none;
   color: var(--ink);
-  padding: .38rem .75rem .38rem .55rem;
+  padding: .5rem 1rem .5rem .7rem;
   border: 1px solid var(--border);
   border-radius: var(--r-pill);
   background: var(--glass-sheen), var(--glass-fill);
@@ -453,14 +455,14 @@ table.data thead th { font-family: var(--font-mono); }
 }
 /* header brandmark — clean frameless emblem in the brand colour */
 .brand-emblem {
-  width: 28px;
-  height: 28px;
+  width: 34px;
+  height: 34px;
   flex: none;
   color: var(--brand);
   filter: drop-shadow(0 1px 3px var(--brand-glow));
 }
-.brand-text { font-family: var(--font-display); font-weight: 650; font-size: .95rem; white-space: nowrap; }
-.brand-text em { font-style: normal; color: var(--ink-soft); font-weight: 400; font-size: .88em; margin-left: .25rem; }
+.brand-text { font-family: var(--font-display); font-weight: 700; font-size: 1.06rem; white-space: nowrap; letter-spacing: -0.005em; }
+.brand-text em { font-style: normal; color: var(--ink-soft); font-weight: 500; font-size: .82em; margin-left: .3rem; }
 
 /* --- Center Navigation Group (Search + Screening Tab) --- */
 .header-center {
@@ -1797,29 +1799,29 @@ body.has-expanded-chat .site-footer {
    visually anchored to the icon so a scan across the row reads
    icon → count → next-tile. */
 .stat {
-  padding: var(--s-4) var(--s-5);
+  padding: var(--s-5) var(--s-5);
   display: grid;
   grid-template-columns: auto 1fr;
   grid-template-rows: auto auto;
-  column-gap: 1rem;
+  column-gap: 1.1rem;
   row-gap: .1rem;
   align-items: center;
-  min-height: 118px;
+  min-height: 138px;
 }
 .stat-ic {
   grid-row: 1 / 3;
   display: grid;
   place-items: center;
-  width: 46px; height: 46px;
-  border-radius: var(--r-1);
+  width: 52px; height: 52px;
+  border-radius: var(--r-2);
   background: rgba(255, 255, 255, 0.16);
   border: 1px solid rgba(255, 255, 255, 0.28);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
   color: #ffffff;
 }
-.stat-ic .icon { width: 22px; height: 22px; }
-.stat-n { font-family: var(--font-display); font-weight: 700; font-size: 2rem; line-height: 1.05; align-self: end; color: #ffffff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.30); }
-.stat-l { font-size: .82rem; color: rgba(255, 255, 255, 0.82); align-self: start; letter-spacing: .01em; }
+.stat-ic .icon { width: 24px; height: 24px; }
+.stat-n { font-family: var(--font-display); font-weight: 700; font-size: 2.4rem; line-height: 1.05; align-self: end; color: #ffffff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.30); }
+.stat-l { font-size: .9rem; color: rgba(255, 255, 255, 0.85); align-self: start; letter-spacing: .01em; }
 .stat-warn .stat-ic { background: rgba(245, 158, 11, 0.25); color: #FCD34D; border-color: rgba(245, 158, 11, 0.45); }
 .stat-danger .stat-ic { background: rgba(239, 68, 68, 0.25); color: #FCA5A5; border-color: rgba(239, 68, 68, 0.45); }
 .stat-warn .stat-n { color: #FCD34D; }
@@ -3169,165 +3171,173 @@ body.is-transitioning .flow-takeover,
   to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
 }
 
-/* ============================================================ RADIAL PATIENT DIAL
-   A GTA-radio-style patient chooser: patient chips sit on a circular ring, the
-   hub in the middle names the currently-highlighted chip, and Open jumps to
-   their profile. Rotation happens via `--dial-angle` on the track; each chip
-   counter-rotates so text stays upright regardless of position. */
-.patient-dial[hidden] { display: none; }
-.patient-dial {
+/* ============================================================ RADIAL PATIENT ARC
+   A semi-circular chooser that emerges from the Patient pill on the dock.
+   Patient chips sit on the top half of an invisible wheel; scrolling (or
+   arrow keys) rotates the wheel via `--dial-angle` so the highlighted chip
+   glides into the top-centre slot marked by `.patient-arc-marker`.
+   All chip positions are computed in JS as absolute pixel coordinates —
+   pure CSS transforms drift as the wheel rotates, which was the "off-centre
+   when rotating" bug in the previous implementation. */
+.patient-arc[hidden] { display: none; }
+.patient-arc {
+  --arc-size: 620px;
+  --arc-radius: 260px;
   position: fixed;
-  inset: 0;
+  left: 50%;
+  bottom: 96px;
+  width: var(--arc-size);
+  height: calc(var(--arc-size) / 2 + 80px);
+  transform: translateX(-50%);
   z-index: 200;
-  display: grid;
-  place-items: center;
-}
-.patient-dial-scrim {
-  position: absolute; inset: 0;
-  background: rgba(6, 12, 20, .5);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  animation: dial-scrim-in 200ms var(--ease-out);
-}
-.patient-dial-ring {
-  --dial-size: min(78vh, 560px);
-  --dial-angle: 0deg;
-  position: relative;
-  width: var(--dial-size);
-  height: var(--dial-size);
-  border-radius: 50%;
-  background: radial-gradient(circle at 50% 50%,
-    color-mix(in srgb, var(--surface) 88%, transparent) 0%,
-    color-mix(in srgb, var(--surface) 78%, transparent) 55%,
-    color-mix(in srgb, var(--surface) 55%, transparent) 100%);
-  border: 1px solid var(--border-strong);
-  box-shadow:
-    inset 0 1px 0 var(--glass-gloss),
-    0 30px 90px rgba(0, 0, 0, .5),
-    0 0 100px color-mix(in srgb, var(--brand) 22%, transparent);
-  backdrop-filter: blur(28px) saturate(160%);
-  -webkit-backdrop-filter: blur(28px) saturate(160%);
-  animation: dial-in 380ms cubic-bezier(.16, 1, .3, 1);
-}
-:root[data-theme="dark"] .patient-dial-ring {
-  background: radial-gradient(circle at 50% 50%,
-    rgba(19, 25, 34, .92) 0%, rgba(19, 25, 34, .78) 55%, rgba(19, 25, 34, .5) 100%);
-  border-color: rgba(255, 255, 255, .12);
-}
-.patient-dial-ring::before,
-.patient-dial-ring::after {
-  content: "";
-  position: absolute;
-  border-radius: 50%;
   pointer-events: none;
 }
-.patient-dial-ring::before {
-  inset: 8px;
-  border: 1px dashed color-mix(in srgb, var(--brand) 45%, transparent);
-  opacity: .55;
+@media (max-width: 720px) {
+  .patient-arc { --arc-size: 92vw; --arc-radius: calc(46vw - 20px); bottom: 92px; }
 }
-.patient-dial-ring::after {
-  inset: 26px;
-  border: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+.patient-arc-scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(6, 12, 20, .48);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  pointer-events: auto;
+  animation: arc-scrim-in 220ms var(--ease-out);
 }
-.patient-dial-track {
+.patient-arc-wheel {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: var(--arc-size);
+  height: var(--arc-size);
+  transform: translate(-50%, 50%);
+  pointer-events: none;
+}
+.patient-arc-track {
   position: absolute;
   inset: 0;
-  transform: rotate(var(--dial-angle));
-  transition: transform 320ms cubic-bezier(.16, 1, .3, 1);
+  pointer-events: none;
+  /* Chips are absolutely positioned by JS via `top`/`left` pixels, so this
+     track is just an anchor origin. No CSS rotation happens on the track
+     itself — that's what caused the earlier drift on rotation. */
 }
-.patient-dial-chip {
+.patient-arc-chip {
   position: absolute;
-  top: 50%; left: 50%;
-  width: 118px;
-  transform:
-    rotate(var(--chip-a, 0deg))
-    translate(calc(var(--dial-size) / 2 - 60px))
-    rotate(calc(var(--dial-angle) * -1))
-    rotate(calc(var(--chip-a, 0deg) * -1))
-    translate(-50%, -50%);
-  padding: .55rem .75rem;
+  min-width: 118px;
+  padding: .55rem .8rem;
   border-radius: var(--r-2);
   border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface) 60%, transparent);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: inset 0 1px 0 var(--glass-gloss), 0 6px 18px rgba(0, 0, 0, .18);
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  box-shadow: inset 0 1px 0 var(--glass-gloss), 0 8px 20px rgba(0, 0, 0, .28);
   color: var(--ink);
   cursor: pointer;
-  transition: transform 260ms var(--ease-out), border-color var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out), box-shadow var(--dur-1) var(--ease-out);
+  pointer-events: auto;
   text-align: center;
   font-size: .8rem;
   font-weight: 600;
   line-height: 1.15;
+  transform: translate(-50%, -50%) scale(var(--chip-scale, 1));
+  opacity: var(--chip-opacity, 1);
+  transition:
+    left 380ms cubic-bezier(.2, .8, .25, 1),
+    top 380ms cubic-bezier(.2, .8, .25, 1),
+    transform 320ms cubic-bezier(.2, .8, .25, 1),
+    opacity 320ms var(--ease-out),
+    border-color var(--dur-1) var(--ease-out),
+    box-shadow var(--dur-1) var(--ease-out);
+  display: flex;
+  align-items: center;
+  gap: .5rem;
 }
-.patient-dial-chip .initials {
+:root[data-theme="dark"] .patient-arc-chip {
+  background: rgba(19, 25, 34, .6);
+  border-color: rgba(255, 255, 255, .12);
+}
+.patient-arc-chip .initials {
   display: inline-grid;
   place-items: center;
-  width: 26px; height: 26px;
+  width: 24px; height: 24px;
   border-radius: 50%;
-  margin: 0 auto .35rem;
   background: linear-gradient(135deg, var(--brand-soft), var(--brand));
   color: #fff;
   font-family: var(--font-mono);
-  font-size: .74rem;
+  font-size: .68rem;
   font-weight: 700;
+  flex: none;
 }
-.patient-dial-chip.is-active {
+.patient-arc-chip.is-active {
   border-color: var(--brand);
   color: var(--ink);
-  box-shadow: inset 0 1px 0 var(--glass-gloss), 0 0 0 3px color-mix(in srgb, var(--brand) 30%, transparent), 0 10px 26px color-mix(in srgb, var(--brand) 35%, transparent);
-  transform:
-    rotate(var(--chip-a, 0deg))
-    translate(calc(var(--dial-size) / 2 - 60px))
-    rotate(calc(var(--dial-angle) * -1))
-    rotate(calc(var(--chip-a, 0deg) * -1))
-    translate(-50%, -50%)
-    scale(1.08);
+  box-shadow:
+    inset 0 1px 0 var(--glass-gloss),
+    0 0 0 3px color-mix(in srgb, var(--brand) 30%, transparent),
+    0 14px 32px color-mix(in srgb, var(--brand) 40%, transparent);
+  z-index: 3;
 }
-.patient-dial-hub {
+.patient-arc-marker {
   position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
+  left: 50%;
+  top: calc(var(--arc-size) / 2 - var(--arc-radius) - 14px);
+  width: 26px;
+  height: 26px;
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 3px;
+  background: linear-gradient(135deg, var(--brand-soft), var(--brand));
+  box-shadow: 0 0 18px var(--brand-glow);
+  pointer-events: none;
+  opacity: .55;
+}
+.patient-arc-hub {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translate(-50%, -22%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: .35rem;
-  padding: 1.2rem 1.6rem;
+  gap: .4rem;
+  padding: .9rem 1.4rem 1rem;
   border-radius: var(--r-3);
-  background: color-mix(in srgb, var(--surface) 78%, transparent);
+  background: color-mix(in srgb, var(--surface) 65%, transparent);
   border: 1px solid var(--border-strong);
-  box-shadow: inset 0 1px 0 var(--glass-gloss), 0 12px 30px rgba(0, 0, 0, .35);
-  max-width: 62%;
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  box-shadow: inset 0 1px 0 var(--glass-gloss), 0 20px 44px rgba(0, 0, 0, .45);
+  min-width: 280px;
+  max-width: 92vw;
   text-align: center;
+  pointer-events: auto;
+  animation: arc-hub-in 340ms cubic-bezier(.16, 1, .3, 1);
 }
-:root[data-theme="dark"] .patient-dial-hub {
-  background: rgba(15, 20, 28, .82);
+:root[data-theme="dark"] .patient-arc-hub {
+  background: rgba(15, 20, 28, .58);
   border-color: rgba(255, 255, 255, .14);
 }
-.patient-dial-hub-k {
+.patient-arc-hub-k {
   font-family: var(--font-mono);
-  font-size: .68rem;
+  font-size: .66rem;
   text-transform: uppercase;
   letter-spacing: .12em;
   color: var(--ink-soft);
 }
-.patient-dial-hub-name {
+.patient-arc-hub-name {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 1.4rem;
+  font-size: 1.3rem;
   color: var(--ink);
-  min-height: 1.6rem;
+  min-height: 1.5rem;
   line-height: 1.15;
   word-break: break-word;
 }
-.patient-dial-hub-actions {
+.patient-arc-hub-actions {
   display: flex;
   align-items: center;
   gap: .5rem;
-  margin-top: .3rem;
+  margin-top: .2rem;
 }
-.patient-dial-open {
+.patient-arc-open {
   display: inline-flex;
   align-items: center;
   gap: .35rem;
@@ -3341,11 +3351,11 @@ body.is-transitioning .flow-takeover,
   transition: transform var(--dur-1) var(--ease-out), filter var(--dur-1) var(--ease-out);
   box-shadow: 0 6px 18px color-mix(in srgb, var(--brand) 40%, transparent);
 }
-.patient-dial-open:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.08); }
-.patient-dial-open:disabled { opacity: .55; cursor: default; }
-.patient-dial-close {
+.patient-arc-open:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.08); }
+.patient-arc-open:disabled { opacity: .55; cursor: default; }
+.patient-arc-close {
   display: grid; place-items: center;
-  width: 36px; height: 36px;
+  width: 34px; height: 34px;
   border-radius: 50%;
   border: 1px solid var(--border);
   background: transparent;
@@ -3353,31 +3363,17 @@ body.is-transitioning .flow-takeover,
   cursor: pointer;
   transition: color var(--dur-1) var(--ease-out), border-color var(--dur-1) var(--ease-out);
 }
-.patient-dial-close:hover { color: var(--ink); border-color: var(--brand); }
-.patient-dial-hub-hint { font-size: .74rem; margin: .3rem 0 0; }
+.patient-arc-close:hover { color: var(--ink); border-color: var(--brand); }
+.patient-arc-hub-hint { font-size: .72rem; margin: .2rem 0 0; letter-spacing: .04em; }
 
-/* Compass indicator: a thin arrow at the 3 o'clock position marks the
-   selected chip's landing spot. */
-.patient-dial-ring > .patient-dial-indicator {
-  position: absolute;
-  top: 50%;
-  right: 6px;
-  transform: translateY(-50%);
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--brand-soft), var(--brand));
-  box-shadow: 0 0 12px var(--brand-glow);
-  pointer-events: none;
+@keyframes arc-scrim-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes arc-hub-in {
+  from { opacity: 0; transform: translate(-50%, 20%) scale(.94); }
+  to   { opacity: 1; transform: translate(-50%, -22%) scale(1); }
 }
-
-@keyframes dial-scrim-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes dial-in {
-  from { opacity: 0; transform: scale(.85) rotate(-8deg); }
-  to   { opacity: 1; transform: scale(1) rotate(0); }
-}
-:root.no-motion .patient-dial-scrim,
-:root.no-motion .patient-dial-ring { animation: none; }
+:root.no-motion .patient-arc-scrim,
+:root.no-motion .patient-arc-hub,
+:root.no-motion .patient-arc-chip { animation: none; transition: none; }
 
 /* ============================================================ 12. ALL SHARED REPORTS TABLE */
 .worklist-section {
@@ -3727,10 +3723,13 @@ body.is-transitioning .flow-takeover,
   max-width: min(1360px, 96vw);
   margin-left: auto;
   margin-right: auto;
-  padding-left: var(--s-4);
-  padding-right: var(--s-4);
-  gap: var(--s-4);
-  justify-content: space-between;
+  padding-left: var(--s-3);
+  padding-right: var(--s-3);
+  /* Tight breathing room between pills instead of the earlier
+     space-between which parked large voids between them. The search bar
+     grabs the remaining slack so the row fills edge to edge. */
+  gap: .6rem;
+  justify-content: flex-start;
 }
 /* Flatten .header-left so the brand and the screening chip participate as
    independent flex items in the outer row — that lets `space-between`
@@ -3744,17 +3743,17 @@ body.is-transitioning .flow-takeover,
   gap: var(--s-2);
   flex: 0 0 auto;
 }
-/* Search sits in the middle and takes the slack so the four zones are pushed
-   to equal spacings. Cap it so it doesn't blow out on very wide displays. */
+/* Search grabs all remaining space so the four header zones sit at the very
+   edges of the row with only a small breathing room between neighbouring
+   pills — matches the tight edge-to-edge cluster the user asked for. */
 .cmdk-trigger.cmdk-trigger-wide {
   flex: 1 1 auto;
-  max-width: 560px;
+  max-width: none;
   min-width: 200px;
-  margin: 0 auto;
   justify-content: flex-start;
   gap: .6rem;
-  padding: .55rem 1rem;
-  font-size: .9rem;
+  padding: .6rem 1rem;
+  font-size: .92rem;
 }
 .cmdk-trigger.cmdk-trigger-wide .cmdk-trigger-label {
   flex: 1 1 auto;
@@ -3865,41 +3864,20 @@ body.is-transitioning .flow-takeover,
    linked to the rail's Compare tile by an SVG path drawn in .bulk-lines —
    the paths grow / retract in response to selection changes, giving a
    physical sense of "these rows are wired to this action." */
-/* Reports shell is a two-column grid: the rail sits in column 1 (auto-width
-   after a row is selected) and the table sits in column 2 (1fr). When nothing
-   is selected column 1 collapses to 0, so the table snaps back to the full
-   width smoothly via the grid-template-columns transition. */
+/* Reports shell keeps the table at its full natural width so selecting a row
+   never reflows the columns. The rail OVERHANGS the shell to the left
+   (negative left) instead of grabbing a grid column — so selection triggers
+   a rail slide-in, not a table shrink. */
 .reports-shell {
   position: relative;
-  display: grid;
-  grid-template-columns: 0 minmax(0, 1fr);
-  gap: 0;
-  align-items: start;
-  transition: grid-template-columns 320ms cubic-bezier(.2, .8, .25, 1),
-              gap 320ms cubic-bezier(.2, .8, .25, 1);
-}
-.reports-shell.has-selection {
-  grid-template-columns: 108px minmax(0, 1fr);
-  gap: 16px;
-}
-@media (max-width: 900px) {
-  .reports-shell,
-  .reports-shell.has-selection {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 0;
-  }
-}
-.reports-shell > .table-wrap.reports-table-card { grid-column: 2; grid-row: 1; min-width: 0; }
-@media (max-width: 900px) {
-  .reports-shell > .table-wrap.reports-table-card { grid-column: 1; }
 }
 .bulk-bar {
-  grid-column: 1;
-  grid-row: 1;
-  position: sticky;
-  top: 100px;
+  position: absolute;
+  top: 8px;
+  left: -124px;
   align-self: start;
   width: 108px;
+  z-index: 6;
   display: flex;
   flex-direction: column;
   gap: .5rem;
@@ -3923,11 +3901,12 @@ body.is-transitioning .flow-takeover,
   from { opacity: 0; transform: translateX(-12px) scale(.94); }
   to   { opacity: 1; transform: translateX(0) scale(1); }
 }
-@media (max-width: 900px) {
+@media (max-width: 1200px) {
+  /* Not enough room to overhang — dock the rail above the table instead. */
   .bulk-bar {
     position: relative;
     top: auto;
-    grid-column: 1;
+    left: auto;
     width: auto;
     flex-direction: row;
     align-items: center;
@@ -4032,18 +4011,20 @@ body.is-transitioning .flow-takeover,
 }
 
 /* SVG overlay that draws the connecting lines from the rail's Compare tile to
-   each selected row. Overlays the whole shell (grid-column 1 / -1) but stays
-   pointer-transparent so the table underneath is fully interactive. */
+   each selected row. The SVG canvas extends 124px into the overhang so the
+   spine and branches can be drawn from the (out-of-shell) rail to each row
+   inside the shell. Pointer-transparent so table interaction is unaffected. */
 .bulk-lines {
   position: absolute;
   top: 0;
-  left: 0;
-  width: 100%;
+  left: -124px;
+  width: calc(100% + 124px);
   height: 100%;
   pointer-events: none;
   z-index: 3;
-  grid-column: 1 / -1;
-  grid-row: 1;
+}
+@media (max-width: 1200px) {
+  .bulk-lines { left: 0; width: 100%; }
 }
 .bulk-lines path {
   fill: none;
@@ -4633,9 +4614,9 @@ body { min-height: 100vh; }
 .compare-panel {
   border-radius: var(--r-3);
   border: 1px solid var(--border-strong);
-  background: color-mix(in srgb, var(--surface) 68%, transparent);
-  backdrop-filter: blur(30px) saturate(150%);
-  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  background: color-mix(in srgb, var(--surface) 42%, transparent);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
   box-shadow: inset 0 1px 0 var(--glass-gloss), var(--shadow-modal);
   padding: var(--s-4) var(--s-5) var(--s-5);
   max-height: calc(100vh - 64px);
@@ -4644,11 +4625,13 @@ body { min-height: 100vh; }
   gap: var(--s-4);
   color: var(--ink);
 }
+/* Push the alpha down so the ambient blueprint clearly reads through the
+   modal — user feedback that the old dark 0.86 fill still felt opaque. */
 :root[data-theme="dark"] .compare-panel {
-  background: rgba(15, 22, 32, 0.86);
-  border-color: rgba(255, 255, 255, .12);
+  background: rgba(15, 22, 32, 0.48);
+  border-color: rgba(255, 255, 255, .14);
 }
-:root:not([data-theme="dark"]) .compare-panel { background: rgba(255, 255, 255, 0.86); }
+:root:not([data-theme="dark"]) .compare-panel { background: rgba(255, 255, 255, 0.5); }
 
 /* Head strip: an inflated glass pill on the left, a matching close chip on the right */
 .compare-head {

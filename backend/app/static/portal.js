@@ -1248,12 +1248,9 @@
     var dial = document.querySelector("[data-patient-dial]");
     if (!dial) return;
     var track = dial.querySelector("[data-patient-dial-track]");
-    var ring = dial.querySelector(".patient-dial-ring");
+    var wheel = dial.querySelector(".patient-arc-wheel");
     var nameEl = dial.querySelector("[data-patient-dial-name]");
     var openBtn = dial.querySelector("[data-patient-dial-open]");
-    var indicator = document.createElement("span");
-    indicator.className = "patient-dial-indicator";
-    if (ring) ring.appendChild(indicator);
 
     var patients = [];
     var activeIndex = 0;
@@ -1283,13 +1280,11 @@
       var n = patients.length;
       if (!n) return;
       patients.forEach(function (p, i) {
-        var angle = (360 / n) * i;
         var chip = document.createElement("button");
         chip.type = "button";
-        chip.className = "patient-dial-chip";
+        chip.className = "patient-arc-chip";
         chip.setAttribute("role", "option");
         chip.setAttribute("data-index", String(i));
-        chip.style.setProperty("--chip-a", angle + "deg");
         chip.innerHTML = '<span class="initials">' + initials(p.name) + '</span><span class="name">' + p.name + '</span>';
         chip.addEventListener("click", function () {
           if (activeIndex === i) { go(); }
@@ -1300,12 +1295,45 @@
       setActive(0);
     }
 
+    /* Position chips along the top-half arc. Coordinates are pixel-exact so
+       the wheel never drifts off centre no matter how many times it rotates.
+       The active chip is placed at angle 0 (12 o'clock); neighbours fan out
+       symmetrically at +/- ARC_STEP radians. */
+    function layout() {
+      if (!wheel || !track || !patients.length) return;
+      var size = wheel.offsetWidth;                          // matches --arc-size
+      var radius = parseFloat(getComputedStyle(dial).getPropertyValue("--arc-radius")) || (size * 0.42);
+      var center = size / 2;                                 // wheel is square
+      var ARC_STEP = Math.PI / 6;                            // 30° between chips
+      track.querySelectorAll(".patient-arc-chip").forEach(function (chip, i) {
+        var offset = i - activeIndex;
+        // Wrap into [-halfN, +halfN] so chips slide the short way when
+        // activeIndex changes.
+        var halfN = patients.length / 2;
+        if (offset > halfN) offset -= patients.length;
+        else if (offset < -halfN) offset += patients.length;
+        var angle = offset * ARC_STEP;                       // 0 = top-centre
+        // Only chips within the visible top arc get shown; the rest fade.
+        var visibleSpan = 5;                                 // ±2.5 slots on each side
+        var absOffset = Math.abs(offset);
+        var visible = absOffset <= visibleSpan;
+        var x = center + radius * Math.sin(angle);
+        var y = center - radius * Math.cos(angle);
+        chip.style.left = x + "px";
+        chip.style.top = y + "px";
+        var scale = visible ? Math.max(.72, 1 - absOffset * 0.10) : 0.6;
+        chip.style.setProperty("--chip-scale", scale);
+        var opacity = visible ? Math.max(.25, 1 - absOffset * 0.28) : 0;
+        chip.style.setProperty("--chip-opacity", opacity);
+        chip.style.pointerEvents = visible ? "auto" : "none";
+        chip.style.zIndex = String(10 - Math.floor(absOffset));
+      });
+    }
+
     function setActive(i) {
       if (!patients.length) return;
       activeIndex = ((i % patients.length) + patients.length) % patients.length;
-      var angle = -(360 / patients.length) * activeIndex;
-      if (ring) ring.style.setProperty("--dial-angle", angle + "deg");
-      track.querySelectorAll(".patient-dial-chip").forEach(function (c, idx) {
+      track.querySelectorAll(".patient-arc-chip").forEach(function (c, idx) {
         c.classList.toggle("is-active", idx === activeIndex);
       });
       var p = patients[activeIndex];
@@ -1314,6 +1342,7 @@
         openBtn.disabled = false;
         openBtn.onclick = go;
       }
+      layout();
     }
     function go() {
       var p = patients[activeIndex];
@@ -1322,11 +1351,14 @@
       window.location.href = p.href;
     }
     function show() {
-      render();
       dial.hidden = false;
       dial.setAttribute("aria-hidden", "false");
       document.body.style.overflow = "hidden";
+      // Chip positions depend on the wheel's rendered size, so render + layout
+      // must run after the arc is visible in the DOM.
+      requestAnimationFrame(function () { render(); layout(); });
       document.addEventListener("keydown", onKey);
+      window.addEventListener("resize", layout);
       dial.addEventListener("wheel", onWheel, { passive: false });
     }
     function open() {
@@ -1355,8 +1387,9 @@
             return;
           }
           document.addEventListener("keydown", onKey);
+          window.addEventListener("resize", layout);
           dial.addEventListener("wheel", onWheel, { passive: false });
-          render();
+          requestAnimationFrame(function () { render(); layout(); });
         })
         .catch(function () {
           close();
@@ -1368,18 +1401,25 @@
       dial.setAttribute("aria-hidden", "true");
       document.body.style.overflow = "";
       document.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", layout);
       dial.removeEventListener("wheel", onWheel);
     }
     function onKey(e) {
       if (e.key === "Escape") { e.preventDefault(); close(); return; }
+      // Arrow left/right rotate the wheel like a real dial. Down/right = next
+      // patient (wheel spins clockwise), up/left = previous.
       if (e.key === "ArrowRight" || e.key === "ArrowDown") { e.preventDefault(); setActive(activeIndex + 1); return; }
       if (e.key === "ArrowLeft" || e.key === "ArrowUp") { e.preventDefault(); setActive(activeIndex - 1); return; }
       if (e.key === "Enter") { e.preventDefault(); go(); }
     }
+    var wheelCooldown = 0;
     function onWheel(e) {
       e.preventDefault();
+      var now = Date.now();
+      if (now - wheelCooldown < 120) return;                 // ~8 steps/sec cap
       var delta = e.deltaY || e.deltaX;
-      if (Math.abs(delta) < 10) return;
+      if (Math.abs(delta) < 4) return;
+      wheelCooldown = now;
       setActive(activeIndex + (delta > 0 ? 1 : -1));
     }
     dial.querySelectorAll("[data-patient-dial-close]").forEach(function (b) {
@@ -1403,16 +1443,19 @@
     if (!bulkLines || !reportsShell || !bulkBar) return;
     while (bulkLines.firstChild) bulkLines.removeChild(bulkLines.firstChild);
     if (bulkBar.hidden) return;
-    var shellRect = reportsShell.getBoundingClientRect();
-    // Fire lines from the RIGHT edge of the rail itself (not just the Compare
-    // tile) so the wires read as one bus leaving the panel, then step at right
-    // angles across to each row — a straight, neat "wired" look.
+    // The SVG's own bounding rect includes the 124px overhang to the left of
+    // the shell — use it as the origin for coordinate math so lines sit
+    // pixel-perfectly against the rail and rows regardless of where the shell
+    // ends up in the viewport.
+    var svgRect = bulkLines.getBoundingClientRect();
     var barRect = bulkBar.getBoundingClientRect();
-    var railRight = barRect.right - shellRect.left;
+    var railRight = barRect.right - svgRect.left;
     var rows = selectedRows();
-    bulkLines.setAttribute("width", Math.max(shellRect.width, 1));
-    bulkLines.setAttribute("height", Math.max(shellRect.height, 1));
-    bulkLines.setAttribute("viewBox", "0 0 " + Math.max(shellRect.width, 1) + " " + Math.max(shellRect.height, 1));
+    var w = Math.max(svgRect.width, 1);
+    var h = Math.max(svgRect.height, 1);
+    bulkLines.setAttribute("width", w);
+    bulkLines.setAttribute("height", h);
+    bulkLines.setAttribute("viewBox", "0 0 " + w + " " + h);
     // First: the vertical spine on the rail's right edge, spanning from the
     // first selected row to the last. It reads as the "bus" all the branches
     // attach to.
@@ -1421,7 +1464,7 @@
         var tr = cb.closest("tr");
         if (!tr) return null;
         var rect = tr.getBoundingClientRect();
-        return rect.top + rect.height / 2 - shellRect.top;
+        return rect.top + rect.height / 2 - svgRect.top;
       }).filter(function (y) { return y !== null; });
       if (ys.length) {
         var minY = Math.min.apply(null, ys);
@@ -1438,8 +1481,8 @@
       var tr = cb.closest("tr");
       if (!tr) return;
       var rowRect = tr.getBoundingClientRect();
-      var endX = rowRect.left - shellRect.left + 6;
-      var endY = rowRect.top + rowRect.height / 2 - shellRect.top;
+      var endX = rowRect.left - svgRect.left + 6;
+      var endY = rowRect.top + rowRect.height / 2 - svgRect.top;
       // Straight horizontal branch from the spine out to the row's left edge.
       var d = "M" + railRight + "," + endY + " L" + endX + "," + endY;
       var path = document.createElementNS("http://www.w3.org/2000/svg", "path");

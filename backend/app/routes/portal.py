@@ -548,7 +548,11 @@ class _PortalChatRequest(BaseModel):
 
 class _PortalCompareChatRequest(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
-    report_ids: list[int] = Field(min_length=2, max_length=4)
+    # The compare panel lets the doctor pick as many reports as they like; the
+    # earlier max_length=4 rejected any batch larger than four with a silent
+    # 422. Bump to 12 so a full worklist still fits, and clamp on the server
+    # side rather than in the schema.
+    report_ids: list[int] = Field(min_length=2, max_length=12)
     history: list[_PortalChatTurn] = Field(default_factory=list)
 
 
