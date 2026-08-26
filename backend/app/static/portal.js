@@ -6,6 +6,18 @@
   "use strict";
   var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+  /* --- 0. platform kbd hint --------------------------------------------------------- */
+  // On non-Mac we show "Ctrl" instead of "⌘" in the header search kbd badge. The
+  // keyboard binding accepts both (Meta on Mac, Ctrl on Windows/Linux).
+  (function () {
+    var isMac = /Mac|iP(hone|ad|od)/.test(navigator.platform || "");
+    if (isMac) return;
+    document.querySelectorAll("[data-cmdk-mod]").forEach(function (el) {
+      el.textContent = "Ctrl";
+      el.style.fontSize = ".68rem";
+    });
+  })();
+
   /* --- 1. theme toggle ------------------------------------------------------------- */
   var root = document.documentElement;
   function currentTheme() {
@@ -1117,39 +1129,152 @@
   }
 
   /* --- 11. floating bottom dock & refresh action ----------------------------------- */
+  // Refresh actually reloads — a "reload to see a new report" affordance
+  // that also serves as an escape hatch for stale data. Queues the toast so
+  // it appears after the reload finishes.
   var dockRefresh = document.querySelector("[data-dock-refresh]");
   if (dockRefresh) {
     dockRefresh.addEventListener("click", function () {
       dockRefresh.classList.add("is-spinning");
-      setTimeout(function () {
-        dockRefresh.classList.remove("is-spinning");
-        if (window.s4dToast) {
-          window.s4dToast("Worklist updated", "Latest screening results synchronized", false);
-        }
-      }, 700);
+      try {
+        sessionStorage.setItem(TOAST_KEY, JSON.stringify({
+          title: "Worklist refreshed",
+          sub: "Latest shared reports loaded",
+          error: false
+        }));
+      } catch (e) {}
+      setTimeout(function () { window.location.reload(); }, 380);
     });
   }
 
-  /* --- 12. table selection & checkboxes -------------------------------------------- */
+  // Patient/Report dock pills that had nothing to link to used to be inert.
+  // They now open the command palette pre-filtered to the appropriate group,
+  // so every dock slot is a live way to jump somewhere.
+  document.querySelectorAll("[data-dock-picker]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var kind = btn.getAttribute("data-dock-picker");
+      var opener = document.querySelector("[data-cmdk-open]");
+      if (opener) opener.click();
+      var input = document.querySelector("[data-cmdk-input]");
+      if (input) {
+        // Seed the palette with a hint the doctor can immediately type past;
+        // clearing it takes one Backspace, or they can just start typing.
+        setTimeout(function () {
+          input.value = "";
+          input.placeholder = kind === "patient"
+            ? "Search patients…"
+            : "Search reports (name, condition, #id)…";
+          input.focus();
+          input.dispatchEvent(new Event("input", { bubbles: true }));
+        }, 60);
+      }
+    });
+  });
+
+  /* --- 12. table selection & bulk action bar --------------------------------------- */
+  var bulkBar = document.querySelector("[data-bulk-bar]");
+  var bulkCount = document.querySelector("[data-bulk-count]");
+
+  function selectedRows() {
+    return Array.prototype.slice.call(
+      document.querySelectorAll("table.reports-data-table .row-cb:checked")
+    );
+  }
+  function refreshBulkBar() {
+    if (!bulkBar) return;
+    var rows = selectedRows();
+    var n = rows.length;
+    if (bulkCount) bulkCount.textContent = String(n);
+    if (n > 0) {
+      bulkBar.hidden = false;
+      // Restart the slide-in animation each time the bar re-appears from zero.
+      bulkBar.style.animation = "none";
+      // eslint-disable-next-line no-unused-expressions
+      bulkBar.offsetHeight;
+      bulkBar.style.animation = "";
+    } else {
+      bulkBar.hidden = true;
+    }
+  }
+
   document.querySelectorAll("[data-select-all]").forEach(function (masterCb) {
     var table = masterCb.closest("table");
     if (!table) return;
     masterCb.addEventListener("change", function () {
       var isChecked = masterCb.checked;
       table.querySelectorAll(".row-cb").forEach(function (cb) {
+        if (cb.closest("tr").hidden) return;   // don't select rows filtered out
         cb.checked = isChecked;
         var tr = cb.closest("tr");
         if (tr) tr.classList.toggle("is-selected", isChecked);
       });
+      refreshBulkBar();
     });
 
     table.querySelectorAll(".row-cb").forEach(function (cb) {
       cb.addEventListener("change", function () {
         var tr = cb.closest("tr");
         if (tr) tr.classList.toggle("is-selected", cb.checked);
-        var allChecked = Array.prototype.every.call(table.querySelectorAll(".row-cb"), function (c) { return c.checked; });
+        var visible = Array.prototype.filter.call(
+          table.querySelectorAll(".row-cb"),
+          function (c) { return !c.closest("tr").hidden; }
+        );
+        var allChecked = visible.length > 0 && visible.every(function (c) { return c.checked; });
         masterCb.checked = allChecked;
+        refreshBulkBar();
       });
     });
   });
+
+  // Bulk action handlers. Archive is a client-side hide (the backend has no
+  // archive endpoint yet) with a toast so the doctor sees the action land;
+  // Open patient jumps to the first selected report's patient.
+  if (bulkBar) {
+    bulkBar.addEventListener("click", function (e) {
+      var btn = e.target.closest("[data-bulk-action]");
+      if (!btn) return;
+      var action = btn.getAttribute("data-bulk-action");
+      var rows = selectedRows();
+      if (action === "clear") {
+        rows.forEach(function (cb) {
+          cb.checked = false;
+          var tr = cb.closest("tr");
+          if (tr) tr.classList.remove("is-selected");
+        });
+        document.querySelectorAll("[data-select-all]").forEach(function (m) { m.checked = false; });
+        refreshBulkBar();
+        return;
+      }
+      if (action === "archive") {
+        if (!rows.length) return;
+        var count = rows.length;
+        rows.forEach(function (cb) {
+          var tr = cb.closest("tr");
+          if (!tr) return;
+          tr.classList.add("is-archiving");
+          setTimeout(function () {
+            tr.remove();
+          }, reduce ? 0 : 420);
+        });
+        if (window.s4dToast) {
+          window.s4dToast(
+            count === 1 ? "Report archived" : count + " reports archived",
+            "Hidden from this worklist view",
+            false
+          );
+        }
+        setTimeout(refreshBulkBar, reduce ? 0 : 440);
+        return;
+      }
+      if (action === "open-patient") {
+        var first = rows[0];
+        if (!first) return;
+        var tr = first.closest("tr");
+        var link = tr && tr.querySelector(".patient-link");
+        if (link && link.href) {
+          window.location.href = link.href;
+        }
+      }
+    });
+  }
 })();

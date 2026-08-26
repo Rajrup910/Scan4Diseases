@@ -41,33 +41,30 @@
 
   <header class="site-header">
     <div class="wrap header-inner">
-      <a class="brand" href="/portal/patients">
-        {# Clean, frameless emblem — the reticle + medical cross + aperture motif
-           from the brandmark, drawn in the brand colour so it stays crisp at any
-           size (no squircle frame / photo halo). #}
-        <svg class="brand-emblem" viewBox="0 0 48 48" aria-hidden="true">
-          <circle cx="24" cy="24" r="16.5" fill="none" stroke="currentColor" stroke-width="2.4"/>
-          <path d="M24 3.5v6M24 38.5v6M3.5 24h6M38.5 24h6"
-                stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
-          <path d="M24 12.5v23M12.5 24h23" stroke="currentColor" stroke-width="4.5"
-                stroke-linecap="round" opacity=".85"/>
-          <circle cx="24" cy="24" r="6" fill="var(--surface)"/>
-          <circle cx="24" cy="24" r="6" fill="none" stroke="currentColor" stroke-width="2.4"/>
-          <path d="M24 20.5l2.6 4.5h-5.2z" fill="currentColor"/>
-        </svg>
-        <span class="brand-text">Scan4Disease <em>Clinician Portal</em></span>
-      </a>
+      {# Left edge: brand lockup + screening disclaimer chip, grouped so they
+         read as one identity block. #}
+      <div class="header-left">
+        <a class="brand" href="/portal/patients">
+          {# Clean, frameless emblem — the reticle + medical cross + aperture motif
+             from the brandmark, drawn in the brand colour so it stays crisp at any
+             size (no squircle frame / photo halo). #}
+          <svg class="brand-emblem" viewBox="0 0 48 48" aria-hidden="true">
+            <circle cx="24" cy="24" r="16.5" fill="none" stroke="currentColor" stroke-width="2.4"/>
+            <path d="M24 3.5v6M24 38.5v6M3.5 24h6M38.5 24h6"
+                  stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+            <path d="M24 12.5v23M12.5 24h23" stroke="currentColor" stroke-width="4.5"
+                  stroke-linecap="round" opacity=".85"/>
+            <circle cx="24" cy="24" r="6" fill="var(--surface)"/>
+            <circle cx="24" cy="24" r="6" fill="none" stroke="currentColor" stroke-width="2.4"/>
+            <path d="M24 20.5l2.6 4.5h-5.2z" fill="currentColor"/>
+          </svg>
+          <span class="brand-text">Scan4Disease <em>Clinician Portal</em></span>
+        </a>
 
-      {% if doctor %}
-      <div class="header-center">
-        {# Command-palette trigger — click opens the palette. Clean search affordance. #}
-        <button class="cmdk-trigger" type="button" data-cmdk-open
-                aria-label="Search patients, actions">
-          <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#search"/></svg>
-          <span class="cmdk-trigger-label">Search patients, actions…</span>
-        </button>
-
-        {# Screening tab with hover disclaimer tooltip #}
+        {% if doctor %}
+        {# Screening disclaimer chip — grouped with the brand on the far left.
+           Absorbs the promise the footer used to carry, so we can drop that
+           footer entirely without losing the "not a diagnosis" reminder. #}
         <div class="screening-wrap" data-screening-wrap>
           <span class="screening-chip" role="note" tabindex="0" aria-label="Screening support — not a medical diagnosis">
             <span class="screening-beacon" aria-hidden="true"><span class="beacon-core"></span><span class="beacon-ring"></span></span>
@@ -75,10 +72,21 @@
           </span>
           <div class="screening-tooltip" role="tooltip">
             <span class="screening-tooltip-dot"></span>
-            <span>AI-assisted screening support only — <strong>not a medical diagnosis</strong>.</span>
+            <span>AI-assisted screening support only — <strong>not a medical diagnosis</strong>. Patient data shown here was explicitly shared with you and may be withdrawn at any time.</span>
           </div>
         </div>
+        {% endif %}
       </div>
+
+      {% if doctor %}
+      {# Wide command-palette trigger, filling the middle of the header. Click
+         or Ctrl/Cmd+K opens the palette. #}
+      <button class="cmdk-trigger cmdk-trigger-wide" type="button" data-cmdk-open
+              aria-label="Search patients, actions (Ctrl+K)">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#search"/></svg>
+        <span class="cmdk-trigger-label">Search patients, actions, reports…</span>
+        <kbd class="cmdk-kbd" aria-hidden="true"><span class="cmdk-kbd-mod" data-cmdk-mod>⌘</span>K</kbd>
+      </button>
       {% endif %}
 
       <nav class="header-nav">
@@ -127,16 +135,14 @@
     {% block content %}{% endblock %}
   </main>
 
-  <footer class="site-footer">
-    <div class="wrap">
-      <p>Scan4Disease Clinician Portal · Encrypted patient records explicitly shared with your account</p>
-    </div>
-  </footer>
+  {# The old site-footer text ("Encrypted patient records…") was made redundant
+     by the header disclaimer chip and clashed visually with the floating dock. #}
 
   {% if doctor %}
   {# Floating bottom dock — the two-way pivot between the worklist, the current
-     patient, and the current report; center pill is a refresh, right pill is
-     the current report id (when on one). #}
+     patient, and the current report. Every pill is always interactive: when
+     there is no active patient/report in view, the pill opens the command
+     palette pre-filtered so the doctor can pick one. #}
   <nav class="dock" data-dock aria-label="Section navigation">
     <a class="dock-item {% if request.url.path == '/portal/patients' %}is-active{% endif %}"
        href="/portal/patients" data-dock-worklist>
@@ -149,10 +155,11 @@
       <span>{{ (patient.display_name or patient.email).split('@')[0][:16] }}</span>
     </a>
     {% else %}
-    <span class="dock-item is-disabled" aria-disabled="true" title="Open a patient to enable">
+    <button class="dock-item dock-item-btn" type="button" data-dock-picker="patient"
+            title="Pick a patient">
       <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#user"/></svg>
       <span>Patient</span>
-    </span>
+    </button>
     {% endif %}
 
     <button class="dock-refresh" type="button" data-dock-refresh
@@ -173,10 +180,11 @@
       <span class="dock-report-id mono">#{{ report.id }}</span>
     </a>
     {% else %}
-    <span class="dock-item is-disabled" aria-disabled="true" title="Open a report to enable">
+    <button class="dock-item dock-item-btn" type="button" data-dock-picker="report"
+            title="Pick a report">
       <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#file-text"/></svg>
       <span>Report</span>
-    </span>
+    </button>
     {% endif %}
   </nav>
 
