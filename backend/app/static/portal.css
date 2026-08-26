@@ -332,9 +332,15 @@ body {
 .bg-scrim {
   position: absolute;
   inset: 0;
+  /* Heavier wash so the ambient home-screen footage (with its readable
+     programme text) is masked to a calm green field on load — only the
+     tabs, cards, and headers should read. The transparent "window" in the
+     centre is gone; the radial now only modulates how deep the green gets,
+     darkest toward the edges where the raw background text used to bleed
+     through above and below the cards. */
   background:
-    radial-gradient(150% 130% at 50% 45%, transparent 42%, color-mix(in srgb, var(--bg) 42%, transparent) 100%),
-    color-mix(in srgb, var(--bg) 55%, transparent);
+    radial-gradient(150% 130% at 50% 42%, color-mix(in srgb, var(--bg) 30%, transparent) 22%, color-mix(in srgb, var(--bg) 60%, transparent) 100%),
+    color-mix(in srgb, var(--bg) 64%, transparent);
 }
 /* Grain — a barely-there film over the motion so it reads as one surface. */
 body::before {
@@ -353,7 +359,7 @@ body::before {
    Also exclude the floating dock, its dial, and the modal dialogs so they
    keep their intended position (fixed / grid overlay) instead of being
    forced into `position: relative` and dropping into the page flow. */
-body > *:not(.bg-stage):not(.site-header):not(.flow-takeover):not(.dock):not(.patient-dial):not(dialog) {
+body > *:not(.bg-stage):not(.site-header):not(.flow-takeover):not(.dock):not(.patient-arc):not(dialog) {
   position: relative;
   z-index: 1;
 }
@@ -3067,7 +3073,7 @@ body.is-transitioning .flow-takeover,
   padding: .7rem .95rem;
   border-radius: var(--r-pill);
   border: 1px solid var(--border-strong);
-  background: color-mix(in srgb, var(--surface) 55%, transparent);
+  background: color-mix(in srgb, var(--surface) 38%, transparent);
   backdrop-filter: blur(28px) saturate(160%);
   -webkit-backdrop-filter: blur(28px) saturate(160%);
   box-shadow:
@@ -3081,7 +3087,7 @@ body.is-transitioning .flow-takeover,
   transition: transform var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out), border-color var(--dur-2) var(--ease-out);
 }
 :root[data-theme="dark"] .dock {
-  background: rgba(20, 26, 36, 0.32);
+  background: rgba(20, 26, 36, 0.22);
   border-color: rgba(255, 255, 255, 0.14);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.18),
@@ -3091,7 +3097,7 @@ body.is-transitioning .flow-takeover,
   -webkit-backdrop-filter: blur(36px) saturate(180%);
 }
 :root:not([data-theme="dark"]) .dock {
-  background: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.28);
   border-color: rgba(200, 210, 225, 0.8);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, .95),
@@ -3126,6 +3132,11 @@ body.is-transitioning .flow-takeover,
 .dock-item {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  /* Uniform pill footprint so Worklist / Patient / Report read as one even
+     three-slot control rather than three different-width tabs. Content is
+     centred inside the fixed min-width. */
+  min-width: 122px;
   gap: .55rem;
   padding: .7rem 1.15rem;
   border-radius: var(--r-pill);
@@ -3247,13 +3258,17 @@ body.is-transitioning .flow-takeover,
 .patient-arc[hidden] { display: none; }
 .patient-arc {
   --arc-size: 420px;
-  --arc-radius: 145px;
+  /* Wider radius: chips fan far enough apart that adjacent names no longer
+     overlap. JS pivots the whole fan on the Patient dock pill, so the arc
+     literally rotates out of the selected name rather than orbiting a point
+     floating in the middle of the screen. */
+  --arc-radius: 188px;
   position: fixed;
   inset: 0;
   z-index: 200;
 }
 @media (max-width: 720px) {
-  .patient-arc { --arc-size: 86vw; --arc-radius: calc(34vw); }
+  .patient-arc { --arc-size: 86vw; --arc-radius: 138px; }
 }
 .patient-arc-scrim {
   position: absolute;
@@ -3263,16 +3278,11 @@ body.is-transitioning .flow-takeover,
   cursor: pointer;
 }
 .patient-arc-wheel {
+  /* Full-viewport stage. Chip coordinates are computed by JS in viewport
+     pixels, pivoted on the live position of the Patient dock pill — so the
+     fan's origin is the selected name itself, not the centre of the screen. */
   position: absolute;
-  left: 50%;
-  /* Anchor the wheel to the DOCK — the wheel's own bottom sits right at
-     the dock's top edge (bottom:78px = 26px dock bottom + ~52px pill
-     height). Chips fan directly out of the Patient pill instead of
-     floating above the dock in an obvious gap. */
-  bottom: 78px;
-  width: var(--arc-size);
-  height: calc(var(--arc-radius) + 60px);
-  transform: translateX(-50%);
+  inset: 0;
   pointer-events: none;
 }
 .patient-arc-track {
@@ -3357,19 +3367,11 @@ body.is-transitioning .flow-takeover,
   100% { transform: translate(-50%, -50%) scale(1.1); }
 }
 :root.no-motion .patient-arc-chip.is-landing { animation: none; }
-.patient-arc-marker {
-  position: absolute;
-  left: 50%;
-  top: 20px;
-  width: 22px;
-  height: 22px;
-  transform: translateX(-50%) rotate(45deg);
-  border-radius: 3px;
-  background: linear-gradient(135deg, var(--brand-soft), var(--brand));
-  box-shadow: 0 0 18px var(--brand-glow);
-  pointer-events: none;
-  opacity: .7;
-}
+/* The old top-of-screen target diamond made sense when the selected chip
+   parked at 12 o'clock in the middle of the viewport. Now the selected chip
+   sits directly above the Patient pill and carries its own brand glow, so the
+   floating marker is retired to avoid a stray diamond mid-screen. */
+.patient-arc-marker { display: none; }
 /* Caption/hub removed — the highlighted patient's name is written directly
    into the Patient dock pill by JS while the arc is open. */
 @keyframes arc-scrim-in { from { opacity: 0; } to { opacity: 1; } }

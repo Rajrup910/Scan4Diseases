@@ -1313,35 +1313,41 @@
       setActive(0);
     }
 
-    /* Position chips along the top-half arc. Coordinates are pixel-exact so
-       the wheel never drifts off centre no matter how many times it rotates.
-       The active chip is placed at angle 0 (12 o'clock, under the marker);
-       neighbours fan out symmetrically at ±ARC_STEP radians. */
+    /* Position chips on a fan that PIVOTS ON THE PATIENT DOCK PILL. The pivot
+       is the live viewport position of the Patient pill, so the selected chip
+       (offset 0) sits directly above the pill — it reads as the name itself
+       lifting out of the dock — and every other chip rotates around that same
+       origin instead of orbiting a point stranded in the middle of the screen.
+       Coordinates are viewport pixels (the wheel/track fill the viewport), so
+       the fan never drifts no matter how far it rotates.
+       The wider radius + 40° step give adjacent chips enough vertical stagger
+       that names no longer collide. */
     function layout() {
       if (!wheel || !track || !patients.length) return;
-      var size = wheel.offsetWidth || 620;                   // matches --arc-size
-      var radius = parseFloat(getComputedStyle(dial).getPropertyValue("--arc-radius")) || (size * 0.4);
-      var centerX = size / 2;                                // wheel's horizontal centre
-      // Anchor the arc's pivot below the marker at the top of the wheel so
-      // the visible chips fan out along the upper half.
-      var anchorY = radius + 40;
-      var ARC_STEP = Math.PI / 6;                            // 30° between chips
+      var pill = patientPill ? patientPill.getBoundingClientRect() : null;
+      // Pivot = centre-top of the Patient pill. Fall back to the dock's
+      // nominal spot if the pill isn't measurable for some reason.
+      var pivotX = pill ? pill.left + pill.width / 2 : window.innerWidth / 2;
+      var pivotY = pill ? pill.top : window.innerHeight - 64;
+      var radius = parseFloat(getComputedStyle(dial).getPropertyValue("--arc-radius")) || 178;
+      var ARC_STEP = 40 * Math.PI / 180;                     // 40° between chips
       track.querySelectorAll(".patient-arc-chip").forEach(function (chip, i) {
         var offset = i - activeIndex;
         var halfN = patients.length / 2;
         if (offset > halfN) offset -= patients.length;
         else if (offset < -halfN) offset += patients.length;
-        var angle = offset * ARC_STEP;                       // 0 = top-centre
-        var visibleSpan = 3;                                 // 7 chips fit the arc nicely
+        var angle = offset * ARC_STEP;                       // 0 = straight up from pill
+        var visibleSpan = 2;                                 // selected + 2 either side
         var absOffset = Math.abs(offset);
         var visible = absOffset <= visibleSpan;
-        var x = centerX + radius * Math.sin(angle);
-        var y = anchorY - radius * Math.cos(angle);
+        // Origin at the pill; selected chip lifts straight up out of it.
+        var x = pivotX + radius * Math.sin(angle);
+        var y = pivotY - radius * Math.cos(angle);
         chip.style.left = x + "px";
         chip.style.top = y + "px";
-        var scale = visible ? Math.max(.7, 1 - absOffset * 0.10) : 0.6;
+        var scale = visible ? Math.max(.66, 1 - absOffset * 0.12) : 0.6;
         chip.style.setProperty("--chip-scale", scale);
-        var opacity = visible ? Math.max(.2, 1 - absOffset * 0.28) : 0;
+        var opacity = visible ? Math.max(.16, 1 - absOffset * 0.34) : 0;
         chip.style.setProperty("--chip-opacity", opacity);
         chip.style.pointerEvents = visible ? "auto" : "none";
         chip.style.zIndex = String(10 - Math.floor(absOffset));
@@ -1359,6 +1365,7 @@
       layout();
     }
     var navigating = false;
+    var openedAt = 0;
     function go() {
       if (navigating) return;              // guard against settle + click race
       var p = patients[activeIndex];
@@ -1372,6 +1379,7 @@
       dial.hidden = false;
       dial.setAttribute("aria-hidden", "false");
       dial.classList.remove("is-ready");
+      openedAt = Date.now();
       document.body.style.overflow = "hidden";
       if (patientPill) patientPill.classList.add("is-arc-active");
       // Two-frame handshake so the first render doesn't animate every chip
@@ -1423,6 +1431,13 @@
         })
         .catch(function () { openPalette("patient"); });
     }
+    // Wheel must sit quiet this long before the landed name auto-selects. Kept
+    // deliberately unhurried: the previous ~650ms felt like the dial grabbed
+    // you mid-scroll, and on a slow first paint a stray wheel tick could commit
+    // and navigate before you'd even read the fan. Enter or a click still
+    // commit instantly for anyone who wants speed.
+    var SETTLE_IDLE_MS = 1500;
+    var SETTLE_LAND_MS = 340;
     var settleTimer = null;
     function armSettle() {
       // Slot-machine behaviour: after the wheel goes quiet, the name that has
@@ -1430,13 +1445,17 @@
       // "landing" flash on the active chip + pill precedes the navigation so
       // the user sees which one locked in.
       if (settleTimer) clearTimeout(settleTimer);
+      // Extra breathing room right after opening so an accidental scroll during
+      // the entrance (or while the page is still settling) can't trap you into
+      // a patient before the dial has even finished appearing.
+      var grace = Math.max(0, 700 - (Date.now() - openedAt));
       settleTimer = setTimeout(function () {
         settleTimer = null;
         var activeChip = track.querySelector(".patient-arc-chip.is-active");
         if (activeChip) activeChip.classList.add("is-landing");
         if (patientPill) patientPill.classList.add("is-arc-locking");
-        setTimeout(go, 260);
-      }, 650);
+        setTimeout(go, SETTLE_LAND_MS);
+      }, SETTLE_IDLE_MS + grace);
     }
     function cancelSettle() {
       if (settleTimer) { clearTimeout(settleTimer); settleTimer = null; }
