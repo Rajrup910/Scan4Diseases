@@ -294,52 +294,7 @@
   {% endif %}
 </div>
 
-<details class="patients-directory-details">
-  <summary class="patients-dir-summary">
-    <h2 class="section-h inline-h">All consented patients ({% if patients %}{{ patients|length }}{% else %}0{% endif %})</h2>
-    <svg class="icon icon-sm chev" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#chevron-down"/></svg>
-  </summary>
-  <div class="patients-dir-content">
-    {% if patients %}
-    <div class="table-wrap">
-      <table class="data">
-        <thead>
-          <tr>
-            <th>Patient</th>
-            <th>Email</th>
-            <th class="num">Shared reports</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for row in patients %}
-          <tr style="view-transition-name: patient-{{ row.user.id }};">
-            <td>{{ row.user.display_name or "—" }}</td>
-            <td class="mono">{{ row.user.email }}</td>
-            <td class="num">
-              {% if row.count %}
-              <span class="pill">{{ row.count }}</span>
-              {% else %}
-              <span class="muted">none yet</span>
-              {% endif %}
-            </td>
-            <td class="row-action">
-              <a class="btn btn-small" href="/portal/patients/{{ row.user.id }}">
-                View reports
-                <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#arrow-right"/></svg>
-              </a>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-    {% else %}
-    <div class="empty">
-      <p>No patients have shared with you yet.</p>
-      <p class="muted">When a patient grants you access from their app, they will appear here.</p>
-    </div>
-    {% endif %}
-  </div>
-</details>
+{# "All consented patients" was removed — the shared-reports table above and
+   the per-patient profile (opened from the patient link) already cover the
+   same ground without duplicating the roster. #}
 {% endblock %}

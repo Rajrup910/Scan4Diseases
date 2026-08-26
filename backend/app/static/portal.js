@@ -1215,9 +1215,12 @@
     }
   }
 
-  // Enhance each picker pill: if there's a remembered target, the pill navigates
-  // straight to it (and shows the id); otherwise it opens the palette so the
-  // doctor can choose. This makes the dock fully functional on the worklist.
+  // Enhance each picker pill.
+  // - Report: if there's a remembered target, jump straight to it; else open
+  //   the palette (numbered ids don't spin nicely on a dial).
+  // - Patient: ALWAYS open the radial dial so the doctor can pick from every
+  //   consented patient, not just the last one — the dial is now the primary
+  //   way to change patient from anywhere in the portal.
   document.querySelectorAll("[data-dock-picker]").forEach(function (btn) {
     var kind = btn.getAttribute("data-dock-picker");
     var lastId = kind === "report" ? lsGet(LAST_REPORT) : lsGet(LAST_PATIENT);
@@ -1229,23 +1232,15 @@
       btn.addEventListener("click", function () { window.location.href = "/portal/reports/" + lastId; });
       return;
     }
-    if (kind === "patient" && lastId) {
-      var nm = lsGet(LAST_PATIENT + "-name");
-      var lbl = btn.querySelector("span:not(.dock-report-id)");
-      if (lbl && nm) lbl.textContent = nm;
-      btn.title = "Open last patient" + (nm ? " (" + nm + ")" : "");
-      btn.addEventListener("click", function () { window.location.href = "/portal/patients/" + lastId; });
+    if (kind === "patient") {
+      btn.title = "Spin the patient dial to pick who to open";
+      btn.addEventListener("click", function () {
+        if (window.__s4dOpenPatientDial) window.__s4dOpenPatientDial();
+        else openPalette("patient");
+      });
       return;
     }
-    // No memory yet — patient falls back to the radial dial; report keeps the
-    // palette because a "spin the dial" flow makes less sense for numbered ids.
-    btn.addEventListener("click", function () {
-      if (kind === "patient" && window.__s4dOpenPatientDial) {
-        window.__s4dOpenPatientDial();
-      } else {
-        openPalette(kind);
-      }
-    });
+    btn.addEventListener("click", function () { openPalette(kind); });
   });
 
   /* --- radial patient dial ---------------------------------------------------------- */
@@ -1326,19 +1321,47 @@
       close();
       window.location.href = p.href;
     }
-    function open() {
-      patients = collectPatients();
-      if (!patients.length) {
-        // No patients on the current page — fall back to the palette.
-        openPalette("patient");
-        return;
-      }
+    function show() {
       render();
       dial.hidden = false;
       dial.setAttribute("aria-hidden", "false");
       document.body.style.overflow = "hidden";
       document.addEventListener("keydown", onKey);
       dial.addEventListener("wheel", onWheel, { passive: false });
+    }
+    function open() {
+      patients = collectPatients();
+      if (patients.length) { show(); return; }
+      // No .patient-link on this page (e.g. viewing a single report). Fetch
+      // the roster from /portal/search so the dial still works from anywhere.
+      if (nameEl) nameEl.textContent = "Loading…";
+      dial.hidden = false;
+      dial.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+      fetch("/portal/search?q=")
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status)); })
+        .then(function (data) {
+          var api = (data && data.patients) || [];
+          patients = api.map(function (p) {
+            return {
+              id: String(p.id),
+              name: p.name || ("Patient #" + p.id),
+              href: p.url || ("/portal/patients/" + p.id),
+            };
+          });
+          if (!patients.length) {
+            close();
+            openPalette("patient");
+            return;
+          }
+          document.addEventListener("keydown", onKey);
+          dial.addEventListener("wheel", onWheel, { passive: false });
+          render();
+        })
+        .catch(function () {
+          close();
+          openPalette("patient");
+        });
     }
     function close() {
       dial.hidden = true;
@@ -1381,29 +1404,47 @@
     while (bulkLines.firstChild) bulkLines.removeChild(bulkLines.firstChild);
     if (bulkBar.hidden) return;
     var shellRect = reportsShell.getBoundingClientRect();
-    var compareTile = bulkBar.querySelector("[data-bulk-action='compare']");
-    if (!compareTile) return;
-    var barRect = compareTile.getBoundingClientRect();
-    // Fire lines from the right edge of the Compare tile, vertically centred.
-    var startX = barRect.right - shellRect.left;
-    var startY = barRect.top + barRect.height / 2 - shellRect.top;
+    // Fire lines from the RIGHT edge of the rail itself (not just the Compare
+    // tile) so the wires read as one bus leaving the panel, then step at right
+    // angles across to each row — a straight, neat "wired" look.
+    var barRect = bulkBar.getBoundingClientRect();
+    var railRight = barRect.right - shellRect.left;
     var rows = selectedRows();
     bulkLines.setAttribute("width", Math.max(shellRect.width, 1));
     bulkLines.setAttribute("height", Math.max(shellRect.height, 1));
     bulkLines.setAttribute("viewBox", "0 0 " + Math.max(shellRect.width, 1) + " " + Math.max(shellRect.height, 1));
+    // First: the vertical spine on the rail's right edge, spanning from the
+    // first selected row to the last. It reads as the "bus" all the branches
+    // attach to.
+    if (rows.length >= 1) {
+      var ys = rows.map(function (cb) {
+        var tr = cb.closest("tr");
+        if (!tr) return null;
+        var rect = tr.getBoundingClientRect();
+        return rect.top + rect.height / 2 - shellRect.top;
+      }).filter(function (y) { return y !== null; });
+      if (ys.length) {
+        var minY = Math.min.apply(null, ys);
+        var maxY = Math.max.apply(null, ys);
+        if (maxY - minY > 2) {
+          var spine = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          spine.setAttribute("d", "M" + railRight + "," + minY + " L" + railRight + "," + maxY);
+          spine.style.setProperty("--len", Math.abs(maxY - minY) + 4);
+          bulkLines.appendChild(spine);
+        }
+      }
+    }
     rows.forEach(function (cb) {
       var tr = cb.closest("tr");
       if (!tr) return;
       var rowRect = tr.getBoundingClientRect();
       var endX = rowRect.left - shellRect.left + 6;
       var endY = rowRect.top + rowRect.height / 2 - shellRect.top;
-      // A soft S-curve from the rail out to the row.
-      var midX = startX + (endX - startX) * 0.55;
-      var d = "M" + startX + "," + startY +
-              " C" + midX + "," + startY + " " + midX + "," + endY + " " + endX + "," + endY;
+      // Straight horizontal branch from the spine out to the row's left edge.
+      var d = "M" + railRight + "," + endY + " L" + endX + "," + endY;
       var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
       path.setAttribute("d", d);
-      var approxLen = Math.abs(endX - startX) + Math.abs(endY - startY) + 40;
+      var approxLen = Math.abs(endX - railRight) + 4;
       path.style.setProperty("--len", approxLen);
       bulkLines.appendChild(path);
       // Landing dot on the row's left edge.
@@ -1415,6 +1456,15 @@
       dot.style.color = "var(--brand)";
       dot.style.opacity = ".9";
       bulkLines.appendChild(dot);
+      // Tap dot where the branch meets the spine so the join is legible.
+      var joint = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      joint.setAttribute("cx", railRight);
+      joint.setAttribute("cy", endY);
+      joint.setAttribute("r", 3);
+      joint.setAttribute("fill", "currentColor");
+      joint.style.color = "var(--brand)";
+      joint.style.opacity = ".85";
+      bulkLines.appendChild(joint);
     });
   }
   function refreshBulkBar() {

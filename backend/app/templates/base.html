@@ -160,13 +160,18 @@
     </a>
 
     {% if patient %}
-    <a class="dock-item is-active" href="/portal/patients/{{ patient.id }}"
-       data-dock-patient-current="{{ patient.id }}"
-       data-dock-patient-name="{{ (patient.display_name or patient.email).split('@')[0][:16] }}"
-       title="{{ patient.display_name or patient.email }}">
+    {# On a patient page the pill still shows the current patient and stays
+       "active", but clicking it opens the radial dial (rather than reloading
+       the same page) so switching to another patient from any screen is one
+       tap away. #}
+    <button class="dock-item dock-item-btn is-active" type="button"
+            data-dock-picker="patient"
+            data-dock-patient-current="{{ patient.id }}"
+            data-dock-patient-name="{{ (patient.display_name or patient.email).split('@')[0][:16] }}"
+            title="Spin the dial to switch patient">
       <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#user"/></svg>
       <span>{{ (patient.display_name or patient.email).split('@')[0][:16] }}</span>
-    </a>
+    </button>
     {% else %}
     <button class="dock-item dock-item-btn" type="button" data-dock-picker="patient"
             title="Pick a patient">
