@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import threading
 import time
 from collections import defaultdict
 from contextlib import asynccontextmanager
@@ -80,3 +81,51 @@ class LLMRateLimiter:
         """Reset rate limiter state (useful for tests)."""
         self._history.clear()
         self._semaphore = None
+
+
+class FixedWindowRateLimiter:
+    """A tiny synchronous sliding-window limiter for the auth endpoints.
+
+    The auth handlers are synchronous (they run in FastAPI's threadpool), so they
+    can't use the async LLM limiter above. This one is thread-safe via a plain
+    lock and keyed by client IP + purpose ("login", "register"), throttling
+    credential-stuffing / brute-force attempts without any external dependency.
+
+    In-process only: on a multi-worker deploy each worker keeps its own window,
+    which still meaningfully slows an attacker. For a hard global limit put a
+    reverse proxy / WAF in front — this is defence in depth, not the sole gate.
+    """
+
+    def __init__(self, max_attempts: int = 8, window_seconds: float = 300.0) -> None:
+        self.max_attempts = max_attempts
+        self.window_seconds = window_seconds
+        self._history: dict[str, list[float]] = defaultdict(list)
+        self._lock = threading.Lock()
+
+    def check(self, key: str) -> tuple[bool, int | None]:
+        """Return (allowed, retry_after_seconds). Records the attempt when allowed."""
+        now = time.monotonic()
+        with self._lock:
+            times = [t for t in self._history[key] if now - t < self.window_seconds]
+            if len(times) >= self.max_attempts:
+                oldest = min(times)
+                retry_after = int(self.window_seconds - (now - oldest)) + 1
+                self._history[key] = times
+                return False, max(retry_after, 1)
+            times.append(now)
+            self._history[key] = times
+            return True, None
+
+    def clear(self, key: str) -> None:
+        """Forget a key's history — call on a *successful* login so a legitimate
+        user who fat-fingered their password a few times isn't then locked out."""
+        with self._lock:
+            self._history.pop(key, None)
+
+    def reset(self) -> None:
+        with self._lock:
+            self._history.clear()
+
+
+# Process-wide limiter shared by the auth routes.
+login_rate_limiter = FixedWindowRateLimiter(max_attempts=8, window_seconds=300.0)

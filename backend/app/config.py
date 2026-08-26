@@ -125,6 +125,11 @@ class Settings(BaseSettings):
     # Set ADMIN_SECRET in Render env vars before calling the endpoint; clear it after.
     admin_secret: str = ""
 
+    # Insecure default sentinels — the app refuses to run in production while any
+    # of these are still in place (see `production_issues`).
+    _INSECURE_JWT_SECRET = "dev-insecure-change-me-set-JWT_SECRET-in-env"
+    _INSECURE_IMAGE_KEY = "_vDxQjzxSasYBgFY5BhXwK9VbO9ugaa7hR2uqIDTtuo="
+
     @field_validator("model_arch")
     @classmethod
     def _known_arch(cls, value: str) -> str:
@@ -132,6 +137,39 @@ class Settings(BaseSettings):
         if value not in allowed:
             raise ValueError(f"MODEL_ARCH must be one of {sorted(allowed)}, got {value!r}")
         return value
+
+    @property
+    def is_production(self) -> bool:
+        return self.app_env.strip().lower() == "production"
+
+    def production_issues(self) -> list[str]:
+        """FATAL insecure-for-production settings. A non-empty list stops
+        startup — these have a safe fix with no data impact (rotate a secret,
+        turn off debug), so there's no excuse to ship with them."""
+        issues: list[str] = []
+        if self.jwt_secret == self._INSECURE_JWT_SECRET or len(self.jwt_secret) < 32:
+            issues.append("JWT_SECRET is unset/default/too short — set a 32+ char random secret.")
+        if self.debug:
+            issues.append("DEBUG must be false in production.")
+        if self.allow_stub_model:
+            issues.append("ALLOW_STUB_MODEL must be false in production.")
+        return issues
+
+    def production_warnings(self) -> list[str]:
+        """NON-FATAL production smells worth logging loudly but not worth
+        refusing to boot over — e.g. rotating the image key would orphan
+        already-encrypted blobs, so that's the operator's call."""
+        warnings: list[str] = []
+        if self.image_encryption_key == self._INSECURE_IMAGE_KEY:
+            warnings.append(
+                "IMAGE_ENCRYPTION_KEY is the committed default — rotate to a fresh "
+                "Fernet key (note: this orphans images encrypted with the old key)."
+            )
+        if self.admin_secret and len(self.admin_secret) < 16:
+            warnings.append("ADMIN_SECRET is set but shorter than 16 chars.")
+        if self.cors_origins.strip() == "*":
+            warnings.append("CORS is wide-open ('*') — set CORS_ORIGINS to your app origins.")
+        return warnings
 
     # --- derived paths ---
 

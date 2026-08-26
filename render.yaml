@@ -11,6 +11,14 @@ services:
         value: .
       - key: APP_ENV
         value: production
+      # Disable debug in production (verbose logging + relaxed behaviour).
+      - key: DEBUG
+        value: "false"
+      # Strong random JWT secret generated once by Render and kept in the
+      # service env — never committed. Rotating it (new deploy) simply forces
+      # users to sign in again.
+      - key: JWT_SECRET
+        generateValue: true
       - key: MODEL_DEVICE
         value: cpu
       - key: LLM_BASE_URL

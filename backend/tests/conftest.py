@@ -17,6 +17,20 @@ from PIL import Image
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
+@pytest.fixture(autouse=True)
+def _reset_login_throttle():
+    """The auth brute-force limiter is a process-wide singleton keyed by client
+    IP. Every TestClient request shares the IP "testclient", so without a reset
+    the 8-attempt window would spill across unrelated tests and 429 legitimate
+    logins. Clear it before each test so the throttle is exercised only where a
+    test deliberately does so."""
+    from backend.app.services.rate_limiter import login_rate_limiter
+
+    login_rate_limiter.reset()
+    yield
+    login_rate_limiter.reset()
+
+
 @pytest.fixture
 def sharp_image() -> Image.Image:
     """A synthetic image that passes the quality gate.

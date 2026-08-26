@@ -169,6 +169,16 @@ def login_submit(
     db: Session = Depends(get_db),
     settings: Settings = Depends(get_app_settings),
 ) -> Response:
+    # Brute-force throttle on the browser login form, keyed by socket IP.
+    from backend.app.services.rate_limiter import login_rate_limiter
+    _ip = audit.client_ip(request) or "unknown"
+    _allowed, _retry = login_rate_limiter.check(f"portal-login:{_ip}")
+    if not _allowed:
+        msg = "Too many sign-in attempts. Please wait a few minutes and try again."
+        if "application/json" in request.headers.get("accept", ""):
+            return JSONResponse({"error": msg}, status_code=429)
+        return templates.TemplateResponse(request, "login.html", {"error": msg}, status_code=429)
+
     email = email.lower().strip()
     user = db.scalar(select(User).where(User.email == email))
 
@@ -220,6 +230,9 @@ def login_submit(
             "Your doctor account is awaiting verification by an administrator.",
             status.HTTP_403_FORBIDDEN,
         )
+
+    # Clear the throttle window for this IP on a clean sign-in.
+    login_rate_limiter.clear(f"portal-login:{_ip}")
 
     token = create_access_token(
         settings, str(user.id), expires_minutes=settings.portal_session_minutes

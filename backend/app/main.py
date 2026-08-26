@@ -36,6 +36,10 @@ from backend.app.routes import (
     reports,
 )
 from backend.app.routes.portal import PortalAuthRequired
+from backend.app.security_middleware import (
+    MaxBodySizeMiddleware,
+    SecurityHeadersMiddleware,
+)
 from backend.app.services.image_vault import ImageVault
 from backend.app.services.inference import InferenceService
 from backend.app.services.lesion_gate import LesionGate
@@ -93,6 +97,20 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     configure_logging(settings.debug)
 
     logger.info("Scan4Disease backend %s starting (%s)", __version__, settings.app_env)
+
+    # Fail loudly on a fatally-insecure production deploy (forgeable JWT secret,
+    # debug on, stub model on); log non-fatal smells as warnings.
+    if settings.is_production:
+        issues = settings.production_issues()
+        if issues:
+            for issue in issues:
+                logger.critical("PRODUCTION CONFIG ERROR: %s", issue)
+            raise RuntimeError(
+                "Refusing to start in production with insecure configuration: "
+                + " | ".join(issues)
+            )
+        for warning in settings.production_warnings():
+            logger.warning("PRODUCTION CONFIG WARNING: %s", warning)
 
     # Create the users/reports tables if they do not exist yet.
     init_db()
@@ -210,12 +228,22 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
     )
 
+    # Middleware runs in reverse order of registration for the request path, so
+    # the body-size guard (added last) is the OUTERMOST — an oversized upload is
+    # rejected before CORS/headers work happens.
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,
         allow_credentials=False,
         allow_methods=["GET", "POST", "DELETE"],
         allow_headers=["*"],
+    )
+    app.add_middleware(SecurityHeadersMiddleware, production=settings.is_production)
+    # A generous global ceiling (4× the image cap) — the per-route image quality
+    # gate enforces the real 10 MB lesion limit; this only stops absurd payloads.
+    app.add_middleware(
+        MaxBodySizeMiddleware,
+        max_bytes=max(settings.max_upload_bytes * 4, 32 * 1024 * 1024),
     )
 
     register_exception_handlers(app)
