@@ -2677,22 +2677,33 @@ body.is-transitioning .flow-takeover,
    confirmation beat. Reuses the login flow's disc + drawn-tick language at
    small scale. Fired from portal.js, which survives the redirect by stashing
    a pending toast in sessionStorage. */
+/* Toast layer docks at the TOP of the viewport so the confirmation is the
+   first thing the doctor sees, and it never hides behind the floating
+   bottom dock. Newest toast stacks on top; each toast animates itself out
+   after its lifetime and the layer stays out of the pointer path. */
 .toast-layer {
   position: fixed;
   right: var(--s-4);
-  /* Sit above the floating dock so the toast never lands behind it. The
-     dock is bottom:26px + ~52px tall — reserve 96px so the toast clears
-     the pill and the mint halo around it. */
-  bottom: 108px;
+  top: calc(var(--s-4) + 56px);           /* clears the sticky site-header */
   z-index: 99999;
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: column;
   gap: var(--s-2);
   pointer-events: none;
 }
 @media (max-width: 720px) {
-  .toast-layer { bottom: 100px; right: var(--s-3); left: var(--s-3); }
+  .toast-layer { top: calc(var(--s-4) + 56px); right: var(--s-3); left: var(--s-3); }
 }
+@keyframes toast-in-top {
+  from { opacity: 0; transform: translateY(-14px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes toast-out-top {
+  from { opacity: 1; transform: none; }
+  to   { opacity: 0; transform: translateY(-8px); }
+}
+.toast-layer .toast { animation: toast-in-top 260ms var(--ease-out) both; }
+.toast-layer .toast.is-leaving { animation: toast-out-top 220ms var(--ease-out) both; }
 .toast {
   display: flex;
   align-items: center;
@@ -3217,14 +3228,14 @@ body.is-transitioning .flow-takeover,
    when rotating" bug in the previous implementation. */
 .patient-arc[hidden] { display: none; }
 .patient-arc {
-  --arc-size: 460px;
-  --arc-radius: 180px;
+  --arc-size: 420px;
+  --arc-radius: 145px;
   position: fixed;
   inset: 0;
   z-index: 200;
 }
 @media (max-width: 720px) {
-  .patient-arc { --arc-size: 88vw; --arc-radius: calc(38vw); }
+  .patient-arc { --arc-size: 86vw; --arc-radius: calc(34vw); }
 }
 .patient-arc-scrim {
   position: absolute;
@@ -3236,9 +3247,12 @@ body.is-transitioning .flow-takeover,
 .patient-arc-wheel {
   position: absolute;
   left: 50%;
-  bottom: 96px;
+  /* Sit just above the dock. The dock lives at bottom:26px and is ~52px
+     tall — parking the wheel at bottom:88px keeps the arc pivot right at
+     the top edge of the dock so chips fan low around the Patient pill. */
+  bottom: 88px;
   width: var(--arc-size);
-  height: calc(var(--arc-size) / 2 + 80px);
+  height: calc(var(--arc-radius) + 90px);
   transform: translateX(-50%);
   pointer-events: none;
 }
@@ -3326,58 +3340,22 @@ body.is-transitioning .flow-takeover,
   pointer-events: none;
   opacity: .7;
 }
-/* Lightweight name + hint strip below the arc — replaces the old centre
-   hub. Just enough context to name the highlighted chip without stealing
-   the middle of the wheel. */
-.patient-arc-caption {
-  position: absolute;
-  left: 50%;
-  bottom: -8px;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: .1rem;
-  padding: .5rem 1rem;
-  border-radius: var(--r-pill);
-  background: color-mix(in srgb, var(--surface) 65%, transparent);
-  border: 1px solid var(--border);
-  backdrop-filter: blur(20px) saturate(160%);
-  -webkit-backdrop-filter: blur(20px) saturate(160%);
-  box-shadow: inset 0 1px 0 var(--glass-gloss), 0 10px 26px rgba(0, 0, 0, .35);
-  pointer-events: none;
-  text-align: center;
-  animation: arc-caption-in 300ms cubic-bezier(.16, 1, .3, 1);
-}
-.patient-arc-caption-name {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: .98rem;
-  color: var(--ink);
-  line-height: 1.2;
-  min-width: 120px;
-}
-.patient-arc-caption-hint {
-  font-family: var(--font-mono);
-  font-size: .64rem;
-  letter-spacing: .08em;
-  color: var(--ink-soft);
-  text-transform: uppercase;
-}
-:root[data-theme="dark"] .patient-arc-caption {
-  background: rgba(15, 20, 28, .62);
-  border-color: rgba(255, 255, 255, .14);
-}
-
+/* Caption/hub removed — the highlighted patient's name is written directly
+   into the Patient dock pill by JS while the arc is open. */
 @keyframes arc-scrim-in { from { opacity: 0; } to { opacity: 1; } }
-@keyframes arc-caption-in {
-  from { opacity: 0; transform: translate(-50%, 14px); }
-  to   { opacity: 1; transform: translate(-50%, 0); }
-}
 :root.no-motion .patient-arc-scrim,
-:root.no-motion .patient-arc-caption,
 :root.no-motion .patient-arc-chip,
 :root.no-motion .patient-arc.is-ready .patient-arc-chip { animation: none; transition: none; }
+
+/* While the arc is open the Patient dock pill glows and shows the currently
+   highlighted name (updated live by JS). */
+.dock-item.is-arc-active {
+  border: 1px solid var(--brand);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 22%, transparent),
+              0 0 22px color-mix(in srgb, var(--brand) 40%, transparent);
+  color: var(--ink) !important;
+}
+:root[data-theme="dark"] .dock-item.is-arc-active { color: #F1F5F9 !important; }
 
 /* ============================================================ 12. ALL SHARED REPORTS TABLE */
 .worklist-section {
@@ -3469,7 +3447,13 @@ body.is-transitioning .flow-takeover,
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   box-shadow: inset 0 1px 0 var(--glass-gloss), var(--shadow-2);
-  overflow: hidden;
+  /* Clip both axes explicitly so nothing bleeds past the rounded card
+     corners (was `overflow: hidden` alone which the .table-wrap rule was
+     overriding with overflow-x:auto in some browsers). */
+  overflow: clip;
+  overflow-x: clip;
+  overflow-y: clip;
+  isolation: isolate;
 }
 .reports-data-table {
   width: 100%;
@@ -3481,13 +3465,21 @@ body.is-transitioning .flow-takeover,
   border-bottom: 1px solid var(--border);
   font-size: .88rem;
 }
+/* The header used to paint a solid --surface-2 fill; in dark mode that read
+   as a very opaque black rectangle that visually spilled past the STATUS
+   column when the card fill was reduced. Use a subtle tint that respects
+   the card's translucency instead. */
 .reports-data-table thead th {
-  background: var(--surface-2);
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
   color: var(--ink-soft);
   font-size: .75rem;
   font-weight: 700;
   letter-spacing: .06em;
   text-transform: uppercase;
+}
+:root[data-theme="dark"] .reports-data-table thead th {
+  background: rgba(255, 255, 255, .05);
+  color: #94A3B8;
 }
 .reports-data-table tbody tr {
   transition: background var(--dur-1) var(--ease-out);
@@ -4619,9 +4611,7 @@ body { min-height: 100vh; }
 .compare-panel {
   border-radius: var(--r-3);
   border: 1px solid var(--border-strong);
-  background: color-mix(in srgb, var(--surface) 28%, transparent);
-  backdrop-filter: blur(48px) saturate(180%);
-  -webkit-backdrop-filter: blur(48px) saturate(180%);
+  background: var(--surface);
   box-shadow: inset 0 1px 0 var(--glass-gloss), var(--shadow-modal);
   padding: var(--s-4) var(--s-5) var(--s-5);
   max-height: calc(100vh - 64px);
@@ -4630,13 +4620,17 @@ body { min-height: 100vh; }
   gap: var(--s-4);
   color: var(--ink);
 }
-/* Push the alpha low enough that the ambient blueprint clearly reads through
-   the modal — the earlier 0.5 still felt opaque against the video. */
+/* Fully opaque so the compare modal reads as a proper focused surface
+   rather than the earlier translucent glass which competed with the
+   ambient video for attention. */
 :root[data-theme="dark"] .compare-panel {
-  background: rgba(15, 22, 32, 0.28);
-  border-color: rgba(255, 255, 255, .16);
+  background: #0F1620;
+  border-color: rgba(255, 255, 255, .12);
 }
-:root:not([data-theme="dark"]) .compare-panel { background: rgba(255, 255, 255, 0.32); }
+:root:not([data-theme="dark"]) .compare-panel {
+  background: #FFFFFF;
+  border-color: rgba(15, 23, 42, .08);
+}
 
 /* Head strip: an inflated glass pill on the left, a matching close chip on the right */
 .compare-head {
@@ -4685,16 +4679,28 @@ body { min-height: 100vh; }
   transition: color var(--dur-1) var(--ease-out), border-color var(--dur-1) var(--ease-out), transform var(--dur-1) var(--ease-out);
 }
 .compare-expand-chip:hover { color: var(--ink); border-color: var(--brand); transform: translateY(-1px); }
-/* Chat-only expand: the modal footprint doesn't change, only the chat log
-   grows and the images/delta collapse into a compact strip so the
-   conversation gets the room instead of the modal chrome. */
-.compare-dialog.is-expanded .compare-chat-log { max-height: 60vh; }
-.compare-dialog.is-expanded .compare-grid { max-height: 140px; overflow: hidden; }
-.compare-dialog.is-expanded .compare-grid .compare-col { padding-top: .3rem; padding-bottom: .3rem; gap: .3rem; }
-.compare-dialog.is-expanded .compare-grid .compare-images { display: none; }
-.compare-dialog.is-expanded .compare-grid .compare-col .btn { display: none; }
-.compare-dialog.is-expanded .compare-delta { padding: .4rem .8rem; }
-.compare-dialog.is-expanded .compare-delta-v { font-size: .82rem; }
+.compare-expand-chip.is-expanded { color: var(--brand); border-color: var(--brand); background: color-mix(in srgb, var(--brand) 10%, transparent); }
+/* Swap expand/collapse icons based on state. */
+.compare-expand-chip .expand-in  { display: none; }
+.compare-expand-chip .expand-out { display: block; }
+.compare-expand-chip.is-expanded .expand-in  { display: block; }
+.compare-expand-chip.is-expanded .expand-out { display: none; }
+
+/* The expand chip now docks INSIDE the chat header (top-right of the chat
+   panel), not the modal head — matches user's "beside the chat itself". */
+.compare-chat-head { position: relative; align-items: flex-start; }
+.compare-chat-head-copy { flex: 1 1 auto; min-width: 0; }
+.compare-chat-head .compare-expand-chip {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  margin-left: auto;
+}
+
+/* Chat-only expand: grow the chat log; leave the images grid and delta
+   strip untouched. */
+.compare-chat-log { transition: max-height 300ms cubic-bezier(.2, .8, .25, 1); }
+.compare-dialog.is-expanded .compare-chat-log { max-height: 560px; }
 
 /* Rendered markdown inside compare-chat assistant bubbles.
    Matches the report chat's spacing so the two feel like one component. */

@@ -210,20 +210,15 @@
     {% endif %}
   </nav>
 
-  {# Semi-circular patient dial — chips fan out above the Patient pill on the
-     dock. No centre hub; the highlighted chip glows under the marker at the
-     top. Scroll (or arrow keys) rotates the wheel; clicking any chip jumps
-     straight to that patient's profile. A tiny hint strip below the arc
-     names the highlighted patient without dominating the layout. #}
+  {# Semi-circular patient dial — chips fan low above the Patient slot in the
+     dock. No caption or centre hub; the highlighted patient's name is written
+     directly into the Patient dock pill in real time. Scroll wheel rotates
+     the arc; click any chip to open. #}
   <div class="patient-arc" data-patient-dial hidden aria-hidden="true">
     <div class="patient-arc-scrim" data-patient-dial-close></div>
     <div class="patient-arc-wheel" role="listbox" aria-label="Choose a patient">
       <div class="patient-arc-track" data-patient-dial-track></div>
       <div class="patient-arc-marker" aria-hidden="true"></div>
-      <div class="patient-arc-caption">
-        <span class="patient-arc-caption-name" data-patient-dial-name>—</span>
-        <span class="patient-arc-caption-hint">scroll · ← → · click to open</span>
-      </div>
     </div>
   </div>
 
@@ -291,14 +286,9 @@
             <span class="compare-n" data-compare-n>2 selected</span>
           </span>
         </span>
-        <div class="compare-head-actions">
-          <button type="button" class="compare-expand-chip" data-compare-expand aria-label="Expand" title="Expand chat panel">
-            <svg class="icon icon-sm" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
-          </button>
-          <button type="button" class="compare-close-chip" data-compare-close aria-label="Close">
-            <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#x"/></svg>
-          </button>
-        </div>
+        <button type="button" class="compare-close-chip" data-compare-close aria-label="Close">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#x"/></svg>
+        </button>
       </div>
 
       <div class="compare-scroll">
@@ -308,10 +298,14 @@
         <section class="compare-chat" data-compare-chat aria-label="Ask about this comparison">
           <header class="compare-chat-head">
             <span class="compare-chat-beacon" aria-hidden="true"></span>
-            <div>
+            <div class="compare-chat-head-copy">
               <h3>Ask about this comparison</h3>
               <p class="muted">Numbers, delta, or the reasoning behind the model's calls — the assistant will keep it grounded to the reports you selected.</p>
             </div>
+            <button type="button" class="compare-expand-chip" data-compare-expand aria-label="Expand chat" title="Expand chat">
+              <svg class="icon icon-sm expand-out" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>
+              <svg class="icon icon-sm expand-in" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7"/></svg>
+            </button>
           </header>
           <ol class="compare-chat-log" data-compare-chat-log role="log" aria-live="polite"></ol>
           <form class="compare-chat-form" data-compare-chat-form>

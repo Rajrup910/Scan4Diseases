@@ -1256,7 +1256,12 @@
     if (!dial) return;
     var track = dial.querySelector("[data-patient-dial-track]");
     var wheel = dial.querySelector(".patient-arc-wheel");
-    var nameEl = dial.querySelector("[data-patient-dial-name]");
+    // The highlighted patient's name is written into the Patient dock pill —
+    // no separate caption. Cache the label span and its default text so we
+    // can restore on close.
+    var patientPill = document.querySelector(".dock [data-dock-picker='patient']");
+    var patientPillLabel = patientPill ? patientPill.querySelector("span:not(.dock-report-id)") : null;
+    var patientPillDefault = patientPillLabel ? patientPillLabel.textContent : "Patient";
 
     var patients = [];
     var activeIndex = 0;
@@ -1347,7 +1352,7 @@
         c.classList.toggle("is-active", idx === activeIndex);
       });
       var p = patients[activeIndex];
-      if (nameEl) nameEl.textContent = p.name;
+      if (patientPillLabel) patientPillLabel.textContent = p.name;
       layout();
     }
     function go() {
@@ -1361,12 +1366,10 @@
       dial.setAttribute("aria-hidden", "false");
       dial.classList.remove("is-ready");
       document.body.style.overflow = "hidden";
-      // Two-frame handshake:
-      //   1. Frame A — render chips (they get inserted with no positions).
-      //   2. Frame B — measure the wheel, position chips, then flip .is-ready
-      //      which turns on the transitions. Without this the first render
-      //      would animate every chip from (0, 0) to its slot, which the user
-      //      described as "crashes/stutters".
+      if (patientPill) patientPill.classList.add("is-arc-active");
+      // Two-frame handshake so the first render doesn't animate every chip
+      // from (0, 0). Frame A creates chips; Frame B measures + positions +
+      // flips .is-ready to enable transitions.
       requestAnimationFrame(function () {
         render();
         requestAnimationFrame(function () {
@@ -1374,9 +1377,18 @@
           dial.classList.add("is-ready");
         });
       });
+      // Wheel handler MUST live on document (not just on `dial`), because
+      // the browser fires wheel events on whatever DOM element sits under
+      // the pointer — if that's the page background (not the arc scrim)
+      // the arc's own listener never fires and the page scrolls instead.
+      // Binding on document, with capture, guarantees we intercept every
+      // wheel while the arc is open.
       document.addEventListener("keydown", onKey);
       window.addEventListener("resize", layout);
-      dial.addEventListener("wheel", onWheel, { passive: false });
+      document.addEventListener("wheel", onWheel, { passive: false, capture: true });
+      // Also block touchmove so mobile browsers don't scroll the page
+      // beneath the arc.
+      document.addEventListener("touchmove", blockScroll, { passive: false, capture: true });
     }
     function open() {
       patients = collectPatients();
@@ -1408,16 +1420,18 @@
       dial.hidden = true;
       dial.setAttribute("aria-hidden", "true");
       document.body.style.overflow = "";
+      if (patientPill) patientPill.classList.remove("is-arc-active");
+      if (patientPillLabel) patientPillLabel.textContent = patientPillDefault;
       document.removeEventListener("keydown", onKey);
       window.removeEventListener("resize", layout);
-      dial.removeEventListener("wheel", onWheel);
+      document.removeEventListener("wheel", onWheel, true);
+      document.removeEventListener("touchmove", blockScroll, true);
     }
+    function blockScroll(e) { e.preventDefault(); }
     function onKey(e) {
+      // Only Escape (close) and Enter (open) — arrow keys removed per user
+      // request; the wheel is the sole rotator now.
       if (e.key === "Escape") { e.preventDefault(); close(); return; }
-      // Arrow left/right rotate the wheel like a real dial. Down/right = next
-      // patient (wheel spins clockwise), up/left = previous.
-      if (e.key === "ArrowRight" || e.key === "ArrowDown") { e.preventDefault(); setActive(activeIndex + 1); return; }
-      if (e.key === "ArrowLeft" || e.key === "ArrowUp") { e.preventDefault(); setActive(activeIndex - 1); return; }
       if (e.key === "Enter") { e.preventDefault(); go(); }
     }
     var wheelCooldown = 0;
@@ -1866,15 +1880,16 @@
         else compareDlg.removeAttribute("open");
       }
     });
-    // Expand toggle — swells the modal so long chat threads and Grad-CAM
-    // panels have room to breathe. Mirrors the report-chat expand button.
+    // Expand toggle docked inside the chat header — only grows the chat log
+    // height, leaving the images grid and delta strip intact.
     var compareExpand = compareDlg.querySelector("[data-compare-expand]");
     if (compareExpand) {
       compareExpand.addEventListener("click", function () {
         var next = !compareDlg.classList.contains("is-expanded");
         compareDlg.classList.toggle("is-expanded", next);
+        compareExpand.classList.toggle("is-expanded", next);
         compareExpand.setAttribute("aria-pressed", next ? "true" : "false");
-        compareExpand.title = next ? "Collapse chat panel" : "Expand chat panel";
+        compareExpand.title = next ? "Collapse chat" : "Expand chat";
       });
     }
   }
