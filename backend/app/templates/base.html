@@ -248,6 +248,20 @@
       <div class="kbd-row"><span class="kbd-label">Close any overlay</span><span class="kbd-keys"><kbd class="kbd">Esc</kbd></span></div>
     </div>
   </dialog>
+
+  {# Compare modal — built client-side from the reports selected in the shared
+     table. Shows each report as a column so a doctor can weigh them together. #}
+  <dialog class="compare-dialog" data-compare aria-label="Compare reports">
+    <div class="compare-panel">
+      <div class="compare-head">
+        <h2><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#layers"/></svg> Compare reports <span class="compare-n" data-compare-n></span></h2>
+        <button type="button" class="chip-btn kbd-close" data-compare-close aria-label="Close">
+          <svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#x"/></svg>
+        </button>
+      </div>
+      <div class="compare-grid" data-compare-grid></div>
+    </div>
+  </dialog>
   {% endif %}
 
   <script src="/portal/static/portal.js" defer></script>

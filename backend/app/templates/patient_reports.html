@@ -4,13 +4,40 @@
 <nav class="crumbs" aria-label="Breadcrumb">
   <a href="/portal/patients">My patients</a>
   <span aria-hidden="true">/</span>
-  <span>{{ patient.display_name or patient.email }}</span>
+  <span class="crumb-current">{{ patient.display_name or patient.email }}</span>
 </nav>
 
-<div class="page-head" style="view-transition-name: patient-{{ patient.id }};">
-  <h1>{{ patient.display_name or "Patient" }}</h1>
-  <p class="muted mono">{{ patient.email }}</p>
-</div>
+{% set _pname = patient.display_name or patient.email.split('@')[0] %}
+{% set _initials = (_pname.split()[0][0] ~ (_pname.split()[1][0] if _pname.split()|length > 1 else ''))|upper %}
+<section class="patient-hero" style="view-transition-name: patient-{{ patient.id }};">
+  <div class="patient-avatar" aria-hidden="true">{{ _initials }}</div>
+  <div class="patient-info">
+    <h1>{{ patient.display_name or "Patient" }}</h1>
+    <div class="patient-meta">
+      <span class="meta-chip mono"><svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#mail"/></svg> {{ patient.email }}</span>
+      {% if profile.linked_at %}
+      <span class="meta-chip"><svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#clipboard"/></svg> Linked since {{ profile.linked_at.strftime("%d %b %Y") }}</span>
+      {% endif %}
+      {% if profile.escalated %}
+      <span class="meta-chip meta-chip-warn"><svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#alert-triangle"/></svg> {{ profile.escalated }} escalated</span>
+      {% endif %}
+    </div>
+  </div>
+  <div class="patient-stats">
+    <div class="patient-stat">
+      <span class="ps-n">{{ profile.reports }}</span>
+      <span class="ps-l">Reports</span>
+    </div>
+    <div class="patient-stat {% if profile.escalated %}ps-danger{% endif %}">
+      <span class="ps-n">{{ profile.escalated }}</span>
+      <span class="ps-l">Escalated</span>
+    </div>
+    <div class="patient-stat">
+      <span class="ps-n">{{ profile.days_since_last if profile.days_since_last is not none else '—' }}</span>
+      <span class="ps-l">Days ago</span>
+    </div>
+  </div>
+</section>
 
 {% if reports %}
 <div class="list-head">

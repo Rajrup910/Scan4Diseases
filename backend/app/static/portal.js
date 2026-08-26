@@ -1344,6 +1344,77 @@
         if (link && link.href) {
           window.location.href = link.href;
         }
+        return;
+      }
+      if (action === "compare") {
+        if (rows.length < 2) {
+          if (window.s4dToast) window.s4dToast("Select at least two reports", "Tick two or more rows to compare", true);
+          return;
+        }
+        openCompare(rows);
+      }
+    });
+  }
+
+  // --- compare modal: build a side-by-side view from the selected rows -------
+  var compareDlg = document.querySelector("[data-compare]");
+  var compareGrid = document.querySelector("[data-compare-grid]");
+  var compareN = document.querySelector("[data-compare-n]");
+
+  function cellText(tr, sel) {
+    var el = tr.querySelector(sel);
+    return el ? el.textContent.trim() : "—";
+  }
+  function openCompare(rows) {
+    if (!compareDlg || !compareGrid) return;
+    compareGrid.innerHTML = "";
+    rows.forEach(function (cb) {
+      var tr = cb.closest("tr");
+      if (!tr) return;
+      var cond = cellText(tr, ".condition-name");
+      var patient = cellText(tr, ".patient-link");
+      var date = cellText(tr, ".date-cell");
+      var conf = cellText(tr, ".conf-pct");
+      var triageEl = tr.querySelector("td:nth-child(6) .badge") || tr.querySelector(".triage-urgent, .triage-soon, .triage-routine");
+      var statusEl = tr.querySelector("td:nth-child(7) .badge") || tr.querySelector("[class*='status-']");
+      var openLink = tr.querySelector(".btn-open, a.btn");
+      var href = openLink ? openLink.getAttribute("href") : "#";
+      var confNum = parseInt((conf || "").replace(/[^0-9]/g, ""), 10);
+
+      var col = document.createElement("div");
+      col.className = "compare-col";
+      col.innerHTML =
+        '<div class="compare-col-head">' +
+          '<span class="compare-cond">' + cond + '</span>' +
+          (patient && patient !== "—" ? '<span class="compare-patient">' + patient + '</span>' : '') +
+        '</div>' +
+        '<div class="compare-row"><span class="compare-k">Date</span><span class="compare-v mono">' + date + '</span></div>' +
+        '<div class="compare-row"><span class="compare-k">Confidence</span>' +
+          (isFinite(confNum)
+            ? '<div class="compare-meter-track"><div class="compare-meter-fill" style="width:' + confNum + '%"></div></div><span class="compare-v mono">' + conf + '</span>'
+            : '<span class="compare-v">' + conf + '</span>') +
+        '</div>' +
+        '<div class="compare-row"><span class="compare-k">Triage</span><span class="compare-v">' + (triageEl ? triageEl.outerHTML : "—") + '</span></div>' +
+        '<div class="compare-row"><span class="compare-k">Status</span><span class="compare-v">' + (statusEl ? statusEl.outerHTML : "—") + '</span></div>' +
+        '<a class="btn btn-small" href="' + href + '">Open report ' +
+          '<svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#arrow-right"/></svg></a>';
+      compareGrid.appendChild(col);
+    });
+    if (compareN) compareN.textContent = "· " + rows.length + " selected";
+    if (typeof compareDlg.showModal === "function") compareDlg.showModal();
+    else compareDlg.setAttribute("open", "true");
+  }
+  if (compareDlg) {
+    compareDlg.querySelectorAll("[data-compare-close]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        if (typeof compareDlg.close === "function") compareDlg.close();
+        else compareDlg.removeAttribute("open");
+      });
+    });
+    compareDlg.addEventListener("click", function (e) {
+      if (e.target === compareDlg) {
+        if (typeof compareDlg.close === "function") compareDlg.close();
+        else compareDlg.removeAttribute("open");
       }
     });
   }

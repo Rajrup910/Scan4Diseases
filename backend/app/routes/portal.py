@@ -450,7 +450,8 @@ def patient_reports_page(
 ) -> Response:
     """One consented patient's shared reports. Requires an active link (else a friendly
     'no access' page, matching the JSON route's 404 without existence-probing)."""
-    if _active_link(db, doctor, patient_id) is None:
+    link = _active_link(db, doctor, patient_id)
+    if link is None:
         return _access_denied(request, doctor, status.HTTP_404_NOT_FOUND)
 
     patient = db.get(User, patient_id)
@@ -459,6 +460,31 @@ def patient_reports_page(
         .where(Report.user_id == patient_id, Report.shared_at.is_not(None))
         .order_by(Report.created_at.desc())
     ).all()
+
+    # Profile-hero stats — computed from the shared reports and the consent link.
+    from datetime import datetime, timezone
+
+    now = datetime.now(timezone.utc)
+    escalated = sum(1 for r in reports if r.status == REPORT_ESCALATED)
+    linked_at = link.consented_at or link.created_at
+    days_linked = None
+    if linked_at is not None:
+        la = linked_at if linked_at.tzinfo else linked_at.replace(tzinfo=timezone.utc)
+        days_linked = max((now - la).days, 0)
+    last_report = reports[0].created_at if reports else None
+    days_since_last = None
+    if last_report is not None:
+        lr = last_report if last_report.tzinfo else last_report.replace(tzinfo=timezone.utc)
+        days_since_last = max((now - lr).days, 0)
+
+    profile = {
+        "reports": len(reports),
+        "escalated": escalated,
+        "days_linked": days_linked,
+        "days_since_last": days_since_last,
+        "linked_at": linked_at,
+    }
+
     return templates.TemplateResponse(
         request,
         "patient_reports.html",
@@ -466,6 +492,7 @@ def patient_reports_page(
             "doctor": doctor,
             "patient": patient,
             "reports": reports,
+            "profile": profile,
             "status_labels": STATUS_LABELS,
         },
     )
