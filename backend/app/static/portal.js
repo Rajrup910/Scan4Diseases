@@ -714,7 +714,14 @@
       var originalBtnText = btn ? btn.innerHTML : "Sign in";
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<span class="login-btn-loading">Authenticating…</span>';
+        btn.innerHTML =
+          '<span class="login-btn-loading">' +
+            '<span class="login-btn-spinner" aria-hidden="true"></span>' +
+            '<span class="login-btn-word">Authenticating</span>' +
+            '<span class="login-btn-dots" aria-hidden="true">' +
+              '<span></span><span></span><span></span>' +
+            '</span>' +
+          '</span>';
       }
 
       var existingAlert = loginForm.parentNode.querySelector(".alert-error");
@@ -1250,7 +1257,6 @@
     var track = dial.querySelector("[data-patient-dial-track]");
     var wheel = dial.querySelector(".patient-arc-wheel");
     var nameEl = dial.querySelector("[data-patient-dial-name]");
-    var openBtn = dial.querySelector("[data-patient-dial-open]");
 
     var patients = [];
     var activeIndex = 0;
@@ -1286,9 +1292,13 @@
         chip.setAttribute("role", "option");
         chip.setAttribute("data-index", String(i));
         chip.innerHTML = '<span class="initials">' + initials(p.name) + '</span><span class="name">' + p.name + '</span>';
+        // A single click opens the patient immediately — no second confirm
+        // step. The wheel snaps to the clicked chip first (so the movement
+        // is legible) before we navigate away.
         chip.addEventListener("click", function () {
-          if (activeIndex === i) { go(); }
-          else { setActive(i); }
+          if (activeIndex === i) { go(); return; }
+          setActive(i);
+          setTimeout(go, 200);
         });
         track.appendChild(chip);
       });
@@ -1338,10 +1348,6 @@
       });
       var p = patients[activeIndex];
       if (nameEl) nameEl.textContent = p.name;
-      if (openBtn) {
-        openBtn.disabled = false;
-        openBtn.onclick = go;
-      }
       layout();
     }
     function go() {
@@ -1376,11 +1382,9 @@
       patients = collectPatients();
       if (patients.length) { show(); return; }
       // No .patient-link on this page (e.g. viewing a single report). Fetch
-      // the roster from /portal/search so the dial still works from anywhere.
-      if (nameEl) nameEl.textContent = "Loading…";
-      dial.hidden = false;
-      dial.setAttribute("aria-hidden", "false");
-      document.body.style.overflow = "hidden";
+      // the roster from /portal/search so the dial still works from any
+      // page. Do NOT show the dial until we have data — a half-open dial
+      // with no chips felt broken; a brief delay is fine.
       fetch("/portal/search?q=")
         .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status)); })
         .then(function (data) {
@@ -1393,25 +1397,12 @@
             };
           });
           if (!patients.length) {
-            close();
             openPalette("patient");
             return;
           }
-          document.addEventListener("keydown", onKey);
-          window.addEventListener("resize", layout);
-          dial.addEventListener("wheel", onWheel, { passive: false });
-          requestAnimationFrame(function () {
-            render();
-            requestAnimationFrame(function () {
-              layout();
-              dial.classList.add("is-ready");
-            });
-          });
+          show();
         })
-        .catch(function () {
-          close();
-          openPalette("patient");
-        });
+        .catch(function () { openPalette("patient"); });
     }
     function close() {
       dial.hidden = true;
@@ -1474,8 +1465,11 @@
     bulkLines.setAttribute("height", h);
     bulkLines.setAttribute("viewBox", "0 0 " + w + " " + h);
     // First: the vertical spine on the rail's right edge, spanning from the
-    // first selected row to the last. It reads as the "bus" all the branches
-    // attach to.
+    // TOPMOST action button in the rail (so the wire actually reads as
+    // leaving the panel) down to the last selected row. Each action button
+    // (Compare, Patient, Archive) then gets a short horizontal "tap" out to
+    // the spine so the wiring reads as: buttons → bus → rows.
+    var actionBtns = bulkBar.querySelectorAll(".bulk-btn[data-bulk-action]:not([data-bulk-action='clear'])");
     if (rows.length >= 1) {
       var ys = rows.map(function (cb) {
         var tr = cb.closest("tr");
@@ -1483,16 +1477,32 @@
         var rect = tr.getBoundingClientRect();
         return rect.top + rect.height / 2 - svgRect.top;
       }).filter(function (y) { return y !== null; });
-      if (ys.length) {
-        var minY = Math.min.apply(null, ys);
-        var maxY = Math.max.apply(null, ys);
-        if (maxY - minY > 2) {
-          var spine = document.createElementNS("http://www.w3.org/2000/svg", "path");
-          spine.setAttribute("d", "M" + railRight + "," + minY + " L" + railRight + "," + maxY);
-          spine.style.setProperty("--len", Math.abs(maxY - minY) + 4);
-          bulkLines.appendChild(spine);
-        }
+      var minY = Math.min.apply(null, ys.length ? ys : [0]);
+      var maxY = Math.max.apply(null, ys.length ? ys : [0]);
+      // Extend the spine up to the first action button so it visually leaves
+      // the panel from the top action, not from row 1.
+      if (actionBtns.length) {
+        var firstBtnRect = actionBtns[0].getBoundingClientRect();
+        var topBtnY = firstBtnRect.top + firstBtnRect.height / 2 - svgRect.top;
+        minY = Math.min(minY, topBtnY);
       }
+      if (maxY - minY > 2) {
+        var spine = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        spine.setAttribute("d", "M" + railRight + "," + minY + " L" + railRight + "," + maxY);
+        spine.style.setProperty("--len", Math.abs(maxY - minY) + 4);
+        bulkLines.appendChild(spine);
+      }
+      // Tap from each action button to the spine.
+      actionBtns.forEach(function (btn) {
+        var bRect = btn.getBoundingClientRect();
+        var btnRight = bRect.right - svgRect.left;
+        var btnY = bRect.top + bRect.height / 2 - svgRect.top;
+        var tap = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        tap.setAttribute("d", "M" + btnRight + "," + btnY + " L" + railRight + "," + btnY);
+        tap.setAttribute("class", "bulk-line-tap");
+        tap.style.setProperty("--len", Math.max(Math.abs(railRight - btnRight) + 2, 2));
+        bulkLines.appendChild(tap);
+      });
     }
     rows.forEach(function (cb) {
       var tr = cb.closest("tr");

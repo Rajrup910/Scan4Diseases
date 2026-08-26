@@ -210,29 +210,19 @@
     {% endif %}
   </nav>
 
-  {# Semi-circular patient dial — emerges from the Patient pill on the dock as
-     a half-wheel that fans out above the dock. Scroll (or arrow keys) rotates
-     the wheel like a GTA-style radio, sliding the highlighted patient into
-     the top-centre slot. Click a chip or press Enter to jump to that
-     patient's profile. #}
+  {# Semi-circular patient dial — chips fan out above the Patient pill on the
+     dock. No centre hub; the highlighted chip glows under the marker at the
+     top. Scroll (or arrow keys) rotates the wheel; clicking any chip jumps
+     straight to that patient's profile. A tiny hint strip below the arc
+     names the highlighted patient without dominating the layout. #}
   <div class="patient-arc" data-patient-dial hidden aria-hidden="true">
     <div class="patient-arc-scrim" data-patient-dial-close></div>
     <div class="patient-arc-wheel" role="listbox" aria-label="Choose a patient">
       <div class="patient-arc-track" data-patient-dial-track></div>
       <div class="patient-arc-marker" aria-hidden="true"></div>
-      <div class="patient-arc-hub">
-        <span class="patient-arc-hub-k">Choose patient</span>
-        <span class="patient-arc-hub-name" data-patient-dial-name>—</span>
-        <div class="patient-arc-hub-actions">
-          <button type="button" class="patient-arc-open" data-patient-dial-open disabled>
-            Open profile
-            <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#arrow-right"/></svg>
-          </button>
-          <button type="button" class="patient-arc-close" data-patient-dial-close aria-label="Close">
-            <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#x"/></svg>
-          </button>
-        </div>
-        <p class="patient-arc-hub-hint muted">scroll · ← → · Enter</p>
+      <div class="patient-arc-caption">
+        <span class="patient-arc-caption-name" data-patient-dial-name>—</span>
+        <span class="patient-arc-caption-hint">scroll · ← → · click to open</span>
       </div>
     </div>
   </div>
