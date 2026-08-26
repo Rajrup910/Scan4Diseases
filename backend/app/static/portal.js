@@ -1297,33 +1297,33 @@
 
     /* Position chips along the top-half arc. Coordinates are pixel-exact so
        the wheel never drifts off centre no matter how many times it rotates.
-       The active chip is placed at angle 0 (12 o'clock); neighbours fan out
-       symmetrically at +/- ARC_STEP radians. */
+       The active chip is placed at angle 0 (12 o'clock, under the marker);
+       neighbours fan out symmetrically at ±ARC_STEP radians. */
     function layout() {
       if (!wheel || !track || !patients.length) return;
-      var size = wheel.offsetWidth;                          // matches --arc-size
-      var radius = parseFloat(getComputedStyle(dial).getPropertyValue("--arc-radius")) || (size * 0.42);
-      var center = size / 2;                                 // wheel is square
+      var size = wheel.offsetWidth || 620;                   // matches --arc-size
+      var radius = parseFloat(getComputedStyle(dial).getPropertyValue("--arc-radius")) || (size * 0.4);
+      var centerX = size / 2;                                // wheel's horizontal centre
+      // Anchor the arc's pivot below the marker at the top of the wheel so
+      // the visible chips fan out along the upper half.
+      var anchorY = radius + 40;
       var ARC_STEP = Math.PI / 6;                            // 30° between chips
       track.querySelectorAll(".patient-arc-chip").forEach(function (chip, i) {
         var offset = i - activeIndex;
-        // Wrap into [-halfN, +halfN] so chips slide the short way when
-        // activeIndex changes.
         var halfN = patients.length / 2;
         if (offset > halfN) offset -= patients.length;
         else if (offset < -halfN) offset += patients.length;
         var angle = offset * ARC_STEP;                       // 0 = top-centre
-        // Only chips within the visible top arc get shown; the rest fade.
-        var visibleSpan = 5;                                 // ±2.5 slots on each side
+        var visibleSpan = 3;                                 // 7 chips fit the arc nicely
         var absOffset = Math.abs(offset);
         var visible = absOffset <= visibleSpan;
-        var x = center + radius * Math.sin(angle);
-        var y = center - radius * Math.cos(angle);
+        var x = centerX + radius * Math.sin(angle);
+        var y = anchorY - radius * Math.cos(angle);
         chip.style.left = x + "px";
         chip.style.top = y + "px";
-        var scale = visible ? Math.max(.72, 1 - absOffset * 0.10) : 0.6;
+        var scale = visible ? Math.max(.7, 1 - absOffset * 0.10) : 0.6;
         chip.style.setProperty("--chip-scale", scale);
-        var opacity = visible ? Math.max(.25, 1 - absOffset * 0.28) : 0;
+        var opacity = visible ? Math.max(.2, 1 - absOffset * 0.28) : 0;
         chip.style.setProperty("--chip-opacity", opacity);
         chip.style.pointerEvents = visible ? "auto" : "none";
         chip.style.zIndex = String(10 - Math.floor(absOffset));
@@ -1353,10 +1353,21 @@
     function show() {
       dial.hidden = false;
       dial.setAttribute("aria-hidden", "false");
+      dial.classList.remove("is-ready");
       document.body.style.overflow = "hidden";
-      // Chip positions depend on the wheel's rendered size, so render + layout
-      // must run after the arc is visible in the DOM.
-      requestAnimationFrame(function () { render(); layout(); });
+      // Two-frame handshake:
+      //   1. Frame A — render chips (they get inserted with no positions).
+      //   2. Frame B — measure the wheel, position chips, then flip .is-ready
+      //      which turns on the transitions. Without this the first render
+      //      would animate every chip from (0, 0) to its slot, which the user
+      //      described as "crashes/stutters".
+      requestAnimationFrame(function () {
+        render();
+        requestAnimationFrame(function () {
+          layout();
+          dial.classList.add("is-ready");
+        });
+      });
       document.addEventListener("keydown", onKey);
       window.addEventListener("resize", layout);
       dial.addEventListener("wheel", onWheel, { passive: false });
@@ -1389,7 +1400,13 @@
           document.addEventListener("keydown", onKey);
           window.addEventListener("resize", layout);
           dial.addEventListener("wheel", onWheel, { passive: false });
-          requestAnimationFrame(function () { render(); layout(); });
+          requestAnimationFrame(function () {
+            render();
+            requestAnimationFrame(function () {
+              layout();
+              dial.classList.add("is-ready");
+            });
+          });
         })
         .catch(function () {
           close();
@@ -1739,11 +1756,36 @@
       '<div class="compare-delta-item"><span class="compare-delta-k">Triage agreement</span><span class="compare-delta-v ' + (triageAgree ? "up" : "down") + '">' + (triageAgree ? "Aligned" : "Divergent") + '</span></div>';
   }
 
+  // Rich chat renderer for the Compare panel: assistant replies flow through
+  // renderMarkdown so tables / bold / headings land properly, and the
+  // "Analyzing Results" snake loader matches the report chat's language so
+  // the two chat surfaces feel like one component.
   function appendChat(role, text, extraClass) {
     if (!compareChatLog) return null;
     var li = document.createElement("li");
     li.className = "compare-chat-msg " + role + (extraClass ? " " + extraClass : "");
-    li.textContent = text;
+    if (role === "assistant" && !/error|thinking/.test(extraClass || "")) {
+      li.innerHTML = '<div class="compare-chat-md">' + renderMarkdown(text) + '</div>';
+    } else {
+      li.textContent = text;
+    }
+    compareChatLog.appendChild(li);
+    compareChatLog.scrollTop = compareChatLog.scrollHeight;
+    return li;
+  }
+  function appendChatAnalyzing() {
+    if (!compareChatLog) return null;
+    var li = document.createElement("li");
+    li.className = "compare-chat-msg assistant analyzing";
+    var cells = "";
+    for (var i = 0; i < 9; i++) cells += '<span class="ai-snake-cell"></span>';
+    li.innerHTML =
+      '<div class="ai-analyzing">' +
+        '<div class="ai-analyzing-frame" aria-hidden="true">' +
+          '<div class="ai-snake">' + cells + '</div>' +
+        '</div>' +
+        '<span class="ai-analyzing-label">Analyzing comparison…</span>' +
+      '</div>';
     compareChatLog.appendChild(li);
     compareChatLog.scrollTop = compareChatLog.scrollHeight;
     return li;
@@ -1765,7 +1807,7 @@
       compareChatInput.value = "";
       compareChatInput.style.height = "";
       compareSession.history.push({ role: "user", content: msg });
-      var thinking = appendChat("assistant", "Thinking…", "thinking");
+      var loading = appendChatAnalyzing();
       var send = compareChatForm.querySelector(".compare-chat-send");
       if (send) send.disabled = true;
       fetch("/portal/compare/chat", {
@@ -1779,13 +1821,13 @@
       })
         .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status)); })
         .then(function (data) {
-          if (thinking) thinking.remove();
+          if (loading) loading.remove();
           var reply = (data && data.response) || "The assistant is unavailable right now. Please rely on the delta strip above for the numbers.";
           appendChat("assistant", reply);
           compareSession.history.push({ role: "assistant", content: reply });
         })
         .catch(function () {
-          if (thinking) thinking.remove();
+          if (loading) loading.remove();
           appendChat("assistant", "I couldn't reach the assistant. The delta strip above still holds the raw numbers you can rely on.", "error");
         })
         .finally(function () { if (send) send.disabled = false; });
@@ -1814,6 +1856,17 @@
         else compareDlg.removeAttribute("open");
       }
     });
+    // Expand toggle — swells the modal so long chat threads and Grad-CAM
+    // panels have room to breathe. Mirrors the report-chat expand button.
+    var compareExpand = compareDlg.querySelector("[data-compare-expand]");
+    if (compareExpand) {
+      compareExpand.addEventListener("click", function () {
+        var next = !compareDlg.classList.contains("is-expanded");
+        compareDlg.classList.toggle("is-expanded", next);
+        compareExpand.setAttribute("aria-pressed", next ? "true" : "false");
+        compareExpand.title = next ? "Collapse chat panel" : "Expand chat panel";
+      });
+    }
   }
 
   /* --- 13. ambient-motion toggle --------------------------------------------------- */

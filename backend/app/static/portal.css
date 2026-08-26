@@ -133,7 +133,7 @@
   --s-1: .25rem;  --s-2: .5rem;   --s-3: .75rem;  --s-4: 1rem;
   --s-5: 1.5rem;  --s-6: 2rem;    --s-7: 3rem;    --s-8: 4rem;
 
-  --maxw: min(1360px, 96vw);
+  --maxw: min(1200px, 92vw);
 
   /* grain visibility (dialled per theme) */
   --grain-opacity: .025;
@@ -3182,74 +3182,76 @@ body.is-transitioning .flow-takeover,
 .patient-arc[hidden] { display: none; }
 .patient-arc {
   --arc-size: 620px;
-  --arc-radius: 260px;
+  --arc-radius: 250px;
   position: fixed;
+  inset: 0;
+  z-index: 200;
+  /* The container catches wheel + arrow-key + escape events for the dial. */
+}
+@media (max-width: 720px) {
+  .patient-arc { --arc-size: 92vw; --arc-radius: calc(44vw); }
+}
+.patient-arc-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 12, 20, .5);
+  animation: arc-scrim-in 200ms var(--ease-out);
+  cursor: pointer;
+}
+.patient-arc-wheel {
+  position: absolute;
   left: 50%;
   bottom: 96px;
   width: var(--arc-size);
   height: calc(var(--arc-size) / 2 + 80px);
   transform: translateX(-50%);
-  z-index: 200;
-  pointer-events: none;
-}
-@media (max-width: 720px) {
-  .patient-arc { --arc-size: 92vw; --arc-radius: calc(46vw - 20px); bottom: 92px; }
-}
-.patient-arc-scrim {
-  position: fixed;
-  inset: 0;
-  background: rgba(6, 12, 20, .48);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  pointer-events: auto;
-  animation: arc-scrim-in 220ms var(--ease-out);
-}
-.patient-arc-wheel {
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  width: var(--arc-size);
-  height: var(--arc-size);
-  transform: translate(-50%, 50%);
   pointer-events: none;
 }
 .patient-arc-track {
   position: absolute;
-  inset: 0;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
-  /* Chips are absolutely positioned by JS via `top`/`left` pixels, so this
-     track is just an anchor origin. No CSS rotation happens on the track
-     itself — that's what caused the earlier drift on rotation. */
+  /* Chips are absolutely positioned by JS via `top`/`left` pixels, computed
+     relative to (arc-size/2, arc-size/2 + 80). No CSS rotation on the track —
+     that was the source of the earlier off-centre drift. */
 }
 .patient-arc-chip {
   position: absolute;
-  min-width: 118px;
+  min-width: 130px;
   padding: .55rem .8rem;
   border-radius: var(--r-2);
   border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface) 55%, transparent);
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
   backdrop-filter: blur(14px) saturate(160%);
   -webkit-backdrop-filter: blur(14px) saturate(160%);
-  box-shadow: inset 0 1px 0 var(--glass-gloss), 0 8px 20px rgba(0, 0, 0, .28);
+  box-shadow: inset 0 1px 0 var(--glass-gloss), 0 8px 20px rgba(0, 0, 0, .32);
   color: var(--ink);
   cursor: pointer;
   pointer-events: auto;
   text-align: center;
-  font-size: .8rem;
+  font-size: .82rem;
   font-weight: 600;
   line-height: 1.15;
   transform: translate(-50%, -50%) scale(var(--chip-scale, 1));
   opacity: var(--chip-opacity, 1);
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  white-space: nowrap;
+}
+/* Transitions only kick in after the arc is fully laid out, so the first
+   render doesn't animate every chip from (0,0). */
+.patient-arc.is-ready .patient-arc-chip {
   transition:
-    left 380ms cubic-bezier(.2, .8, .25, 1),
-    top 380ms cubic-bezier(.2, .8, .25, 1),
+    left 360ms cubic-bezier(.2, .8, .25, 1),
+    top 360ms cubic-bezier(.2, .8, .25, 1),
     transform 320ms cubic-bezier(.2, .8, .25, 1),
     opacity 320ms var(--ease-out),
     border-color var(--dur-1) var(--ease-out),
     box-shadow var(--dur-1) var(--ease-out);
-  display: flex;
-  align-items: center;
-  gap: .5rem;
 }
 :root[data-theme="dark"] .patient-arc-chip {
   background: rgba(19, 25, 34, .6);
@@ -3279,28 +3281,28 @@ body.is-transitioning .flow-takeover,
 .patient-arc-marker {
   position: absolute;
   left: 50%;
-  top: calc(var(--arc-size) / 2 - var(--arc-radius) - 14px);
-  width: 26px;
-  height: 26px;
+  top: 20px;
+  width: 22px;
+  height: 22px;
   transform: translateX(-50%) rotate(45deg);
   border-radius: 3px;
   background: linear-gradient(135deg, var(--brand-soft), var(--brand));
   box-shadow: 0 0 18px var(--brand-glow);
   pointer-events: none;
-  opacity: .55;
+  opacity: .7;
 }
 .patient-arc-hub {
   position: absolute;
   left: 50%;
-  bottom: 0;
-  transform: translate(-50%, -22%);
+  bottom: 20px;
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: .4rem;
   padding: .9rem 1.4rem 1rem;
   border-radius: var(--r-3);
-  background: color-mix(in srgb, var(--surface) 65%, transparent);
+  background: color-mix(in srgb, var(--surface) 68%, transparent);
   border: 1px solid var(--border-strong);
   backdrop-filter: blur(28px) saturate(180%);
   -webkit-backdrop-filter: blur(28px) saturate(180%);
@@ -3368,12 +3370,13 @@ body.is-transitioning .flow-takeover,
 
 @keyframes arc-scrim-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes arc-hub-in {
-  from { opacity: 0; transform: translate(-50%, 20%) scale(.94); }
-  to   { opacity: 1; transform: translate(-50%, -22%) scale(1); }
+  from { opacity: 0; transform: translate(-50%, 30px) scale(.94); }
+  to   { opacity: 1; transform: translate(-50%, 0)     scale(1); }
 }
 :root.no-motion .patient-arc-scrim,
 :root.no-motion .patient-arc-hub,
-:root.no-motion .patient-arc-chip { animation: none; transition: none; }
+:root.no-motion .patient-arc-chip,
+:root.no-motion .patient-arc.is-ready .patient-arc-chip { animation: none; transition: none; }
 
 /* ============================================================ 12. ALL SHARED REPORTS TABLE */
 .worklist-section {
@@ -3720,15 +3723,14 @@ body.is-transitioning .flow-takeover,
    The site-header .wrap container is widened so the search bar has room to
    breathe on desktop. */
 .site-header .wrap.header-inner {
-  max-width: min(1360px, 96vw);
+  /* Match the page container width so the header sits over the same rhythm
+     as the dashboard tiles — uniform gutter on both sides of the viewport. */
+  max-width: var(--maxw);
   margin-left: auto;
   margin-right: auto;
-  padding-left: var(--s-3);
-  padding-right: var(--s-3);
-  /* Tight breathing room between pills instead of the earlier
-     space-between which parked large voids between them. The search bar
-     grabs the remaining slack so the row fills edge to edge. */
-  gap: .6rem;
+  padding-left: 0;
+  padding-right: 0;
+  gap: .55rem;
   justify-content: flex-start;
 }
 /* Flatten .header-left so the brand and the screening chip participate as
@@ -3743,17 +3745,19 @@ body.is-transitioning .flow-takeover,
   gap: var(--s-2);
   flex: 0 0 auto;
 }
-/* Search grabs all remaining space so the four header zones sit at the very
-   edges of the row with only a small breathing room between neighbouring
-   pills — matches the tight edge-to-edge cluster the user asked for. */
+/* Search bar sits in the middle of the header row. Auto-margins on both
+   sides split the leftover space equally, so brand + screening sit at the
+   left edge and theme + profile sit at the right edge with uniform gutters
+   in between. */
 .cmdk-trigger.cmdk-trigger-wide {
-  flex: 1 1 auto;
-  max-width: none;
+  flex: 0 1 420px;
+  max-width: 420px;
   min-width: 200px;
+  margin: 0 auto;
   justify-content: flex-start;
-  gap: .6rem;
-  padding: .6rem 1rem;
-  font-size: .92rem;
+  gap: .55rem;
+  padding: .55rem 1rem;
+  font-size: .9rem;
 }
 .cmdk-trigger.cmdk-trigger-wide .cmdk-trigger-label {
   flex: 1 1 auto;
@@ -4554,34 +4558,9 @@ body { min-height: 100vh; }
   .patient-hero { animation: none; }
 }
 
-/* ============================================================ BULK BAR AS GLASS PILL
-   Restyle the selection bar into a floating frosted pill that hovers above the
-   table (matching the dock language), instead of a flat block. */
-.bulk-bar {
-  position: sticky;
-  top: 12px;
-  z-index: 40;
-  width: max-content;
-  max-width: 100%;
-  margin: 0 auto var(--s-3);
-  border-radius: var(--r-pill);
-  border: 1px solid var(--border-strong);
-  background: color-mix(in srgb, var(--surface) 55%, transparent);
-  backdrop-filter: blur(26px) saturate(150%);
-  -webkit-backdrop-filter: blur(26px) saturate(150%);
-  box-shadow: inset 0 1px 0 var(--glass-gloss), 0 12px 34px rgba(0, 0, 0, .28);
-  padding: .45rem .55rem .45rem .9rem;
-}
-:root[data-theme="dark"] .bulk-bar { background: rgba(20, 26, 36, 0.6); }
-:root:not([data-theme="dark"]) .bulk-bar { background: rgba(255, 255, 255, 0.66); }
-.bulk-btn { border-radius: var(--r-pill); }
-.bulk-btn-primary {
-  border-color: transparent;
-  background: linear-gradient(135deg, var(--brand-soft) 0%, var(--brand) 60%, var(--brand-strong) 100%);
-  color: #fff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3), 0 2px 8px var(--brand-glow);
-}
-.bulk-btn-primary:hover { filter: brightness(1.08); transform: translateY(-1px); background: linear-gradient(135deg, var(--brand-soft) 0%, var(--brand) 60%, var(--brand-strong) 100%); border-color: transparent; color: #fff; }
+/* The historic "sticky glass pill" bulk-bar rules were overriding the new
+   left-overhanging rail (centring it above the table). The rail's canonical
+   styles now live earlier in the file — nothing more to add here. */
 
 /* ============================================================ COMPARE MODAL v2
    A large glass panel with three regions:
@@ -4665,6 +4644,83 @@ body { min-height: 100vh; }
 .compare-head-text { display: flex; flex-direction: column; line-height: 1.05; }
 .compare-head-title { font-family: var(--font-display); font-weight: 700; font-size: 1.05rem; color: var(--ink); }
 .compare-n { font-size: .78rem; color: var(--ink-soft); font-family: var(--font-mono); letter-spacing: .02em; }
+.compare-head-actions { display: inline-flex; align-items: center; gap: .5rem; }
+.compare-expand-chip,
+.compare-close-chip { /* shared */ }
+.compare-expand-chip {
+  display: grid;
+  place-items: center;
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--glass-fill);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: color var(--dur-1) var(--ease-out), border-color var(--dur-1) var(--ease-out), transform var(--dur-1) var(--ease-out);
+}
+.compare-expand-chip:hover { color: var(--ink); border-color: var(--brand); transform: translateY(-1px); }
+.compare-dialog.is-expanded { max-width: min(1400px, calc(100vw - 24px)); }
+.compare-dialog.is-expanded .compare-panel { max-height: calc(100vh - 24px); }
+.compare-dialog.is-expanded .compare-chat-log { max-height: 440px; }
+
+/* Rendered markdown inside compare-chat assistant bubbles.
+   Matches the report chat's spacing so the two feel like one component. */
+.compare-chat-md { display: flex; flex-direction: column; gap: .5rem; }
+.compare-chat-md p { margin: 0; line-height: 1.5; }
+.compare-chat-md h1, .compare-chat-md h2, .compare-chat-md h3 {
+  margin: .1rem 0 .1rem; line-height: 1.25; color: var(--ink);
+}
+.compare-chat-md h1 { font-size: 1.05rem; font-weight: 700; }
+.compare-chat-md h2 { font-size: .98rem; font-weight: 650; }
+.compare-chat-md h3 { font-size: .9rem; font-weight: 650; color: var(--ink-soft); text-transform: uppercase; letter-spacing: .05em; }
+.compare-chat-md strong { color: var(--ink); font-weight: 700; }
+.compare-chat-md em { color: var(--ink-soft); font-style: italic; }
+.compare-chat-md code {
+  font-family: var(--font-mono);
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+  padding: .1rem .35rem;
+  border-radius: 4px;
+  font-size: .82em;
+}
+.compare-chat-md ul, .compare-chat-md ol { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: .25rem; }
+.compare-chat-md li { line-height: 1.5; }
+.compare-chat-md .table-responsive-wrapper { overflow-x: auto; }
+.compare-chat-md table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .82rem;
+}
+.compare-chat-md th, .compare-chat-md td {
+  padding: .35rem .55rem;
+  border: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+.compare-chat-md thead th {
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
+  color: var(--ink);
+  font-weight: 650;
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+:root[data-theme="dark"] .compare-chat-md code { background: rgba(255,255,255,.08); }
+:root[data-theme="dark"] .compare-chat-md th,
+:root[data-theme="dark"] .compare-chat-md td { border-color: rgba(255,255,255,.12); }
+
+/* Analyzing loader inside compare-chat: wraps the shared .ai-analyzing chip
+   in the assistant bubble frame so it lines up with real replies. */
+.compare-chat-msg.analyzing {
+  padding: .45rem .75rem;
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  border: 1px solid var(--border);
+  border-radius: var(--r-2);
+}
+:root[data-theme="dark"] .compare-chat-msg.analyzing {
+  background: rgba(255, 255, 255, .05);
+  border-color: rgba(255, 255, 255, .1);
+}
+
 .compare-close-chip {
   display: grid;
   place-items: center;
@@ -4856,15 +4912,18 @@ body { min-height: 100vh; }
 }
 .compare-chat-log:empty { display: none; }
 .compare-chat-msg {
-  padding: .55rem .85rem;
+  padding: .6rem .9rem;
   border-radius: var(--r-2);
   font-size: .9rem;
   line-height: 1.5;
   max-width: 92%;
-  white-space: pre-wrap;
   word-wrap: break-word;
   color: var(--ink);
 }
+/* Plain-text user bubbles keep pre-wrap so line-breaks survive; assistant
+   bubbles are rendered markdown and must respect the HTML whitespace model. */
+.compare-chat-msg.user { white-space: pre-wrap; }
+.compare-chat-msg.assistant { white-space: normal; }
 .compare-chat-msg.user {
   align-self: flex-end;
   background: color-mix(in srgb, var(--brand) 22%, transparent);
