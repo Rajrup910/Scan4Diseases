@@ -647,8 +647,13 @@ async def compare_chat(
             "reported_symptoms": r.symptoms or {},
         }
 
-    tags = ["Report A", "Report B", "Report C", "Report D"]
-    snapshots = [_snap(r, tags[i]) for i, r in enumerate(reports)]
+    # Any batch size up to the schema cap needs a tag — the previous fixed
+    # list of four raised IndexError once the doctor picked five or more
+    # reports, which is what surfaced as "I couldn't reach the assistant".
+    def _tag(i: int) -> str:
+        return "Report " + (chr(ord("A") + i) if i < 26 else str(i + 1))
+
+    snapshots = [_snap(r, _tag(i)) for i, r in enumerate(reports)]
     prediction = {
         "mode": "compare",
         "reports": snapshots,

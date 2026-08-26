@@ -242,14 +242,16 @@
           <td class="condition-cell">
             <span class="condition-name">{{ r.condition }}</span>
             {% if (r.symptoms and r.symptoms.get('language') == 'hi') or loop.index in [1, 3] %}
+            {# Just the two localised phrases marqueeing — the "हि" glyph
+               prefix was dropped since it read as a broken syllable before
+               the English translation. #}
             <span class="lang-tag-hi" title="Generated in Hindi">
-              <span class="lang-icon">हि</span>
               <span class="lang-marquee" aria-hidden="true">
                 <span class="lang-marquee-track">
-                  <span class="lang-marquee-item">हिन्दी में तैयार</span>
                   <span class="lang-marquee-item">Generated in Hindi</span>
                   <span class="lang-marquee-item">हिन्दी में तैयार</span>
                   <span class="lang-marquee-item">Generated in Hindi</span>
+                  <span class="lang-marquee-item">हिन्दी में तैयार</span>
                 </span>
               </span>
               <span class="sr-only">Generated in Hindi</span>
@@ -269,7 +271,15 @@
             {% endif %}
           </td>
           <td>
-            <span class="badge triage-{{ item.tone }}" title="{{ r.triage }}">{{ r.triage }}</span>
+            {# Marquee the triage label so the full "Prompt dermatologist
+               consultation" text stays legible without the badge growing
+               past its fixed slot. #}
+            <span class="badge triage-{{ item.tone }} triage-marquee" title="{{ r.triage }}">
+              <span class="triage-marquee-track">
+                <span class="triage-marquee-item">{{ r.triage }}</span>
+                <span class="triage-marquee-item">{{ r.triage }}</span>
+              </span>
+            </span>
           </td>
           <td>
             <span class="badge status-{{ r.status }}">{{ status_labels.get(r.status, r.status) }}</span>

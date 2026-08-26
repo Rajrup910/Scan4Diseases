@@ -51,6 +51,30 @@
   </div>
 </div>
 
+{# Same bulk-action rail + reports-shell as the main worklist — a doctor can
+   compare two or more of THIS patient's reports right from the profile. #}
+<div class="reports-shell" data-reports-shell>
+  <div class="bulk-bar" data-bulk-bar hidden>
+    <div class="bulk-head">
+      <span class="bulk-count-n" data-bulk-count>0</span>
+      <span class="bulk-count-l">selected</span>
+    </div>
+    <div class="bulk-sep" aria-hidden="true"></div>
+    <button type="button" class="bulk-btn bulk-btn-primary" data-bulk-action="compare"
+            title="Compare the selected reports side by side">
+      <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#layers"/></svg>
+      <span>Compare</span>
+    </button>
+    <button type="button" class="bulk-btn" data-bulk-action="archive" title="Archive the selected reports from this view">
+      <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#eye"/></svg>
+      <span>Archive</span>
+    </button>
+    <button type="button" class="bulk-btn bulk-btn-ghost" data-bulk-action="clear" aria-label="Clear selection" title="Clear selection">
+      <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#x"/></svg>
+    </button>
+  </div>
+  <svg class="bulk-lines" data-bulk-lines aria-hidden="true"></svg>
+
 <div class="table-wrap reports-table-card">
   <table class="data reports-data-table" data-reports-table>
     <thead>
@@ -109,6 +133,7 @@
       <tr class="no-match" hidden><td colspan="7" class="muted empty-cell">No reports with this status.</td></tr>
     </tbody>
   </table>
+</div>
 </div>
 {% else %}
 <div class="empty">

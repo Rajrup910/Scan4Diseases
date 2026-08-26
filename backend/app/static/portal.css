@@ -133,7 +133,7 @@
   --s-1: .25rem;  --s-2: .5rem;   --s-3: .75rem;  --s-4: 1rem;
   --s-5: 1.5rem;  --s-6: 2rem;    --s-7: 3rem;    --s-8: 4rem;
 
-  --maxw: min(1200px, 92vw);
+  --maxw: min(1080px, 90vw);
 
   /* grain visibility (dialled per theme) */
   --grain-opacity: .025;
@@ -1737,7 +1737,7 @@ body.has-expanded-chat .site-footer {
 }
 
 /* ============================================================ 7. DASHBOARD (Zone B) */
-.dash { margin-bottom: var(--s-6); }
+.dash { margin-bottom: calc(var(--s-6) * 1.8); }
 .section-h { margin: var(--s-6) 0 var(--s-4); font-size: 1rem; color: var(--ink-soft); }
 
 /* stat tiles — static numbers, never animated */
@@ -1800,29 +1800,29 @@ body.has-expanded-chat .site-footer {
    visually anchored to the icon so a scan across the row reads
    icon → count → next-tile. */
 .stat {
-  padding: var(--s-5) var(--s-5);
+  padding: var(--s-4) var(--s-5);
   display: grid;
   grid-template-columns: auto 1fr;
   grid-template-rows: auto auto;
-  column-gap: 1.1rem;
+  column-gap: 1rem;
   row-gap: .1rem;
   align-items: center;
-  min-height: 138px;
+  min-height: 124px;
 }
 .stat-ic {
   grid-row: 1 / 3;
   display: grid;
   place-items: center;
-  width: 52px; height: 52px;
+  width: 46px; height: 46px;
   border-radius: var(--r-2);
   background: rgba(255, 255, 255, 0.16);
   border: 1px solid rgba(255, 255, 255, 0.28);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
   color: #ffffff;
 }
-.stat-ic .icon { width: 24px; height: 24px; }
-.stat-n { font-family: var(--font-display); font-weight: 700; font-size: 2.4rem; line-height: 1.05; align-self: end; color: #ffffff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.30); }
-.stat-l { font-size: .9rem; color: rgba(255, 255, 255, 0.85); align-self: start; letter-spacing: .01em; }
+.stat-ic .icon { width: 22px; height: 22px; }
+.stat-n { font-family: var(--font-display); font-weight: 700; font-size: 2.1rem; line-height: 1.05; align-self: end; color: #ffffff; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.30); }
+.stat-l { font-size: .82rem; color: rgba(255, 255, 255, 0.85); align-self: start; letter-spacing: .01em; }
 .stat-warn .stat-ic { background: rgba(245, 158, 11, 0.25); color: #FCD34D; border-color: rgba(245, 158, 11, 0.45); }
 .stat-danger .stat-ic { background: rgba(239, 68, 68, 0.25); color: #FCA5A5; border-color: rgba(239, 68, 68, 0.45); }
 .stat-warn .stat-n { color: #FCD34D; }
@@ -3058,8 +3058,10 @@ body.is-transitioning .flow-takeover,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: .45rem;
-  padding: .55rem .7rem;
+  gap: .55rem;
+  /* Inflated so the dock reads as the primary nav — matches the green
+     silhouette in the reference. */
+  padding: .7rem .95rem;
   border-radius: var(--r-pill);
   border: 1px solid var(--border-strong);
   background: color-mix(in srgb, var(--surface) 55%, transparent);
@@ -3121,13 +3123,13 @@ body.is-transitioning .flow-takeover,
 .dock-item {
   display: inline-flex;
   align-items: center;
-  gap: .5rem;
-  padding: .6rem 1.05rem;
+  gap: .55rem;
+  padding: .7rem 1.15rem;
   border-radius: var(--r-pill);
   color: var(--ink-soft);
   text-decoration: none;
   font-weight: 600;
-  font-size: .92rem;
+  font-size: .95rem;
   transition: background var(--dur-1) var(--ease-out),
               color var(--dur-1) var(--ease-out),
               transform 180ms cubic-bezier(.34, 1.3, .5, 1),
@@ -3161,6 +3163,19 @@ body.is-transitioning .flow-takeover,
   background: rgba(255, 255, 255, .25);
   color: #ffffff;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3);
+}
+/* The bright-white chip was reading as invisible against the light theme's
+   bright dock background — recolour with dark ink on a subtle grey. */
+:root:not([data-theme="dark"]) .dock-report-id {
+  background: rgba(15, 23, 42, .12);
+  color: #0F172A;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55);
+}
+/* Same story on the ACTIVE state — when the Report pill is filled the chip
+   sits on gradient teal, so paint it dark for legibility. */
+:root:not([data-theme="dark"]) .dock-item.is-active .dock-report-id {
+  background: rgba(255, 255, 255, .3);
+  color: #06251f;
 }
 
 /* Thin vertical separators flanking the central refresh, so the three nav
@@ -3247,12 +3262,13 @@ body.is-transitioning .flow-takeover,
 .patient-arc-wheel {
   position: absolute;
   left: 50%;
-  /* Sit just above the dock. The dock lives at bottom:26px and is ~52px
-     tall — parking the wheel at bottom:88px keeps the arc pivot right at
-     the top edge of the dock so chips fan low around the Patient pill. */
-  bottom: 88px;
+  /* Anchor the wheel to the DOCK — the wheel's own bottom sits right at
+     the dock's top edge (bottom:78px = 26px dock bottom + ~52px pill
+     height). Chips fan directly out of the Patient pill instead of
+     floating above the dock in an obvious gap. */
+  bottom: 78px;
   width: var(--arc-size);
-  height: calc(var(--arc-radius) + 90px);
+  height: calc(var(--arc-radius) + 60px);
   transform: translateX(-50%);
   pointer-events: none;
 }
@@ -3348,7 +3364,9 @@ body.is-transitioning .flow-takeover,
 :root.no-motion .patient-arc.is-ready .patient-arc-chip { animation: none; transition: none; }
 
 /* While the arc is open the Patient dock pill glows and shows the currently
-   highlighted name (updated live by JS). */
+   highlighted name (updated live by JS). A fixed label width prevents the
+   pill from resizing every time the wheel rotates onto a longer/shorter
+   name — the jarring layout shift the user called out. */
 .dock-item.is-arc-active {
   border: 1px solid var(--brand);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 22%, transparent),
@@ -3356,6 +3374,15 @@ body.is-transitioning .flow-takeover,
   color: var(--ink) !important;
 }
 :root[data-theme="dark"] .dock-item.is-arc-active { color: #F1F5F9 !important; }
+.dock-item[data-dock-picker="patient"] > span:not(.dock-report-id) {
+  display: inline-block;
+  width: 118px;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
 
 /* ============================================================ 12. ALL SHARED REPORTS TABLE */
 .worklist-section {
@@ -3365,7 +3392,7 @@ body.is-transitioning .flow-takeover,
 .worklist-head-row {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: space-between;
   gap: var(--s-3);
   margin-bottom: var(--s-3);
   flex-wrap: wrap;
@@ -3375,12 +3402,10 @@ body.is-transitioning .flow-takeover,
   align-items: center;
   gap: var(--s-3);
 }
-/* Search sits right next to the title chip rather than at the far edge —
-   the earlier space-between made it feel disconnected from the table it
-   filters. Cap width so it stays compact. */
+/* Search sits at the far right of the head row — user preference. */
 .worklist-head-row .table-search-wrap {
-  margin-left: .35rem;
-  width: min(240px, 100%);
+  margin-left: auto;
+  width: min(260px, 100%);
 }
 .reports-badge {
   display: inline-flex;
@@ -3585,6 +3610,41 @@ body.is-transitioning .flow-takeover,
   .lang-marquee-track { animation: none; }
 }
 :root.no-motion .lang-marquee-track { animation: none; }
+
+/* Triage marquee: same seamless loop, but for the triage badge — long
+   phrases like "Prompt dermatologist consultation" now scroll horizontally
+   inside the fixed badge slot instead of being ellipsised. Pauses on hover. */
+.reports-data-table .badge.triage-marquee {
+  display: inline-flex;
+  align-items: center;
+  padding-left: .55rem;
+  padding-right: .55rem;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: clip;
+  mask-image: linear-gradient(90deg, transparent 0, #000 6%, #000 94%, transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 6%, #000 94%, transparent 100%);
+}
+.triage-marquee-track {
+  display: inline-flex;
+  gap: 2em;
+  padding-left: .4em;
+  white-space: nowrap;
+  animation: triage-scroll 12s linear infinite;
+  will-change: transform;
+}
+.triage-marquee-item { display: inline-block; }
+.reports-data-table .badge.triage-marquee:hover .triage-marquee-track {
+  animation-play-state: paused;
+}
+@keyframes triage-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .triage-marquee-track { animation: none; }
+}
+:root.no-motion .triage-marquee-track { animation: none; }
 
 /* Confidence meter inside table */
 .conf-meter-wrap {
@@ -3886,20 +3946,26 @@ body.is-transitioning .flow-takeover,
   flex-direction: column;
   gap: .5rem;
   padding: .7rem .55rem .8rem;
-  /* Transparent glass pill — the ambient blueprint reads through, matching
-     the dock's frosted look rather than the previous flat brand-tinted slab. */
+  /* More opaque so the action buttons don't compete with the ambient
+     video/blueprint behind them. Still keeps the mint edge glow. */
   border-radius: 18px;
-  border: 1px solid color-mix(in srgb, var(--brand) 42%, transparent);
-  background: color-mix(in srgb, var(--surface) 26%, transparent);
-  backdrop-filter: blur(26px) saturate(160%);
-  -webkit-backdrop-filter: blur(26px) saturate(160%);
+  border: 1px solid color-mix(in srgb, var(--brand) 55%, transparent);
+  background: color-mix(in srgb, var(--surface) 90%, transparent);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
   box-shadow:
     inset 0 1px 0 var(--glass-gloss),
     0 12px 32px rgba(0, 0, 0, .28),
     0 0 22px color-mix(in srgb, var(--brand) 25%, transparent);
-  animation: bulk-rail-in 320ms cubic-bezier(.2, .8, .25, 1);
-  z-index: 6;
+  animation: bulk-rail-in 340ms cubic-bezier(.2, .8, .25, 1);
   overflow: hidden;
+}
+:root[data-theme="dark"] .bulk-bar {
+  background: rgba(15, 20, 28, 0.92);
+  border-color: color-mix(in srgb, var(--brand) 55%, transparent);
+}
+:root:not([data-theme="dark"]) .bulk-bar {
+  background: rgba(255, 255, 255, 0.92);
 }
 @keyframes bulk-rail-in {
   from { opacity: 0; transform: translateX(-12px) scale(.94); }
@@ -4698,9 +4764,30 @@ body { min-height: 100vh; }
 }
 
 /* Chat-only expand: grow the chat log; leave the images grid and delta
-   strip untouched. */
-.compare-chat-log { transition: max-height 300ms cubic-bezier(.2, .8, .25, 1); }
-.compare-dialog.is-expanded .compare-chat-log { max-height: 560px; }
+   strip untouched. When expanded, force the log open so an empty
+   conversation still shows the expanded height (otherwise :empty hides
+   it and the expand click reads as a no-op). */
+.compare-chat-log {
+  transition: max-height 300ms cubic-bezier(.2, .8, .25, 1),
+              min-height 300ms cubic-bezier(.2, .8, .25, 1);
+}
+.compare-dialog.is-expanded .compare-chat-log {
+  max-height: 560px;
+  min-height: 340px;
+  display: flex !important;   /* beats the :empty { display: none } rule */
+}
+.compare-dialog.is-expanded .compare-chat-log:empty::before {
+  content: "The assistant's replies will appear here — ask a question below or pick a suggestion.";
+  color: var(--ink-soft);
+  font-size: .82rem;
+  line-height: 1.5;
+  padding: .8rem 1rem;
+  border-radius: var(--r-2);
+  border: 1px dashed color-mix(in srgb, var(--brand) 40%, transparent);
+  background: color-mix(in srgb, var(--brand) 6%, transparent);
+  align-self: flex-start;
+  max-width: 80%;
+}
 
 /* Rendered markdown inside compare-chat assistant bubbles.
    Matches the report chat's spacing so the two feel like one component. */
