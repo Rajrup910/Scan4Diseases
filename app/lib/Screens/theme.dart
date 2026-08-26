@@ -597,6 +597,12 @@ class SmoothPageTransitionsBuilder extends PageTransitionsBuilder {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
+    // Honour the OS "reduce motion" accessibility setting: a plain cross-fade
+    // with no slide/scale so nothing lurches for motion-sensitive users.
+    if (MediaQuery.maybeDisableAnimationsOf(context) == true) {
+      return FadeTransition(opacity: animation, child: child);
+    }
+
     final entering = CurvedAnimation(parent: animation, curve: Curves.easeOutCubic);
     final exiting = CurvedAnimation(parent: secondaryAnimation, curve: Curves.easeInCubic);
 
@@ -606,10 +612,17 @@ class SmoothPageTransitionsBuilder extends PageTransitionsBuilder {
         position: Tween<Offset>(begin: const Offset(0, 0.035), end: Offset.zero).animate(entering),
         child: ScaleTransition(
           scale: Tween<double>(begin: 0.985, end: 1.0).animate(entering),
-          child: FadeTransition(
-            // Ease the previous screen back a touch as the new one arrives.
-            opacity: Tween<double>(begin: 1.0, end: 0.92).animate(exiting),
-            child: child,
+          // The outgoing screen eases back AND sinks a touch, so the two
+          // pages feel physically stacked rather than cross-dissolved.
+          child: SlideTransition(
+            position: Tween<Offset>(begin: Offset.zero, end: const Offset(0, -0.018)).animate(exiting),
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 1.0, end: 0.985).animate(exiting),
+              child: FadeTransition(
+                opacity: Tween<double>(begin: 1.0, end: 0.92).animate(exiting),
+                child: child,
+              ),
+            ),
           ),
         ),
       ),

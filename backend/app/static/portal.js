@@ -1297,13 +1297,16 @@
         chip.setAttribute("role", "option");
         chip.setAttribute("data-index", String(i));
         chip.innerHTML = '<span class="initials">' + initials(p.name) + '</span><span class="name">' + p.name + '</span>';
-        // A single click opens the patient immediately — no second confirm
-        // step. The wheel snaps to the clicked chip first (so the movement
-        // is legible) before we navigate away.
+        // A single click opens the patient immediately — the wheel snaps the
+        // clicked chip to the marker first, plays the lock-in flash, then
+        // navigates (same confirmation beat as the scroll-settle path).
         chip.addEventListener("click", function () {
-          if (activeIndex === i) { go(); return; }
+          cancelSettle();
           setActive(i);
-          setTimeout(go, 200);
+          var activeChip = track.querySelector(".patient-arc-chip.is-active");
+          if (activeChip) activeChip.classList.add("is-landing");
+          if (patientPill) patientPill.classList.add("is-arc-locking");
+          setTimeout(go, activeIndex === i ? 180 : 300);
         });
         track.appendChild(chip);
       });
@@ -1355,10 +1358,14 @@
       if (patientPillLabel) patientPillLabel.textContent = p.name;
       layout();
     }
+    var navigating = false;
     function go() {
+      if (navigating) return;              // guard against settle + click race
       var p = patients[activeIndex];
       if (!p) return;
-      close();
+      navigating = true;
+      cancelSettle();
+      // Let the lock-in flash play, then navigate.
       window.location.href = p.href;
     }
     function show() {
@@ -1416,11 +1423,30 @@
         })
         .catch(function () { openPalette("patient"); });
     }
+    var settleTimer = null;
+    function armSettle() {
+      // Slot-machine behaviour: after the wheel goes quiet, the name that has
+      // landed at the Patient pill is auto-selected — no Enter needed. A short
+      // "landing" flash on the active chip + pill precedes the navigation so
+      // the user sees which one locked in.
+      if (settleTimer) clearTimeout(settleTimer);
+      settleTimer = setTimeout(function () {
+        settleTimer = null;
+        var activeChip = track.querySelector(".patient-arc-chip.is-active");
+        if (activeChip) activeChip.classList.add("is-landing");
+        if (patientPill) patientPill.classList.add("is-arc-locking");
+        setTimeout(go, 260);
+      }, 650);
+    }
+    function cancelSettle() {
+      if (settleTimer) { clearTimeout(settleTimer); settleTimer = null; }
+    }
     function close() {
+      cancelSettle();
       dial.hidden = true;
       dial.setAttribute("aria-hidden", "true");
       document.body.style.overflow = "";
-      if (patientPill) patientPill.classList.remove("is-arc-active");
+      if (patientPill) patientPill.classList.remove("is-arc-active", "is-arc-locking");
       if (patientPillLabel) patientPillLabel.textContent = patientPillDefault;
       document.removeEventListener("keydown", onKey);
       window.removeEventListener("resize", layout);
@@ -1429,20 +1455,24 @@
     }
     function blockScroll(e) { e.preventDefault(); }
     function onKey(e) {
-      // Only Escape (close) and Enter (open) — arrow keys removed per user
-      // request; the wheel is the sole rotator now.
-      if (e.key === "Escape") { e.preventDefault(); close(); return; }
-      if (e.key === "Enter") { e.preventDefault(); go(); }
+      // Escape closes; Enter selects immediately (skips the settle wait).
+      // The wheel is the primary rotator and auto-selects on settle.
+      if (e.key === "Escape") { e.preventDefault(); cancelSettle(); close(); return; }
+      if (e.key === "Enter") { e.preventDefault(); cancelSettle(); go(); }
     }
     var wheelCooldown = 0;
     function onWheel(e) {
       e.preventDefault();
+      // Every wheel tick cancels the pending auto-select and re-arms it, so
+      // the selection only fires once the user stops scrolling.
+      cancelSettle();
       var now = Date.now();
-      if (now - wheelCooldown < 120) return;                 // ~8 steps/sec cap
+      if (now - wheelCooldown < 110) { armSettle(); return; }   // rate cap
       var delta = e.deltaY || e.deltaX;
-      if (Math.abs(delta) < 4) return;
+      if (Math.abs(delta) < 4) { armSettle(); return; }
       wheelCooldown = now;
       setActive(activeIndex + (delta > 0 ? 1 : -1));
+      armSettle();
     }
     dial.querySelectorAll("[data-patient-dial-close]").forEach(function (b) {
       b.addEventListener("click", close);
@@ -1751,6 +1781,9 @@
         '<div class="compare-row"><span class="compare-k">Status</span><span class="compare-v">' + (statusEl ? statusEl.outerHTML : "—") + '</span></div>' +
         '<a class="btn btn-small" href="' + escapeHtml(href) + '">Open report ' +
           '<svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#arrow-right"/></svg></a>';
+      // Stagger the column entrance so the panels cascade in rather than
+      // popping in all at once.
+      col.style.animationDelay = (idx * 70) + "ms";
       compareGrid.appendChild(col);
     });
 

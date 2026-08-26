@@ -933,6 +933,9 @@ table.data tbody tr:hover { background: var(--surface-3); }
   font-weight: 650;
   line-height: 1.4;
   border: 1px solid transparent;
+  transition: background var(--dur-2) var(--ease-out),
+              color var(--dur-2) var(--ease-out),
+              border-color var(--dur-2) var(--ease-out);
 }
 .badge-lg { font-size: .9rem; padding: .3rem .85rem; }
 
@@ -3343,6 +3346,17 @@ body.is-transitioning .flow-takeover,
     0 14px 32px color-mix(in srgb, var(--brand) 40%, transparent);
   z-index: 3;
 }
+/* "Landing" flash — the chip locks in with a quick brand pulse just before
+   the dial auto-navigates (slot-machine settle). */
+.patient-arc-chip.is-landing {
+  animation: arc-chip-land 260ms cubic-bezier(.2, .8, .25, 1);
+}
+@keyframes arc-chip-land {
+  0%   { transform: translate(-50%, -50%) scale(1.06); }
+  45%  { transform: translate(-50%, -50%) scale(1.16); box-shadow: inset 0 1px 0 var(--glass-gloss), 0 0 0 5px color-mix(in srgb, var(--brand) 45%, transparent), 0 16px 40px color-mix(in srgb, var(--brand) 55%, transparent); }
+  100% { transform: translate(-50%, -50%) scale(1.1); }
+}
+:root.no-motion .patient-arc-chip.is-landing { animation: none; }
 .patient-arc-marker {
   position: absolute;
   left: 50%;
@@ -3372,8 +3386,24 @@ body.is-transitioning .flow-takeover,
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--brand) 22%, transparent),
               0 0 22px color-mix(in srgb, var(--brand) 40%, transparent);
   color: var(--ink) !important;
+  transition: box-shadow var(--dur-1) var(--ease-out), border-color var(--dur-1) var(--ease-out);
 }
 :root[data-theme="dark"] .dock-item.is-arc-active { color: #F1F5F9 !important; }
+/* Pill "locks in" — fills with the brand gradient right before the dial
+   navigates, so the settle feels like a confirmed selection. */
+.dock-item.is-arc-locking {
+  background: linear-gradient(135deg, var(--brand-soft) 0%, var(--brand) 60%, var(--brand-strong) 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 35%, transparent),
+              0 0 30px color-mix(in srgb, var(--brand) 55%, transparent);
+  animation: arc-pill-lock 260ms cubic-bezier(.2, .8, .25, 1);
+}
+@keyframes arc-pill-lock {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+:root.no-motion .dock-item.is-arc-locking { animation: none; }
 .dock-item[data-dock-picker="patient"] > span:not(.dock-report-id) {
   display: inline-block;
   width: 118px;
@@ -3507,14 +3537,20 @@ body.is-transitioning .flow-takeover,
   color: #94A3B8;
 }
 .reports-data-table tbody tr {
-  transition: background var(--dur-1) var(--ease-out);
+  transition: background var(--dur-2) var(--ease-out),
+              box-shadow var(--dur-2) var(--ease-out);
+  position: relative;
 }
 .reports-data-table tbody tr:hover {
   background: var(--surface-3);
 }
 .reports-data-table tbody tr.is-selected {
   background: var(--brand-tint);
+  /* Inset brand accent stripe on the left of a selected row — grows in
+     smoothly via the box-shadow transition above. */
+  box-shadow: inset 3px 0 0 0 var(--brand);
 }
+.reports-data-table tbody tr.is-selected td.td-cb { position: relative; }
 
 /* Custom Checkbox */
 .custom-cb {
@@ -3537,14 +3573,25 @@ body.is-transitioning .flow-takeover,
   background: var(--surface);
   display: inline-grid;
   place-items: center;
-  transition: all var(--dur-1) var(--ease-out);
+  transition: background var(--dur-1) var(--ease-out),
+              border-color var(--dur-1) var(--ease-out),
+              box-shadow var(--dur-2) var(--ease-out),
+              transform 200ms var(--ease-spring);
 }
-.custom-cb:hover .cb-box { border-color: var(--brand); }
+.custom-cb:hover .cb-box { border-color: var(--brand); transform: scale(1.08); }
+.custom-cb:active .cb-box { transform: scale(.92); }
 .custom-cb input:checked + .cb-box {
   background: var(--brand);
   border-color: var(--brand);
   box-shadow: 0 0 6px var(--brand-glow);
+  animation: cb-pop 260ms var(--ease-spring);
 }
+@keyframes cb-pop {
+  0%   { transform: scale(.8); }
+  55%  { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+:root.no-motion .custom-cb input:checked + .cb-box { animation: none; }
 .custom-cb input:checked + .cb-box::after {
   content: "";
   width: 4px;
@@ -3552,7 +3599,15 @@ body.is-transitioning .flow-takeover,
   border: solid #ffffff;
   border-width: 0 2px 2px 0;
   transform: rotate(45deg) translate(-1px, -1px);
+  /* Draw the tick in rather than snap it on. */
+  animation: cb-tick 220ms var(--ease-out) 60ms both;
 }
+@keyframes cb-tick {
+  0%   { opacity: 0; height: 0; }
+  60%  { opacity: 1; height: 8px; }
+  100% { opacity: 1; height: 8px; }
+}
+:root.no-motion .custom-cb input:checked + .cb-box::after { animation: none; }
 .th-cb, .td-cb { width: 38px; text-align: center !important; padding-right: 0 !important; }
 
 /* Multilingual Tag / Hindi Badge */

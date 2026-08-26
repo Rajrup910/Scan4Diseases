@@ -150,7 +150,14 @@ class _TabButton extends StatelessWidget {
                   ]
                 : null,
           ),
-          child: Icon(tab.icon, size: 23, color: selected ? activeInk : idleInk),
+          child: AnimatedScale(
+            // A small bump as the tab becomes active gives the selection a
+            // tactile "pop" without touching the layout.
+            scale: selected ? 1.12 : 1.0,
+            duration: const Duration(milliseconds: 240),
+            curve: Curves.easeOutBack,
+            child: Icon(tab.icon, size: 23, color: selected ? activeInk : idleInk),
+          ),
         ),
       ),
     );
