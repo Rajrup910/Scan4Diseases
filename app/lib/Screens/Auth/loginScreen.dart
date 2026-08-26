@@ -200,15 +200,22 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(24),
                   child: BackdropFilter(
-                    // 12/12 (was 20/20) so the ambient video reads through the
-                    // glass instead of being blurred into a flat wash — matches
-                    // the lower panel alpha in liquidGlassDecoration.
-                    filter: ui.ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                    // Lift the blur slightly and lower the panel alpha so the
+                    // ambient blueprint background reads clearly through the
+                    // sign-in card — matches user feedback on the register
+                    // screen feeling too opaque.
+                    filter: ui.ImageFilter.blur(sigmaX: 18, sigmaY: 18),
                     child: Container(
                       padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
                       // Glass panel preserved in both themes — dark variant
-                      // gets the teal-tinted rim from the shared helper.
-                      decoration: Themes.liquidGlassDecoration(radius: 24, dark: dark),
+                      // gets the teal-tinted rim from the shared helper. The
+                      // explicit low alphas let the video breathe through.
+                      decoration: Themes.liquidGlassDecoration(
+                        radius: 24,
+                        dark: dark,
+                        topAlpha: dark ? 0.42 : 0.44,
+                        bottomAlpha: dark ? 0.28 : 0.28,
+                      ),
                       child: Form(
                 key: _formKey,
                 child: Column(

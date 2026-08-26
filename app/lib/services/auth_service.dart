@@ -80,22 +80,40 @@ class AuthService {
     final cleanPassword = password.trim();
     final cleanName = displayName?.trim();
 
+    // The Render free tier can cold-start for ~50s. Warm the server with a
+    // cheap GET first (short timeout, best-effort) so the register POST that
+    // follows lands on a hot process instead of tripping the app's timeout.
     try {
-      final res = await http.post(
-        _uri('/auth/register'),
-        headers: const {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'email': cleanEmail,
-          'password': cleanPassword,
-          if (cleanName != null && cleanName.isNotEmpty)
-            'display_name': cleanName,
-        }),
-      ).timeout(const Duration(seconds: 30));
+      await http.get(_uri('/health')).timeout(const Duration(seconds: 8));
+    } catch (_) {
+      // Warm-up failure is harmless — the actual register call below handles
+      // the real error surface.
+    }
+
+    Future<http.Response> attempt() => http.post(
+          _uri('/auth/register'),
+          headers: const {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'email': cleanEmail,
+            'password': cleanPassword,
+            if (cleanName != null && cleanName.isNotEmpty)
+              'display_name': cleanName,
+          }),
+        ).timeout(const Duration(seconds: 75));
+
+    try {
+      http.Response res;
+      try {
+        res = await attempt();
+      } on TimeoutException catch (_) {
+        // One retry after a cold-start — by now the container is warm.
+        res = await attempt();
+      }
       return await _consumeAuth(res, deferUserUpdate: deferUserUpdate);
     } on SocketException catch (_) {
       throw AuthException('Cannot reach cloud server. Please check your internet connection.');
     } on TimeoutException catch (_) {
-      throw AuthException('Server is connecting. Please try again in a moment.');
+      throw AuthException('The server is still waking up. Please try Create account again — it should go through this time.');
     } on HandshakeException catch (_) {
       throw AuthException('Secure SSL connection failed. Please check your device date/time.');
     } catch (e) {

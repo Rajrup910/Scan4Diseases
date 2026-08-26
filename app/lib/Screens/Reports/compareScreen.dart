@@ -327,9 +327,21 @@ class _CompareScreeningsScreenState extends State<CompareScreeningsScreen> {
                   ),
           ),
           const SizedBox(height: 10),
+          // Dark-mode contrast fix: the previous darkInk value read as muddy
+          // against the near-black liquid-glass fill after the eye adapted to
+          // the bright lesion photo just above it. Bumping to pure #F1F5F9
+          // (with a subtle luminous shadow) keeps the label crisp in both
+          // themes.
           Text(
             r.condition,
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: dark ? Themes.darkInk : Themes.ink),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+              color: dark ? const Color(0xFFF1F5F9) : Themes.ink,
+              shadows: dark
+                  ? const [Shadow(color: Color(0x66000000), blurRadius: 4)]
+                  : null,
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -338,11 +350,19 @@ class _CompareScreeningsScreenState extends State<CompareScreeningsScreen> {
             children: [
               Text(
                 'Match score: ',
-                style: TextStyle(fontSize: 11.5, color: dark ? Themes.darkInkSoft : Themes.inkSoft),
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w600,
+                  color: dark ? const Color(0xFFCBD5E1) : Themes.inkSoft,
+                ),
               ),
               Text(
                 r.confidence != null ? '${(r.confidence! * 100).toStringAsFixed(1)}%' : '—',
-                style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: dark ? Themes.darkInk : Themes.ink),
+                style: TextStyle(
+                  fontSize: 11.5,
+                  fontWeight: FontWeight.w800,
+                  color: dark ? const Color(0xFF6EE7B7) : Themes.ink,
+                ),
               ),
             ],
           ),
@@ -446,7 +466,11 @@ class _CompareScreeningsScreenState extends State<CompareScreeningsScreen> {
             flex: 2,
             child: Text(
               title,
-              style: TextStyle(fontSize: 12.5, color: dark ? Themes.darkInkSoft : Themes.inkSoft, fontWeight: FontWeight.w600),
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: dark ? const Color(0xFFCBD5E1) : Themes.inkSoft,
+              ),
             ),
           ),
           const SizedBox(width: 8),
@@ -457,7 +481,9 @@ class _CompareScreeningsScreenState extends State<CompareScreeningsScreen> {
               style: TextStyle(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
-                color: isChanged ? (dark ? Themes.tealLight : Themes.soon) : (dark ? Themes.darkInk : Themes.ink),
+                color: isChanged
+                    ? (dark ? const Color(0xFFFCD34D) : Themes.soon)
+                    : (dark ? const Color(0xFFF1F5F9) : Themes.ink),
               ),
             ),
           ),

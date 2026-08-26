@@ -1237,24 +1237,192 @@
       btn.addEventListener("click", function () { window.location.href = "/portal/patients/" + lastId; });
       return;
     }
-    // No memory yet — fall back to the palette picker.
-    btn.addEventListener("click", function () { openPalette(kind); });
+    // No memory yet — patient falls back to the radial dial; report keeps the
+    // palette because a "spin the dial" flow makes less sense for numbered ids.
+    btn.addEventListener("click", function () {
+      if (kind === "patient" && window.__s4dOpenPatientDial) {
+        window.__s4dOpenPatientDial();
+      } else {
+        openPalette(kind);
+      }
+    });
   });
+
+  /* --- radial patient dial ---------------------------------------------------------- */
+  (function () {
+    var dial = document.querySelector("[data-patient-dial]");
+    if (!dial) return;
+    var track = dial.querySelector("[data-patient-dial-track]");
+    var ring = dial.querySelector(".patient-dial-ring");
+    var nameEl = dial.querySelector("[data-patient-dial-name]");
+    var openBtn = dial.querySelector("[data-patient-dial-open]");
+    var indicator = document.createElement("span");
+    indicator.className = "patient-dial-indicator";
+    if (ring) ring.appendChild(indicator);
+
+    var patients = [];
+    var activeIndex = 0;
+
+    function collectPatients() {
+      var seen = Object.create(null);
+      var list = [];
+      document.querySelectorAll(".patient-link").forEach(function (a) {
+        var href = a.getAttribute("href") || "";
+        var m = href.match(/\/portal\/patients\/(\d+)/);
+        if (!m) return;
+        var id = m[1];
+        if (seen[id]) return;
+        seen[id] = true;
+        list.push({ id: id, name: (a.textContent || "").trim() || "Patient #" + id, href: href });
+      });
+      return list;
+    }
+
+    function initials(name) {
+      return name.split(/\s+/).map(function (w) { return w.charAt(0); }).join("").slice(0, 2).toUpperCase() || "??";
+    }
+
+    function render() {
+      if (!track) return;
+      track.innerHTML = "";
+      var n = patients.length;
+      if (!n) return;
+      patients.forEach(function (p, i) {
+        var angle = (360 / n) * i;
+        var chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "patient-dial-chip";
+        chip.setAttribute("role", "option");
+        chip.setAttribute("data-index", String(i));
+        chip.style.setProperty("--chip-a", angle + "deg");
+        chip.innerHTML = '<span class="initials">' + initials(p.name) + '</span><span class="name">' + p.name + '</span>';
+        chip.addEventListener("click", function () {
+          if (activeIndex === i) { go(); }
+          else { setActive(i); }
+        });
+        track.appendChild(chip);
+      });
+      setActive(0);
+    }
+
+    function setActive(i) {
+      if (!patients.length) return;
+      activeIndex = ((i % patients.length) + patients.length) % patients.length;
+      var angle = -(360 / patients.length) * activeIndex;
+      if (ring) ring.style.setProperty("--dial-angle", angle + "deg");
+      track.querySelectorAll(".patient-dial-chip").forEach(function (c, idx) {
+        c.classList.toggle("is-active", idx === activeIndex);
+      });
+      var p = patients[activeIndex];
+      if (nameEl) nameEl.textContent = p.name;
+      if (openBtn) {
+        openBtn.disabled = false;
+        openBtn.onclick = go;
+      }
+    }
+    function go() {
+      var p = patients[activeIndex];
+      if (!p) return;
+      close();
+      window.location.href = p.href;
+    }
+    function open() {
+      patients = collectPatients();
+      if (!patients.length) {
+        // No patients on the current page — fall back to the palette.
+        openPalette("patient");
+        return;
+      }
+      render();
+      dial.hidden = false;
+      dial.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+      document.addEventListener("keydown", onKey);
+      dial.addEventListener("wheel", onWheel, { passive: false });
+    }
+    function close() {
+      dial.hidden = true;
+      dial.setAttribute("aria-hidden", "true");
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", onKey);
+      dial.removeEventListener("wheel", onWheel);
+    }
+    function onKey(e) {
+      if (e.key === "Escape") { e.preventDefault(); close(); return; }
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") { e.preventDefault(); setActive(activeIndex + 1); return; }
+      if (e.key === "ArrowLeft" || e.key === "ArrowUp") { e.preventDefault(); setActive(activeIndex - 1); return; }
+      if (e.key === "Enter") { e.preventDefault(); go(); }
+    }
+    function onWheel(e) {
+      e.preventDefault();
+      var delta = e.deltaY || e.deltaX;
+      if (Math.abs(delta) < 10) return;
+      setActive(activeIndex + (delta > 0 ? 1 : -1));
+    }
+    dial.querySelectorAll("[data-patient-dial-close]").forEach(function (b) {
+      b.addEventListener("click", close);
+    });
+    window.__s4dOpenPatientDial = open;
+  })();
 
   /* --- 12. table selection & bulk action bar --------------------------------------- */
   var bulkBar = document.querySelector("[data-bulk-bar]");
   var bulkCount = document.querySelector("[data-bulk-count]");
+  var reportsShell = document.querySelector("[data-reports-shell]");
+  var bulkLines = document.querySelector("[data-bulk-lines]");
 
   function selectedRows() {
     return Array.prototype.slice.call(
       document.querySelectorAll("table.reports-data-table .row-cb:checked")
     );
   }
+  function drawBulkLines() {
+    if (!bulkLines || !reportsShell || !bulkBar) return;
+    while (bulkLines.firstChild) bulkLines.removeChild(bulkLines.firstChild);
+    if (bulkBar.hidden) return;
+    var shellRect = reportsShell.getBoundingClientRect();
+    var compareTile = bulkBar.querySelector("[data-bulk-action='compare']");
+    if (!compareTile) return;
+    var barRect = compareTile.getBoundingClientRect();
+    // Fire lines from the right edge of the Compare tile, vertically centred.
+    var startX = barRect.right - shellRect.left;
+    var startY = barRect.top + barRect.height / 2 - shellRect.top;
+    var rows = selectedRows();
+    bulkLines.setAttribute("width", Math.max(shellRect.width, 1));
+    bulkLines.setAttribute("height", Math.max(shellRect.height, 1));
+    bulkLines.setAttribute("viewBox", "0 0 " + Math.max(shellRect.width, 1) + " " + Math.max(shellRect.height, 1));
+    rows.forEach(function (cb) {
+      var tr = cb.closest("tr");
+      if (!tr) return;
+      var rowRect = tr.getBoundingClientRect();
+      var endX = rowRect.left - shellRect.left + 6;
+      var endY = rowRect.top + rowRect.height / 2 - shellRect.top;
+      // A soft S-curve from the rail out to the row.
+      var midX = startX + (endX - startX) * 0.55;
+      var d = "M" + startX + "," + startY +
+              " C" + midX + "," + startY + " " + midX + "," + endY + " " + endX + "," + endY;
+      var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", d);
+      var approxLen = Math.abs(endX - startX) + Math.abs(endY - startY) + 40;
+      path.style.setProperty("--len", approxLen);
+      bulkLines.appendChild(path);
+      // Landing dot on the row's left edge.
+      var dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      dot.setAttribute("cx", endX);
+      dot.setAttribute("cy", endY);
+      dot.setAttribute("r", 4);
+      dot.setAttribute("fill", "currentColor");
+      dot.style.color = "var(--brand)";
+      dot.style.opacity = ".9";
+      bulkLines.appendChild(dot);
+    });
+  }
   function refreshBulkBar() {
     if (!bulkBar) return;
     var rows = selectedRows();
     var n = rows.length;
     if (bulkCount) bulkCount.textContent = String(n);
+    if (reportsShell) reportsShell.classList.toggle("has-selection", n > 0);
     if (n > 0) {
       bulkBar.hidden = false;
       // Restart the slide-in animation each time the bar re-appears from zero.
@@ -1265,7 +1433,12 @@
     } else {
       bulkBar.hidden = true;
     }
+    // The rail sizing needs a paint before we can measure it, so defer the
+    // draw to the next frame — otherwise the first row lands at 0,0.
+    requestAnimationFrame(drawBulkLines);
   }
+  window.addEventListener("resize", function () { requestAnimationFrame(drawBulkLines); });
+  window.addEventListener("scroll", function () { requestAnimationFrame(drawBulkLines); }, { passive: true });
 
   document.querySelectorAll("[data-select-all]").forEach(function (masterCb) {
     var table = masterCb.closest("table");
@@ -1357,53 +1530,184 @@
   }
 
   // --- compare modal: build a side-by-side view from the selected rows -------
+  // Each column pulls the row's report id (via the checkbox's data-row-id) so it
+  // can lazy-load /portal/reports/<id>/image + /gradcam. The delta strip is
+  // computed from the first two columns; the chat panel forwards questions plus
+  // both reports' snapshots to /portal/compare/chat.
   var compareDlg = document.querySelector("[data-compare]");
   var compareGrid = document.querySelector("[data-compare-grid]");
   var compareN = document.querySelector("[data-compare-n]");
+  var compareDelta = document.querySelector("[data-compare-delta]");
+  var compareChatLog = document.querySelector("[data-compare-chat-log]");
+  var compareChatForm = document.querySelector("[data-compare-chat-form]");
+  var compareChatInput = document.querySelector("[data-compare-chat-input]");
+  var compareChatSuggest = document.querySelector("[data-compare-chat-suggest]");
+  var compareSession = { reports: [], history: [] };
+  var COL_LABELS = ["A", "B", "C", "D"];
 
   function cellText(tr, sel) {
     var el = tr.querySelector(sel);
     return el ? el.textContent.trim() : "—";
   }
+  function escapeHtml(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function triageTone(text) {
+    var t = (text || "").toLowerCase();
+    if (/urgent|escalat/.test(t)) return "urgent";
+    if (/prompt|soon|watch/.test(t)) return "soon";
+    return "routine";
+  }
   function openCompare(rows) {
     if (!compareDlg || !compareGrid) return;
     compareGrid.innerHTML = "";
-    rows.forEach(function (cb) {
+    compareSession = { reports: [], history: [] };
+    if (compareChatLog) compareChatLog.innerHTML = "";
+
+    rows.forEach(function (cb, idx) {
       var tr = cb.closest("tr");
       if (!tr) return;
+      var reportId = cb.getAttribute("data-row-id") || "";
       var cond = cellText(tr, ".condition-name");
       var patient = cellText(tr, ".patient-link");
       var date = cellText(tr, ".date-cell");
       var conf = cellText(tr, ".conf-pct");
-      var triageEl = tr.querySelector("td:nth-child(6) .badge") || tr.querySelector(".triage-urgent, .triage-soon, .triage-routine");
-      var statusEl = tr.querySelector("td:nth-child(7) .badge") || tr.querySelector("[class*='status-']");
+      var triageEl = tr.querySelector("td:nth-child(6) .badge");
+      var statusEl = tr.querySelector("td:nth-child(7) .badge");
       var openLink = tr.querySelector(".btn-open, a.btn");
       var href = openLink ? openLink.getAttribute("href") : "#";
       var confNum = parseInt((conf || "").replace(/[^0-9]/g, ""), 10);
+      var triageText = triageEl ? triageEl.textContent.trim() : "—";
+      var statusText = statusEl ? statusEl.textContent.trim() : "—";
+      var label = COL_LABELS[idx] || String(idx + 1);
+
+      compareSession.reports.push({
+        id: reportId, label: label, condition: cond, patient: patient,
+        date: date, confidence: isFinite(confNum) ? confNum : null,
+        triage: triageText, status: statusText,
+      });
+
+      var imageSrc = reportId ? "/portal/reports/" + reportId + "/image" : "";
+      var camSrc = reportId ? "/portal/reports/" + reportId + "/gradcam" : "";
 
       var col = document.createElement("div");
       col.className = "compare-col";
       col.innerHTML =
+        '<span class="compare-col-label">Report ' + label + (reportId ? " · #" + escapeHtml(reportId) : "") + '</span>' +
         '<div class="compare-col-head">' +
-          '<span class="compare-cond">' + cond + '</span>' +
-          (patient && patient !== "—" ? '<span class="compare-patient">' + patient + '</span>' : '') +
+          '<span class="compare-cond">' + escapeHtml(cond) + '</span>' +
+          (patient && patient !== "—" ? '<span class="compare-patient">' + escapeHtml(patient) + ' · ' + escapeHtml(date) + '</span>' : '') +
         '</div>' +
-        '<div class="compare-row"><span class="compare-k">Date</span><span class="compare-v mono">' + date + '</span></div>' +
+        '<div class="compare-images">' +
+          (imageSrc
+            ? '<div class="compare-image"><img loading="lazy" alt="Lesion photo" src="' + imageSrc + '" onerror="this.parentNode.classList.add(\'compare-image--placeholder\');this.remove();"><span class="compare-image-label">Lesion</span></div>'
+            : '<div class="compare-image compare-image--placeholder">No lesion image</div>') +
+          (camSrc
+            ? '<div class="compare-image"><img loading="lazy" alt="Grad-CAM heatmap" src="' + camSrc + '" onerror="this.parentNode.classList.add(\'compare-image--placeholder\');this.remove();"><span class="compare-image-label">Grad-CAM</span></div>'
+            : '<div class="compare-image compare-image--placeholder">No heatmap</div>') +
+        '</div>' +
         '<div class="compare-row"><span class="compare-k">Confidence</span>' +
           (isFinite(confNum)
-            ? '<div class="compare-meter-track"><div class="compare-meter-fill" style="width:' + confNum + '%"></div></div><span class="compare-v mono">' + conf + '</span>'
-            : '<span class="compare-v">' + conf + '</span>') +
+            ? '<div class="compare-meter-track"><div class="compare-meter-fill" style="width:' + confNum + '%"></div></div><span class="compare-v mono">' + escapeHtml(conf) + '</span>'
+            : '<span class="compare-v">' + escapeHtml(conf) + '</span>') +
         '</div>' +
         '<div class="compare-row"><span class="compare-k">Triage</span><span class="compare-v">' + (triageEl ? triageEl.outerHTML : "—") + '</span></div>' +
         '<div class="compare-row"><span class="compare-k">Status</span><span class="compare-v">' + (statusEl ? statusEl.outerHTML : "—") + '</span></div>' +
-        '<a class="btn btn-small" href="' + href + '">Open report ' +
+        '<a class="btn btn-small" href="' + escapeHtml(href) + '">Open report ' +
           '<svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#arrow-right"/></svg></a>';
       compareGrid.appendChild(col);
     });
-    if (compareN) compareN.textContent = "· " + rows.length + " selected";
+
+    renderCompareDelta();
+
+    if (compareN) compareN.textContent = rows.length + " selected";
     if (typeof compareDlg.showModal === "function") compareDlg.showModal();
     else compareDlg.setAttribute("open", "true");
   }
+
+  function renderCompareDelta() {
+    if (!compareDelta) return;
+    var a = compareSession.reports[0];
+    var b = compareSession.reports[1];
+    if (!a || !b) { compareDelta.hidden = true; return; }
+    var confDelta = (a.confidence != null && b.confidence != null) ? (b.confidence - a.confidence) : null;
+    var confCls = confDelta == null ? "" : (confDelta > 0 ? "up" : (confDelta < 0 ? "down" : ""));
+    var confTxt = confDelta == null ? "—" : ((confDelta > 0 ? "+" : "") + confDelta + " pts");
+    var samePatient = a.patient === b.patient && a.patient !== "—";
+    var sameCondition = a.condition.toLowerCase() === b.condition.toLowerCase();
+    var triageAgree = triageTone(a.triage) === triageTone(b.triage);
+    compareDelta.hidden = false;
+    compareDelta.innerHTML =
+      '<div class="compare-delta-item"><span class="compare-delta-k">Confidence Δ (B − A)</span><span class="compare-delta-v ' + confCls + '">' + confTxt + '</span></div>' +
+      '<div class="compare-delta-item"><span class="compare-delta-k">Same patient</span><span class="compare-delta-v ' + (samePatient ? "up" : "") + '">' + (samePatient ? "Yes · " + escapeHtml(a.patient) : "No") + '</span></div>' +
+      '<div class="compare-delta-item"><span class="compare-delta-k">Same condition</span><span class="compare-delta-v ' + (sameCondition ? "up" : "down") + '">' + (sameCondition ? "Yes" : escapeHtml(a.condition) + " → " + escapeHtml(b.condition)) + '</span></div>' +
+      '<div class="compare-delta-item"><span class="compare-delta-k">Triage agreement</span><span class="compare-delta-v ' + (triageAgree ? "up" : "down") + '">' + (triageAgree ? "Aligned" : "Divergent") + '</span></div>';
+  }
+
+  function appendChat(role, text, extraClass) {
+    if (!compareChatLog) return null;
+    var li = document.createElement("li");
+    li.className = "compare-chat-msg " + role + (extraClass ? " " + extraClass : "");
+    li.textContent = text;
+    compareChatLog.appendChild(li);
+    compareChatLog.scrollTop = compareChatLog.scrollHeight;
+    return li;
+  }
+
+  if (compareChatForm && compareChatInput) {
+    compareChatInput.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        compareChatForm.requestSubmit();
+      }
+    });
+    compareChatForm.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var msg = (compareChatInput.value || "").trim();
+      if (!msg) return;
+      if (!compareSession.reports.length) return;
+      appendChat("user", msg);
+      compareChatInput.value = "";
+      compareChatInput.style.height = "";
+      compareSession.history.push({ role: "user", content: msg });
+      var thinking = appendChat("assistant", "Thinking…", "thinking");
+      var send = compareChatForm.querySelector(".compare-chat-send");
+      if (send) send.disabled = true;
+      fetch("/portal/compare/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: msg,
+          report_ids: compareSession.reports.map(function (r) { return parseInt(r.id, 10); }).filter(Boolean),
+          history: compareSession.history.slice(-10),
+        }),
+      })
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status)); })
+        .then(function (data) {
+          if (thinking) thinking.remove();
+          var reply = (data && data.response) || "The assistant is unavailable right now. Please rely on the delta strip above for the numbers.";
+          appendChat("assistant", reply);
+          compareSession.history.push({ role: "assistant", content: reply });
+        })
+        .catch(function () {
+          if (thinking) thinking.remove();
+          appendChat("assistant", "I couldn't reach the assistant. The delta strip above still holds the raw numbers you can rely on.", "error");
+        })
+        .finally(function () { if (send) send.disabled = false; });
+    });
+  }
+  if (compareChatSuggest) {
+    compareChatSuggest.addEventListener("click", function (e) {
+      var b = e.target.closest("button[data-suggest]");
+      if (!b || !compareChatInput || !compareChatForm) return;
+      compareChatInput.value = b.getAttribute("data-suggest") || "";
+      compareChatInput.focus();
+      compareChatForm.requestSubmit();
+    });
+  }
+
   if (compareDlg) {
     compareDlg.querySelectorAll("[data-compare-close]").forEach(function (b) {
       b.addEventListener("click", function () {
@@ -1497,6 +1801,15 @@
       } else if (k === "m") {   // motion
         e.preventDefault();
         if (window.__s4dToggleMotion) window.__s4dToggleMotion();
+      } else if (k === "r" && !e.shiftKey) {
+        // Refresh caseload: run the dock's spin-then-reload path so the doctor
+        // gets the same "Worklist refreshed" toast as clicking the dock button,
+        // instead of a raw browser reload with no feedback.
+        var r = document.querySelector("[data-dock-refresh]");
+        if (r) {
+          e.preventDefault();
+          r.click();
+        }
       }
     }
   });

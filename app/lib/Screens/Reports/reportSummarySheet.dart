@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme.dart';
 import '../app_data.dart';
 import '../widgets/app_logo_mark.dart';
+import '../widgets/markdown_text.dart';
 
 /// Shows a doctor-ready consultation summary sheet for a screening report.
 ///
@@ -207,9 +208,13 @@ class _ReportSummaryContent extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: borderColor),
                 ),
-                child: Text(
+                // Render the LLM explanation as Markdown so headings ("### What
+                // the scan found") land as proper subheads and bullets/bold
+                // formatting show through, instead of the raw `###` glyphs.
+                child: MarkdownText(
                   report.explanation,
-                  style: TextStyle(fontSize: 13, height: 1.4, color: ink),
+                  color: ink,
+                  fontSize: 13,
                 ),
               ),
               const SizedBox(height: 16),

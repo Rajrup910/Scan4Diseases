@@ -180,32 +180,35 @@
   </div>
 
   {% if all_reports %}
-  {# Floating bulk-action bar — appears anchored to the table when at least one
-     report row is selected. Wires up to portal.js which listens to `.row-cb`
-     changes and toggles the `is-visible` state. #}
-  <div class="bulk-bar" data-bulk-bar hidden>
-    <span class="bulk-count">
-      <span class="bulk-count-n" data-bulk-count>0</span>
-      <span>selected</span>
-    </span>
-    <div class="bulk-sep" aria-hidden="true"></div>
-    <button type="button" class="bulk-btn bulk-btn-primary" data-bulk-action="compare"
-            title="Compare the selected reports side by side">
-      <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#layers"/></svg>
-      Compare
-    </button>
-    <button type="button" class="bulk-btn" data-bulk-action="open-patient" title="Open the patient of the first selected report">
-      <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#user"/></svg>
-      Open patient
-    </button>
-    <button type="button" class="bulk-btn" data-bulk-action="archive" title="Archive the selected reports from your worklist view">
-      <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#eye"/></svg>
-      Archive
-    </button>
-    <button type="button" class="bulk-btn bulk-btn-ghost" data-bulk-action="clear" aria-label="Clear selection">
-      <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#x"/></svg>
-    </button>
-  </div>
+  {# Reports shell: a positioning wrapper so the bulk-action rail can dock to
+     the left of the table (with connecting SVG lines drawn from the Compare
+     tile out to each selected row). The rail is square-cornered and stacks
+     vertically instead of the old horizontal pill row. #}
+  <div class="reports-shell" data-reports-shell>
+    <div class="bulk-bar" data-bulk-bar hidden>
+      <div class="bulk-head">
+        <span class="bulk-count-n" data-bulk-count>0</span>
+        <span class="bulk-count-l">selected</span>
+      </div>
+      <div class="bulk-sep" aria-hidden="true"></div>
+      <button type="button" class="bulk-btn bulk-btn-primary" data-bulk-action="compare"
+              title="Compare the selected reports side by side">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#layers"/></svg>
+        <span>Compare</span>
+      </button>
+      <button type="button" class="bulk-btn" data-bulk-action="open-patient" title="Open the patient of the first selected report">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#user"/></svg>
+        <span>Patient</span>
+      </button>
+      <button type="button" class="bulk-btn" data-bulk-action="archive" title="Archive the selected reports from your worklist view">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#eye"/></svg>
+        <span>Archive</span>
+      </button>
+      <button type="button" class="bulk-btn bulk-btn-ghost" data-bulk-action="clear" aria-label="Clear selection" title="Clear selection">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#x"/></svg>
+      </button>
+    </div>
+    <svg class="bulk-lines" data-bulk-lines aria-hidden="true"></svg>
 
   <div class="table-wrap reports-table-card">
     <table class="data reports-data-table" data-reports-table>
@@ -241,7 +244,15 @@
             {% if (r.symptoms and r.symptoms.get('language') == 'hi') or loop.index in [1, 3] %}
             <span class="lang-tag-hi" title="Generated in Hindi">
               <span class="lang-icon">हि</span>
-              {% if loop.index == 1 %}Generated in हिन्दी{% else %}हिन्दी{% endif %}
+              <span class="lang-marquee" aria-hidden="true">
+                <span class="lang-marquee-track">
+                  <span class="lang-marquee-item">हिन्दी में तैयार</span>
+                  <span class="lang-marquee-item">Generated in Hindi</span>
+                  <span class="lang-marquee-item">हिन्दी में तैयार</span>
+                  <span class="lang-marquee-item">Generated in Hindi</span>
+                </span>
+              </span>
+              <span class="sr-only">Generated in Hindi</span>
             </span>
             {% endif %}
           </td>
@@ -258,7 +269,7 @@
             {% endif %}
           </td>
           <td>
-            <span class="badge triage-{{ item.tone }}">{{ r.triage }}</span>
+            <span class="badge triage-{{ item.tone }}" title="{{ r.triage }}">{{ r.triage }}</span>
           </td>
           <td>
             <span class="badge status-{{ r.status }}">{{ status_labels.get(r.status, r.status) }}</span>
@@ -273,6 +284,7 @@
         <tr class="no-match" hidden><td colspan="8" class="muted empty-cell">No reports with this status.</td></tr>
       </tbody>
     </table>
+  </div>
   </div>
   {% else %}
   <div class="empty">

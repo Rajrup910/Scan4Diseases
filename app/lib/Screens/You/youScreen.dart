@@ -92,22 +92,28 @@ class YouScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFEF4444).withValues(alpha: 0.10),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
+                        color: const Color(0xFFEF4444).withValues(alpha: 0.18),
+                        blurRadius: 14,
+                        offset: const Offset(0, 4),
                       ),
                     ],
                   ),
+                  // Translucent red glass pill — replaces the near-solid light-mode
+                  // pink panel that felt disconnected from the surrounding cards.
                   child: OutlinedButton.icon(
                     onPressed: () => _confirmLogout(context),
                     icon: const Icon(Icons.logout_rounded, color: Themes.danger, size: 18),
                     label: const Text('Sign out',
                         style: TextStyle(color: Themes.danger, fontWeight: FontWeight.w700, fontSize: 14)),
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: const Color(0xFFEF4444).withValues(alpha: 0.45), width: 1.2),
+                      side: BorderSide(
+                        color: const Color(0xFFEF4444).withValues(alpha: 0.7),
+                        width: 1.4,
+                      ),
                       backgroundColor: dark
-                          ? const Color(0xFF3A1B1B).withValues(alpha: 0.55)
-                          : const Color(0xFFFEF2F2).withValues(alpha: 0.85),
+                          ? const Color(0xFFEF4444).withValues(alpha: 0.14)
+                          : const Color(0xFFEF4444).withValues(alpha: 0.10),
+                      foregroundColor: Themes.danger,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                   ),
@@ -158,6 +164,13 @@ class YouScreen extends StatelessWidget {
       trailing: Switch.adaptive(
         value: dark,
         activeThumbColor: Themes.tealGlow,
+        // Give the off state a visible outline in light mode; without it the
+        // grey track disappeared into the white "App preferences" panel.
+        trackOutlineColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return Themes.tealGlow;
+          return dark ? Themes.darkBorder : const Color(0xFFB4BBC7);
+        }),
+        trackOutlineWidth: WidgetStateProperty.all(1.4),
         onChanged: (_) => ThemeService.instance.toggle(context),
       ),
       onTap: () => ThemeService.instance.toggle(context),
@@ -196,6 +209,14 @@ class YouScreen extends StatelessWidget {
             trailing: Switch.adaptive(
               value: reduced || forcedByOs,
               activeThumbColor: Themes.tealGlow,
+              // Match the theme switch — visible outline on the off state so
+              // the control edge stays readable against the light preferences
+              // panel.
+              trackOutlineColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) return Themes.tealGlow;
+                return dark ? Themes.darkBorder : const Color(0xFFB4BBC7);
+              }),
+              trackOutlineWidth: WidgetStateProperty.all(1.4),
               // The OS setting wins; don't let the switch imply otherwise.
               onChanged: forcedByOs ? null : (v) => MotionService.instance.set(v),
             ),

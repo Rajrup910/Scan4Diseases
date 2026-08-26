@@ -205,6 +205,32 @@
     {% endif %}
   </nav>
 
+  {# Radial patient dial — the "Patient" pill on the dock (without a remembered
+     patient) opens this instead of the palette. Populated at open-time from
+     the in-page patient list (worklist rows and the directory table). Scroll,
+     arrow keys, or clicking a chip rotates the ring; Enter jumps to the
+     highlighted patient's profile. #}
+  <div class="patient-dial" data-patient-dial hidden aria-hidden="true">
+    <div class="patient-dial-scrim" data-patient-dial-close></div>
+    <div class="patient-dial-ring" role="listbox" aria-label="Choose a patient">
+      <div class="patient-dial-track" data-patient-dial-track></div>
+      <div class="patient-dial-hub">
+        <span class="patient-dial-hub-k">Choose patient</span>
+        <span class="patient-dial-hub-name" data-patient-dial-name>—</span>
+        <div class="patient-dial-hub-actions">
+          <button type="button" class="patient-dial-open" data-patient-dial-open disabled>
+            Open profile
+            <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#arrow-right"/></svg>
+          </button>
+          <button type="button" class="patient-dial-close" data-patient-dial-close aria-label="Close">
+            <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#x"/></svg>
+          </button>
+        </div>
+        <p class="patient-dial-hub-hint muted">↑ ↓ or scroll to spin · Enter to open</p>
+      </div>
+    </div>
+  </div>
+
   {# Command palette — hidden until data-cmdk-open triggers it. Uses <dialog>
      for native modal semantics with a JS enhancement layer for typeahead. #}
   <dialog class="cmdk" data-cmdk aria-label="Command palette">
@@ -250,16 +276,59 @@
   </dialog>
 
   {# Compare modal — built client-side from the reports selected in the shared
-     table. Shows each report as a column so a doctor can weigh them together. #}
+     table. Three regions:
+       1. A glass "pill" head with the report count and a close chip.
+       2. The compare grid — each selected report gets a column with its lesion
+          photo, Grad-CAM overlay, and full metadata block.
+       3. A delta strip (auto-computed differences) and a chat panel that
+          POSTs to /portal/compare/chat so the clinician can ask the LLM
+          about the pair (or trio) without leaving the modal. #}
   <dialog class="compare-dialog" data-compare aria-label="Compare reports">
     <div class="compare-panel">
       <div class="compare-head">
-        <h2><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#layers"/></svg> Compare reports <span class="compare-n" data-compare-n></span></h2>
-        <button type="button" class="chip-btn kbd-close" data-compare-close aria-label="Close">
-          <svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#x"/></svg>
+        <span class="compare-head-pill">
+          <span class="compare-head-ic">
+            <svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#layers"/></svg>
+          </span>
+          <span class="compare-head-text">
+            <span class="compare-head-title">Compare reports</span>
+            <span class="compare-n" data-compare-n>2 selected</span>
+          </span>
+        </span>
+        <button type="button" class="compare-close-chip" data-compare-close aria-label="Close">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#x"/></svg>
         </button>
       </div>
-      <div class="compare-grid" data-compare-grid></div>
+
+      <div class="compare-scroll">
+        <div class="compare-grid" data-compare-grid></div>
+        <div class="compare-delta" data-compare-delta hidden></div>
+
+        <section class="compare-chat" data-compare-chat aria-label="Ask about this comparison">
+          <header class="compare-chat-head">
+            <span class="compare-chat-beacon" aria-hidden="true"></span>
+            <div>
+              <h3>Ask about this comparison</h3>
+              <p class="muted">Numbers, delta, or the reasoning behind the model's calls — the assistant will keep it grounded to the reports you selected.</p>
+            </div>
+          </header>
+          <ol class="compare-chat-log" data-compare-chat-log role="log" aria-live="polite"></ol>
+          <form class="compare-chat-form" data-compare-chat-form>
+            <textarea class="compare-chat-input" data-compare-chat-input rows="1"
+                      placeholder="Why does report A carry higher confidence? Any triage disagreement?"
+                      aria-label="Ask the assistant about this comparison"></textarea>
+            <button type="submit" class="compare-chat-send" aria-label="Send question">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#arrow-right"/></svg>
+              <span>Ask</span>
+            </button>
+          </form>
+          <div class="compare-chat-suggest" data-compare-chat-suggest>
+            <button type="button" data-suggest="Which report should I prioritise for review?">Which to prioritise?</button>
+            <button type="button" data-suggest="What does the confidence delta tell me about the model's certainty?">Confidence delta</button>
+            <button type="button" data-suggest="Do the triage recommendations agree, and why?">Triage agreement</button>
+          </div>
+        </section>
+      </div>
     </div>
   </dialog>
   {% endif %}

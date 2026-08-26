@@ -15,6 +15,7 @@ authorisation decision still funnels through `services.access` via the helpers i
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import jwt
@@ -54,6 +55,8 @@ from backend.app.security import create_access_token, decode_token, verify_passw
 from backend.app.services import audit
 from backend.app.services.image_vault import ImageVault
 from backend.app.utils.errors import AppError
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/portal", tags=["portal"], include_in_schema=False)
 
@@ -543,6 +546,12 @@ class _PortalChatRequest(BaseModel):
     history: list[_PortalChatTurn] = Field(default_factory=list)
 
 
+class _PortalCompareChatRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=4000)
+    report_ids: list[int] = Field(min_length=2, max_length=4)
+    history: list[_PortalChatTurn] = Field(default_factory=list)
+
+
 @router.post("/reports/{report_id}/chat")
 async def report_chat(
     report_id: int,
@@ -593,6 +602,91 @@ async def report_chat(
             "available": True,
             "response": response_text,
             "filtered": False,
+            "disclaimer": get_disclaimer(Language.ENGLISH),
+        }
+    )
+
+
+@router.post("/compare/chat")
+async def compare_chat(
+    request: Request,
+    body: _PortalCompareChatRequest,
+    doctor: User = Depends(get_portal_doctor),
+    db: Session = Depends(get_db),
+    llm: LLMService = Depends(get_llm_service),
+) -> Response:
+    """Answer a follow-up question that compares two or more reports.
+
+    Access is enforced per report — a doctor can only ask about reports that were
+    actually shared with them. The reports' predictions are folded into a single
+    'compare' prediction dict which is handed to the standard chat pipeline, so
+    the same guardrails and rate limits apply."""
+    reports: list[Report] = []
+    for report_id in body.report_ids:
+        try:
+            reports.append(_viewable_report_or_403(db, doctor, report_id))
+        except AppError as exc:
+            return JSONResponse(
+                {"available": False, "response": "", "error": "forbidden"},
+                status_code=exc.status_code,
+            )
+
+    def _snap(r: Report, tag: str) -> dict:
+        return {
+            "tag": tag,
+            "report_id": r.id,
+            "predicted_category_name": r.condition,
+            "predicted_category": r.predicted_class or r.condition,
+            "model_confidence_percent": round((r.confidence or 0) * 100),
+            "safety_category_label": r.triage,
+            "review_status": r.status,
+            "reported_symptoms": r.symptoms or {},
+        }
+
+    tags = ["Report A", "Report B", "Report C", "Report D"]
+    snapshots = [_snap(r, tags[i]) for i, r in enumerate(reports)]
+    prediction = {
+        "mode": "compare",
+        "reports": snapshots,
+        "clinician_question": body.message,
+    }
+
+    # First report drives the language/symptoms context; the others land in the
+    # prediction dict so the assistant sees the whole picture.
+    lead = reports[0]
+    history = [ChatMessage(role=t.role, content=t.content) for t in body.history[-10:]]
+
+    guided = (
+        "This question is about a side-by-side comparison of the reports listed in "
+        "the prediction context. Answer with concrete numbers (confidence delta, "
+        "triage agreement) and refer to each report by its tag (Report A, B, ...). "
+        "Do not restate a diagnosis for either lesion — only compare what the model "
+        "and the safety layer already said.\n\nClinician's question: "
+        + body.message
+    )
+
+    try:
+        result = await llm.chat(
+            message=guided,
+            history=history,
+            prediction=prediction,
+            symptoms=lead.symptoms or {},
+            language=Language.ENGLISH,
+        )
+        response_text = result.text or llm._clinical_fallback_response(
+            body.message, prediction, lead.symptoms or {}, Language.ENGLISH
+        )
+    except Exception as err:
+        logger.warning("Error in compare_chat: %s", err)
+        response_text = llm._clinical_fallback_response(
+            body.message, prediction, lead.symptoms or {}, Language.ENGLISH
+        )
+
+    return JSONResponse(
+        {
+            "available": True,
+            "response": response_text,
+            "report_ids": [r.id for r in reports],
             "disclaimer": get_disclaimer(Language.ENGLISH),
         }
     )
