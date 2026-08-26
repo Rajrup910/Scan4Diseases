@@ -90,18 +90,35 @@
       {% endif %}
 
       <nav class="header-nav">
-        <button class="theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode"
-                data-theme-toggle>
-          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-          </svg>
-          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="4"/>
-            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
-          </svg>
-        </button>
+        {# Appearance chip — theme toggle + ambient-motion toggle, grouped in one
+           pill (matches the reference design's appearance-chip). #}
+        <div class="appearance-chip" role="group" aria-label="Appearance">
+          <button class="chip-btn theme-toggle" type="button" aria-label="Toggle dark mode" title="Toggle dark mode"
+                  data-theme-toggle>
+            <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+            </svg>
+            <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4"/>
+              <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+            </svg>
+          </button>
+          <button class="chip-btn motion-toggle" type="button" aria-pressed="false"
+                  aria-label="Reduce ambient motion" title="Reduce ambient motion" data-motion-toggle>
+            <svg class="icon-motion-on" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M2 12c2-3 4-3 6 0s4 3 6 0 4-3 6 0"/>
+              <path d="M2 18c2-3 4-3 6 0s4 3 6 0 4-3 6 0"/>
+            </svg>
+            <svg class="icon-motion-off" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 12h16"/>
+              <path d="M4 6l16 12"/>
+            </svg>
+          </button>
+        </div>
         {% if doctor %}
         {% set who = (doctor.display_name if doctor.display_name and doctor.display_name.lower().startswith("dr")
                       else ("Dr. " ~ doctor.display_name if doctor.display_name else doctor.email)) %}
@@ -117,6 +134,12 @@
               <span class="menu-id-name">{{ who }}</span>
               <span class="menu-id-mail mono">{{ doctor.email }}</span>
             </div>
+            <div class="menu-sep" role="separator"></div>
+            <button type="button" class="menu-item" role="menuitem" data-open-kbd>
+              <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#activity"/></svg>
+              <span class="menu-item-label">Keyboard shortcuts</span>
+              <span class="menu-kbd-tag">?</span>
+            </button>
             <div class="menu-sep" role="separator"></div>
             <form method="post" action="/portal/logout">
               <button type="submit" class="menu-item" role="menuitem">
@@ -139,18 +162,23 @@
      by the header disclaimer chip and clashed visually with the floating dock. #}
 
   {% if doctor %}
-  {# Floating bottom dock — the two-way pivot between the worklist, the current
-     patient, and the current report. Every pill is always interactive: when
-     there is no active patient/report in view, the pill opens the command
-     palette pre-filtered so the doctor can pick one. #}
+  {# Floating bottom dock — the pivot between the worklist, the current patient,
+     and the current report, with a central refresh. Every button is always
+     interactive: Worklist always navigates; Patient/Report navigate when there
+     is a context in view, otherwise open the command palette pre-filtered so
+     the doctor can pick one. The active button is marked is-active and the
+     sliding thumb tracks it. #}
+  {% set on_worklist = request.url.path == '/portal/patients' %}
   <nav class="dock" data-dock aria-label="Section navigation">
-    <a class="dock-item {% if request.url.path == '/portal/patients' %}is-active{% endif %}"
+    <a class="dock-item{% if on_worklist %} is-active{% endif %}"
        href="/portal/patients" data-dock-worklist>
       <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#users"/></svg>
       <span>Worklist</span>
     </a>
+
     {% if patient %}
-    <a class="dock-item is-active" href="/portal/patients/{{ patient.id }}">
+    <a class="dock-item is-active" href="/portal/patients/{{ patient.id }}"
+       title="{{ patient.display_name or patient.email }}">
       <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#user"/></svg>
       <span>{{ (patient.display_name or patient.email).split('@')[0][:16] }}</span>
     </a>
@@ -162,16 +190,18 @@
     </button>
     {% endif %}
 
+    <span class="dock-sep" aria-hidden="true"></span>
+
     <button class="dock-refresh" type="button" data-dock-refresh
-            aria-label="Refresh current view" title="Refresh">
+            aria-label="Refresh current view" title="Refresh (⌘R)">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-           stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M3 12a9 9 0 0 1 15.5-6.3L21 8"/>
-        <path d="M21 3v5h-5"/>
-        <path d="M21 12a9 9 0 0 1-15.5 6.3L3 16"/>
-        <path d="M3 21v-5h5"/>
+           stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 12a9 9 0 0 1-15.36 6.36M3 12a9 9 0 0 1 15.36-6.36"/>
+        <path d="M21 4v5h-5M3 20v-5h5"/>
       </svg>
     </button>
+
+    <span class="dock-sep" aria-hidden="true"></span>
 
     {% if report %}
     <a class="dock-item is-active" href="/portal/reports/{{ report.id }}">
@@ -209,6 +239,26 @@
         <span><kbd>↵</kbd> Open</span>
         <span><kbd>Esc</kbd> Close</span>
       </p>
+    </div>
+  </dialog>
+
+  {# Keyboard-shortcuts modal — opens on "?" or from the account menu. #}
+  <dialog class="kbd-modal-dialog" data-kbd aria-label="Keyboard shortcuts">
+    <div class="kbd-modal">
+      <div class="kbd-modal-head">
+        <h2>Keyboard shortcuts</h2>
+        <button type="button" class="chip-btn kbd-close" data-kbd-close aria-label="Close">
+          <svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#x"/></svg>
+        </button>
+      </div>
+      <p class="muted">Desktop hotkeys — available from any page in the portal.</p>
+      <div class="kbd-row"><span class="kbd-label">Command palette</span><span class="kbd-keys"><kbd class="kbd" data-kbd-mod-2>⌘</kbd><kbd class="kbd">K</kbd></span></div>
+      <div class="kbd-row"><span class="kbd-label">Keyboard shortcuts</span><span class="kbd-keys"><kbd class="kbd">?</kbd></span></div>
+      <div class="kbd-row"><span class="kbd-label">Toggle theme</span><span class="kbd-keys"><kbd class="kbd" data-kbd-mod-2>⌘</kbd><kbd class="kbd">J</kbd></span></div>
+      <div class="kbd-row"><span class="kbd-label">Reduce ambient motion</span><span class="kbd-keys"><kbd class="kbd" data-kbd-mod-2>⌘</kbd><kbd class="kbd">M</kbd></span></div>
+      <div class="kbd-row"><span class="kbd-label">Navigate palette list</span><span class="kbd-keys"><kbd class="kbd">↑</kbd><kbd class="kbd">↓</kbd></span></div>
+      <div class="kbd-row"><span class="kbd-label">Refresh caseload</span><span class="kbd-keys"><kbd class="kbd" data-kbd-mod-2>⌘</kbd><kbd class="kbd">R</kbd></span></div>
+      <div class="kbd-row"><span class="kbd-label">Close any overlay</span><span class="kbd-keys"><kbd class="kbd">Esc</kbd></span></div>
     </div>
   </dialog>
   {% endif %}

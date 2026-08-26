@@ -24,11 +24,28 @@
     return root.getAttribute("data-theme") ||
       (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
   }
+  // Smooth theme swap: paint a short cross-fade over the colour change by
+  // enabling a global transition only for the duration of the switch. Gated so
+  // it never runs on first paint (which would flash every element on load).
+  var themeAnimTimer = null;
+  function swapTheme(next) {
+    // Set the attribute synchronously so currentTheme() is never stale (rapid
+    // toggles stay in sync). The .theme-animating class supplies the smooth
+    // 420ms colour cross-fade via CSS transitions — no async View Transition,
+    // which would race the attribute read.
+    if (!reduce) {
+      root.classList.add("theme-animating");
+      clearTimeout(themeAnimTimer);
+      themeAnimTimer = setTimeout(function () {
+        root.classList.remove("theme-animating");
+      }, 480);
+    }
+    root.setAttribute("data-theme", next);
+    try { localStorage.setItem("s4d-theme", next); } catch (e) {}
+  }
   document.querySelectorAll("[data-theme-toggle]").forEach(function (btn) {
     btn.addEventListener("click", function () {
-      var next = currentTheme() === "dark" ? "light" : "dark";
-      root.setAttribute("data-theme", next);
-      try { localStorage.setItem("s4d-theme", next); } catch (e) {}
+      swapTheme(currentTheme() === "dark" ? "light" : "dark");
     });
   });
 
@@ -848,6 +865,22 @@
         }
       },
       {
+        id: "act-motion",
+        title: "Reduce Ambient Motion",
+        subtitle: "Pause the background video and one-shot effects",
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><path d="M4 12h16"/><path d="M4 6l16 12"/></svg>',
+        group: "Preferences",
+        run: function () { if (window.__s4dToggleMotion) window.__s4dToggleMotion(); }
+      },
+      {
+        id: "act-kbd",
+        title: "Keyboard Shortcuts",
+        subtitle: "See every hotkey",
+        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></svg>',
+        group: "Help",
+        run: function () { if (window.__s4dOpenKbd) window.__s4dOpenKbd(); }
+      },
+      {
         id: "act-signout",
         title: "Sign Out",
         subtitle: "End clinician session securely",
@@ -1277,4 +1310,96 @@
       }
     });
   }
+
+  /* --- 13. ambient-motion toggle --------------------------------------------------- */
+  // Adds .no-motion to <html>, persisted in localStorage. Kills the ambient
+  // video + one-shot animations without touching the OS-level preference.
+  (function () {
+    var MKEY = "s4d-motion";
+    function motionReduced() {
+      try { return localStorage.getItem(MKEY) === "reduce"; } catch (e) { return false; }
+    }
+    function applyMotion(reduced) {
+      root.classList.toggle("no-motion", reduced);
+      document.querySelectorAll("[data-motion-toggle]").forEach(function (b) {
+        b.setAttribute("aria-pressed", reduced ? "true" : "false");
+      });
+    }
+    applyMotion(motionReduced());
+    document.querySelectorAll("[data-motion-toggle]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var next = !motionReduced();
+        try { localStorage.setItem(MKEY, next ? "reduce" : "full"); } catch (e) {}
+        applyMotion(next);
+        if (window.s4dToast) {
+          window.s4dToast(next ? "Ambient motion reduced" : "Ambient motion on",
+                          next ? "Background video paused" : "Background video resumed", false);
+        }
+      });
+    });
+    window.__s4dToggleMotion = function () {
+      var t = document.querySelector("[data-motion-toggle]");
+      if (t) t.click();
+    };
+  })();
+
+  /* --- 14. keyboard-shortcuts modal ------------------------------------------------- */
+  (function () {
+    var kbd = document.querySelector("[data-kbd]");
+    if (!kbd) return;
+    function openKbd() {
+      if (typeof kbd.showModal === "function") kbd.showModal();
+      else kbd.setAttribute("open", "true");
+    }
+    function closeKbd() {
+      if (typeof kbd.close === "function") kbd.close();
+      else kbd.removeAttribute("open");
+    }
+    window.__s4dOpenKbd = openKbd;
+    document.querySelectorAll("[data-open-kbd]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        // Close the account menu that hosts this item, then open the modal.
+        var menu = b.closest("details[data-menu]");
+        if (menu) menu.open = false;
+        openKbd();
+      });
+    });
+    kbd.querySelectorAll("[data-kbd-close]").forEach(function (b) {
+      b.addEventListener("click", closeKbd);
+    });
+    kbd.addEventListener("click", function (e) { if (e.target === kbd) closeKbd(); });
+  })();
+
+  /* --- 15. global hotkeys (?, Cmd/Ctrl+J theme, Cmd/Ctrl+M motion) ------------------ */
+  document.addEventListener("keydown", function (e) {
+    var tag = (e.target && e.target.tagName) || "";
+    var typing = tag === "INPUT" || tag === "TEXTAREA" || (e.target && e.target.isContentEditable);
+    // "?" opens the shortcuts modal (Shift+/ on most layouts).
+    if (!typing && (e.key === "?" || (e.key === "/" && e.shiftKey))) {
+      e.preventDefault();
+      if (window.__s4dOpenKbd) window.__s4dOpenKbd();
+      return;
+    }
+    if (e.metaKey || e.ctrlKey) {
+      var k = e.key.toLowerCase();
+      if (k === "j") {   // theme
+        e.preventDefault();
+        var t = document.querySelector("[data-theme-toggle]");
+        if (t) t.click();
+      } else if (k === "m") {   // motion
+        e.preventDefault();
+        if (window.__s4dToggleMotion) window.__s4dToggleMotion();
+      }
+    }
+  });
+
+  // Extend the platform kbd-hint swap to the modal's ⌘ glyphs too.
+  (function () {
+    var isMac = /Mac|iP(hone|ad|od)/.test(navigator.platform || "");
+    if (isMac) return;
+    document.querySelectorAll("[data-kbd-mod-2]").forEach(function (el) {
+      el.textContent = "Ctrl";
+      el.style.fontSize = ".62rem";
+    });
+  })();
 })();

@@ -3058,9 +3058,21 @@ body.is-transitioning .flow-takeover,
   color: #ffffff;
 }
 
+/* Thin vertical separators flanking the central refresh, so the three nav
+   pills read as two groups either side of the action (matches the reference
+   bottom-nav). */
+.dock-sep {
+  width: 1px;
+  height: 22px;
+  flex: 0 0 auto;
+  background: color-mix(in srgb, var(--ink) 22%, transparent);
+  margin: 0 2px;
+}
+:root[data-theme="dark"] .dock-sep { background: rgba(255, 255, 255, .16); }
+
 .dock-refresh {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, .35);
   background: linear-gradient(135deg, var(--mint) 0%, var(--brand) 60%, var(--brand-strong) 100%);
@@ -3069,16 +3081,24 @@ body.is-transitioning .flow-takeover,
   place-items: center;
   cursor: pointer;
   box-shadow: 0 2px 10px var(--brand-glow), inset 0 1px 0 rgba(255, 255, 255, .5);
-  transition: transform var(--dur-1) var(--ease-out), filter var(--dur-1) var(--ease-out);
+  transition: transform 220ms cubic-bezier(.34, 1.3, .5, 1),
+              filter var(--dur-1) var(--ease-out),
+              box-shadow var(--dur-2) var(--ease-out);
   flex-shrink: 0;
   margin: 0 2px;
 }
+.dock-refresh svg { width: 19px; height: 19px; }
 .dock-refresh:hover {
-  transform: scale(1.08);
+  transform: scale(1.1) rotate(-12deg);
   filter: brightness(1.12);
+  box-shadow: 0 4px 16px var(--brand-glow), inset 0 1px 0 rgba(255, 255, 255, .6);
 }
 .dock-refresh:active {
-  transform: scale(.92);
+  transform: scale(.9);
+}
+.dock-refresh:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
 }
 .dock-refresh.is-spinning svg {
   animation: spin-once 650ms cubic-bezier(.4, 0, .2, 1);
@@ -3724,3 +3744,204 @@ tr.is-archiving {
 }
 
 
+
+/* ============================================================ APPEARANCE CHIP
+   Theme toggle + ambient-motion toggle grouped into one segmented pill, so the
+   two appearance controls read as one system (matches the reference design). */
+.appearance-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border);
+  background: var(--glass-sheen), var(--glass-fill);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: inset 0 1px 0 var(--glass-gloss), var(--shadow-1);
+}
+.appearance-chip .chip-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background var(--dur-1) var(--ease-out),
+              color var(--dur-1) var(--ease-out),
+              transform var(--dur-1) var(--ease-spring);
+}
+.appearance-chip .chip-btn:hover { background: var(--surface-3); color: var(--ink); }
+.appearance-chip .chip-btn:active { transform: scale(.9); }
+.appearance-chip .chip-btn svg { width: 17px; height: 17px; }
+/* Motion toggle: show the "on" wave normally, the "off" slash when engaged. */
+.motion-toggle .icon-motion-off { display: none; }
+.motion-toggle[aria-pressed="true"] .icon-motion-on { display: none; }
+.motion-toggle[aria-pressed="true"] .icon-motion-off { display: block; }
+.motion-toggle[aria-pressed="true"] { color: var(--brand); background: var(--brand-tint); }
+
+/* menu keyboard-shortcut tag (in the account dropdown) */
+.menu-kbd-tag {
+  margin-left: auto;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+  font-size: .74rem;
+}
+
+/* ============================================================ KEYBOARD SHORTCUTS MODAL */
+.kbd-modal-dialog {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  max-width: 460px;
+  width: calc(100vw - 2 * var(--s-5));
+  color: var(--ink);
+  overflow: visible;
+}
+.kbd-modal-dialog::backdrop {
+  background: var(--scrim-heavy);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+.kbd-modal-dialog[open] { animation: cmdk-scale-in var(--dur-3) var(--ease-spring); }
+.kbd-modal {
+  padding: var(--s-5);
+  border-radius: var(--r-3);
+  border: 1px solid var(--border-strong);
+  background: var(--glass-sheen), var(--glass-fill-strong);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: inset 0 1px 0 var(--glass-gloss), var(--shadow-modal);
+}
+.kbd-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  margin-bottom: var(--s-1);
+}
+.kbd-modal-head h2 { margin: 0; }
+.kbd-modal .muted { margin: 0 0 var(--s-4); font-size: .88rem; }
+.kbd-close {
+  display: inline-grid;
+  place-items: center;
+  width: 32px; height: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-2);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition: background var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out);
+}
+.kbd-close:hover { background: var(--surface-3); color: var(--ink); }
+.kbd-close .icon { width: 16px; height: 16px; }
+.kbd-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-4);
+  padding: .55rem .25rem;
+  border-bottom: 1px solid var(--hairline);
+}
+.kbd-row:last-child { border-bottom: 0; }
+.kbd-label { font-size: .9rem; color: var(--ink); }
+.kbd-keys { display: inline-flex; gap: 4px; }
+.kbd-keys .kbd {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 6px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--ink) 10%, transparent);
+  font-family: var(--font-mono);
+  font-size: .78rem;
+  color: var(--ink);
+}
+@media (prefers-reduced-motion: reduce) {
+  .kbd-modal-dialog[open] { animation: none; }
+}
+
+/* Ambient-motion kill switch driven by the header toggle (adds .no-motion on
+   <html>). Mirrors prefers-reduced-motion for the ambient video + one-shots. */
+:root.no-motion .bg-video { display: none; }
+:root.no-motion *, :root.no-motion *::before, :root.no-motion *::after {
+  animation-duration: .001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: .001ms !important;
+}
+
+/* ============================================================ THEME-SWITCH TRANSITION
+   When the theme toggle fires, portal.js adds .theme-animating to <html> for
+   ~480ms. During that window every surface, border, and text colour eases
+   between palettes instead of snapping — a calm cross-fade tuned per theme.
+   Gated on the class so it never runs on first paint (which would flash the
+   whole page on load) and never fights hover/press micro-transitions. */
+:root.theme-animating,
+:root.theme-animating .card,
+:root.theme-animating .stat,
+:root.theme-animating .table-wrap,
+:root.theme-animating table.data th,
+:root.theme-animating table.data td,
+:root.theme-animating .badge,
+:root.theme-animating .btn,
+:root.theme-animating .dock,
+:root.theme-animating .dock-item,
+:root.theme-animating .appearance-chip,
+:root.theme-animating .cmdk-trigger,
+:root.theme-animating .screening-chip,
+:root.theme-animating .brand,
+:root.theme-animating .account-trigger,
+:root.theme-animating .site-header,
+:root.theme-animating .reports-badge,
+:root.theme-animating .segmented,
+:root.theme-animating .seg {
+  transition:
+    background-color 420ms var(--ease-in-out),
+    background 420ms var(--ease-in-out),
+    color 420ms var(--ease-in-out),
+    border-color 420ms var(--ease-in-out),
+    box-shadow 420ms var(--ease-in-out) !important;
+}
+
+/* Native View-Transition cross-fade for the theme swap (Chromium). The whole
+   viewport dissolves between palettes rather than hard-cutting. */
+:root.theme-animating::view-transition-old(root),
+:root.theme-animating::view-transition-new(root) {
+  animation-duration: 420ms;
+  animation-timing-function: var(--ease-in-out);
+  mix-blend-mode: normal;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root.theme-animating,
+  :root.theme-animating * { transition: none !important; }
+}
+
+/* ============================================================ PAGE ENTRANCE
+   A single calm rise on the main content when a page loads, tuned to the
+   app's easing so navigation between worklist / patient / report feels like
+   one continuous surface rather than a hard cut. Zone-B safe: no loops, one
+   shot, transform+opacity only. */
+@media (prefers-reduced-motion: no-preference) {
+  main.wrap > * {
+    animation: page-rise var(--dur-3) var(--ease-out) both;
+  }
+}
+@keyframes page-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+:root.no-motion main.wrap > * { animation: none !important; }
