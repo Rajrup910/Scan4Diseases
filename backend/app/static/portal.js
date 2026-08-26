@@ -1180,28 +1180,65 @@
     });
   }
 
-  // Patient/Report dock pills that had nothing to link to used to be inert.
-  // They now open the command palette pre-filtered to the appropriate group,
-  // so every dock slot is a live way to jump somewhere.
+  // --- last-viewed report / patient memory ---------------------------------
+  // When a report or patient page is open, its dock pill carries the id; stash
+  // it so the Report/Patient pills on OTHER pages (e.g. the worklist homepage)
+  // can jump straight back to the last one the doctor looked at.
+  var LAST_REPORT = "s4d-last-report";
+  var LAST_PATIENT = "s4d-last-patient";
+  function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+  (function stashCurrent() {
+    var rc = document.querySelector("[data-dock-report-current]");
+    if (rc) lsSet(LAST_REPORT, rc.getAttribute("data-dock-report-current"));
+    var pc = document.querySelector("[data-dock-patient-current]");
+    if (pc) {
+      lsSet(LAST_PATIENT, pc.getAttribute("data-dock-patient-current"));
+      lsSet(LAST_PATIENT + "-name", pc.getAttribute("data-dock-patient-name") || "Patient");
+    }
+  })();
+
+  function openPalette(kind) {
+    var opener = document.querySelector("[data-cmdk-open]");
+    if (opener) opener.click();
+    var input = document.querySelector("[data-cmdk-input]");
+    if (input) {
+      setTimeout(function () {
+        input.value = "";
+        input.placeholder = kind === "patient"
+          ? "Search patients…"
+          : "Search reports (name, condition, #id)…";
+        input.focus();
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+      }, 60);
+    }
+  }
+
+  // Enhance each picker pill: if there's a remembered target, the pill navigates
+  // straight to it (and shows the id); otherwise it opens the palette so the
+  // doctor can choose. This makes the dock fully functional on the worklist.
   document.querySelectorAll("[data-dock-picker]").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var kind = btn.getAttribute("data-dock-picker");
-      var opener = document.querySelector("[data-cmdk-open]");
-      if (opener) opener.click();
-      var input = document.querySelector("[data-cmdk-input]");
-      if (input) {
-        // Seed the palette with a hint the doctor can immediately type past;
-        // clearing it takes one Backspace, or they can just start typing.
-        setTimeout(function () {
-          input.value = "";
-          input.placeholder = kind === "patient"
-            ? "Search patients…"
-            : "Search reports (name, condition, #id)…";
-          input.focus();
-          input.dispatchEvent(new Event("input", { bubbles: true }));
-        }, 60);
-      }
-    });
+    var kind = btn.getAttribute("data-dock-picker");
+    var lastId = kind === "report" ? lsGet(LAST_REPORT) : lsGet(LAST_PATIENT);
+
+    if (kind === "report" && lastId) {
+      var tag = btn.querySelector("[data-dock-report-id]");
+      if (tag) { tag.textContent = "#" + lastId; tag.hidden = false; }
+      btn.title = "Open last report (#" + lastId + ")";
+      btn.addEventListener("click", function () { window.location.href = "/portal/reports/" + lastId; });
+      return;
+    }
+    if (kind === "patient" && lastId) {
+      var nm = lsGet(LAST_PATIENT + "-name");
+      var lbl = btn.querySelector("span:not(.dock-report-id)");
+      if (lbl && nm) lbl.textContent = nm;
+      btn.title = "Open last patient" + (nm ? " (" + nm + ")" : "");
+      btn.addEventListener("click", function () { window.location.href = "/portal/patients/" + lastId; });
+      return;
+    }
+    // No memory yet — fall back to the palette picker.
+    btn.addEventListener("click", function () { openPalette(kind); });
   });
 
   /* --- 12. table selection & bulk action bar --------------------------------------- */
@@ -1326,21 +1363,21 @@
       });
     }
     applyMotion(motionReduced());
+    function toggleMotion() {
+      var next = !motionReduced();
+      try { localStorage.setItem(MKEY, next ? "reduce" : "full"); } catch (e) {}
+      applyMotion(next);
+      if (window.s4dToast) {
+        window.s4dToast(next ? "Ambient motion reduced" : "Ambient motion on",
+                        next ? "Background video paused" : "Background video resumed", false);
+      }
+    }
+    // The header no longer carries a motion button; the toggle stays reachable
+    // from the command palette and the ⌘/Ctrl+M hotkey.
     document.querySelectorAll("[data-motion-toggle]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var next = !motionReduced();
-        try { localStorage.setItem(MKEY, next ? "reduce" : "full"); } catch (e) {}
-        applyMotion(next);
-        if (window.s4dToast) {
-          window.s4dToast(next ? "Ambient motion reduced" : "Ambient motion on",
-                          next ? "Background video paused" : "Background video resumed", false);
-        }
-      });
+      btn.addEventListener("click", toggleMotion);
     });
-    window.__s4dToggleMotion = function () {
-      var t = document.querySelector("[data-motion-toggle]");
-      if (t) t.click();
-    };
+    window.__s4dToggleMotion = toggleMotion;
   })();
 
   /* --- 14. keyboard-shortcuts modal ------------------------------------------------- */

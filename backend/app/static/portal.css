@@ -598,28 +598,28 @@ table.data thead th { font-family: var(--font-mono); }
   display: flex;
   align-items: center;
   gap: .5rem;
-  padding: .5rem .85rem;
+  padding: .6rem .95rem;
   border-radius: var(--r-2);
   border: 1px solid var(--border-strong);
-  background: var(--surface);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, .32), 0 2px 6px rgba(0, 0, 0, .18);
+  background: color-mix(in srgb, var(--surface) 64%, transparent);
+  backdrop-filter: blur(28px) saturate(150%);
+  -webkit-backdrop-filter: blur(28px) saturate(150%);
+  box-shadow: inset 0 1px 0 var(--glass-gloss), 0 12px 32px rgba(0, 0, 0, .3);
   color: var(--ink);
   font-size: .80rem;
-  line-height: 1.35;
+  line-height: 1.4;
   white-space: nowrap;
   transition: opacity var(--dur-2) var(--ease-out), transform var(--dur-2) var(--ease-out), visibility var(--dur-2);
 }
 :root[data-theme="dark"] .screening-tooltip {
-  background: rgba(19, 24, 34, 0.96);
+  background: rgba(19, 24, 34, 0.6);
   border-color: rgba(255, 255, 255, 0.16);
-  box-shadow: 0 16px 40px rgba(0, 0, 0, .7), 0 0 20px rgba(47, 185, 163, .12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 16px 40px rgba(0, 0, 0, .6), 0 0 20px rgba(47, 185, 163, .12);
 }
 :root:not([data-theme="dark"]) .screening-tooltip {
-  background: rgba(255, 255, 255, 0.98);
+  background: rgba(255, 255, 255, 0.7);
   border-color: var(--border-strong);
-  box-shadow: 0 14px 34px rgba(16, 24, 40, .16), 0 2px 6px rgba(16, 24, 40, .08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .9), 0 14px 34px rgba(16, 24, 40, .16);
 }
 .screening-tooltip-dot {
   width: 7px;
@@ -2800,28 +2800,28 @@ body.is-transitioning .flow-takeover,
 .cmdk-panel {
   width: min(640px, calc(100vw - 32px));
   max-height: min(520px, calc(100vh - 80px));
-  background: var(--surface);
   border: 1px solid var(--border-strong);
   border-radius: var(--r-3);
-  box-shadow: var(--shadow-modal), 0 0 0 1px var(--hairline);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  /* Translucent frosted glass in both themes — the ambient background reads
+     softly through the blur instead of an opaque slab. */
+  background: color-mix(in srgb, var(--surface) 66%, transparent);
+  backdrop-filter: blur(30px) saturate(150%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
+  box-shadow: inset 0 1px 0 var(--glass-gloss), var(--shadow-modal);
   animation: cmdk-scale-in 240ms cubic-bezier(.16, 1, .3, 1);
 }
 :root[data-theme="dark"] .cmdk-panel {
-  background: rgba(19, 24, 34, 0.94);
-  backdrop-filter: blur(28px) saturate(160%);
-  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  background: rgba(19, 24, 34, 0.62);
   border-color: rgba(255, 255, 255, 0.16);
-  box-shadow: 0 25px 80px rgba(0, 0, 0, .8), 0 0 0 1px rgba(255, 255, 255, .08), 0 0 30px rgba(47, 185, 163, .12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12), 0 25px 80px rgba(0, 0, 0, .7), 0 0 30px rgba(47, 185, 163, .12);
 }
 :root:not([data-theme="dark"]) .cmdk-panel {
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  background: rgba(255, 255, 255, 0.72);
   border-color: var(--border-strong);
-  box-shadow: 0 25px 70px rgba(16, 24, 40, .22), 0 0 0 1px rgba(0, 0, 0, .05);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .9), 0 25px 70px rgba(16, 24, 40, .22);
 }
 
 .cmdk-input-row {
@@ -2830,7 +2830,7 @@ body.is-transitioning .flow-takeover,
   gap: var(--s-3);
   padding: .9rem 1.1rem;
   border-bottom: 1px solid var(--border);
-  background: var(--surface-dim);
+  background: color-mix(in srgb, var(--surface) 30%, transparent);
 }
 .cmdk-input-row svg {
   color: var(--brand);
@@ -2985,21 +2985,22 @@ body.is-transitioning .flow-takeover,
 /* ============================================================ 10. FLOATING BOTTOM DOCK */
 .dock {
   position: fixed;
-  bottom: 22px;
+  bottom: 26px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 95;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: .35rem;
-  padding: .35rem .45rem;
+  gap: .4rem;
+  padding: .5rem .6rem;
   border-radius: var(--r-pill);
   border: 1px solid var(--border-strong);
-  background: var(--glass-sheen), var(--glass-fill-strong);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  box-shadow: inset 0 1px 0 var(--glass-gloss), 0 12px 36px rgba(0, 0, 0, .28), 0 2px 8px rgba(0, 0, 0, .14);
+  /* Translucent frosted glass — the ambient background reads through it. */
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+  backdrop-filter: blur(26px) saturate(150%);
+  -webkit-backdrop-filter: blur(26px) saturate(150%);
+  box-shadow: inset 0 1px 0 var(--glass-gloss), 0 14px 40px rgba(0, 0, 0, .3), 0 2px 8px rgba(0, 0, 0, .14);
   width: max-content;
   max-width: calc(100vw - 32px);
   box-sizing: border-box;
@@ -3007,34 +3008,41 @@ body.is-transitioning .flow-takeover,
   transition: transform var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out);
 }
 :root[data-theme="dark"] .dock {
-  background: rgba(22, 27, 38, 0.88);
-  border-color: rgba(255, 255, 255, 0.16);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 16px 40px rgba(0, 0, 0, .6), 0 0 20px rgba(47, 185, 163, .15);
+  background: rgba(20, 26, 36, 0.58);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 18px 44px rgba(0, 0, 0, .6), 0 0 24px rgba(47, 185, 163, .14);
 }
 :root:not([data-theme="dark"]) .dock {
-  background: rgba(255, 255, 255, 0.90);
-  border-color: rgba(200, 210, 225, 0.9);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .95), 0 14px 34px rgba(16, 24, 40, .18), 0 2px 6px rgba(16, 24, 40, .08);
+  background: rgba(255, 255, 255, 0.62);
+  border-color: rgba(200, 210, 225, 0.8);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .9), 0 16px 38px rgba(16, 24, 40, .2), 0 2px 6px rgba(16, 24, 40, .08);
 }
 .dock:hover {
   transform: translateX(-50%) translateY(-2px);
-  box-shadow: inset 0 1px 0 var(--glass-gloss), 0 18px 46px rgba(0, 0, 0, .32);
+  box-shadow: inset 0 1px 0 var(--glass-gloss), 0 22px 52px rgba(0, 0, 0, .34);
 }
 
 .dock-item {
   display: inline-flex;
   align-items: center;
-  gap: .45rem;
-  padding: .45rem .85rem;
+  gap: .5rem;
+  padding: .6rem 1.05rem;
   border-radius: var(--r-pill);
   color: var(--ink-soft);
   text-decoration: none;
   font-weight: 600;
-  font-size: .86rem;
-  transition: all var(--dur-1) var(--ease-out);
+  font-size: .92rem;
+  transition: background var(--dur-1) var(--ease-out),
+              color var(--dur-1) var(--ease-out),
+              transform 180ms cubic-bezier(.34, 1.3, .5, 1),
+              box-shadow var(--dur-2) var(--ease-out);
   cursor: pointer;
   white-space: nowrap;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
 }
+.dock-item .icon { width: 17px; height: 17px; }
 .dock-item:hover:not(.is-disabled) {
   background: var(--surface-3);
   color: var(--ink);
@@ -3051,11 +3059,12 @@ body.is-transitioning .flow-takeover,
 }
 .dock-report-id {
   font-family: var(--font-mono);
-  font-size: .78rem;
-  padding: .1rem .38rem;
+  font-size: .8rem;
+  padding: .12rem .45rem;
   border-radius: var(--r-pill);
-  background: rgba(255, 255, 255, .22);
+  background: rgba(255, 255, 255, .25);
   color: #ffffff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3);
 }
 
 /* Thin vertical separators flanking the central refresh, so the three nav
@@ -3071,8 +3080,8 @@ body.is-transitioning .flow-takeover,
 :root[data-theme="dark"] .dock-sep { background: rgba(255, 255, 255, .16); }
 
 .dock-refresh {
-  width: 38px;
-  height: 38px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, .35);
   background: linear-gradient(135deg, var(--mint) 0%, var(--brand) 60%, var(--brand-strong) 100%);
@@ -3453,75 +3462,83 @@ body.is-transitioning .flow-takeover,
 }
 
 /* ============================================================ STAT SPARKLINES
-   Tiny 14-day trend footers under the caseload tiles. The area path fills a
-   soft translucent slab; the line rides the top. Delta pill sits next to the
-   sparkline on the right so the eye picks up the trend as a pair. */
+   A clean teal trend line on an 84x22 viewBox: a filled gradient area below,
+   a bright polyline on top, and a dot at the latest point. Sits in its own
+   translucent slab with a caption to the right. Matches the reference design. */
 .stat.has-spark {
   grid-template-rows: auto auto auto;
-  row-gap: .2rem;
-  padding-bottom: .55rem;
+  row-gap: .15rem;
 }
-.stat-spark {
+.spark {
   grid-column: 1 / -1;
   display: flex;
   align-items: center;
   gap: var(--s-3);
-  margin-top: .35rem;
-  padding: .3rem .55rem;
+  margin-top: .5rem;
+  padding: .35rem .6rem;
   border-radius: var(--r-2);
-  background: rgba(255, 255, 255, .10);
-  border: 1px solid rgba(255, 255, 255, .14);
-  min-height: 30px;
+  background: rgba(255, 255, 255, .09);
+  border: 1px solid rgba(255, 255, 255, .16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .12);
 }
-.stat-spark svg {
+.spark svg {
   flex: 1 1 auto;
-  height: 26px;
+  height: 24px;
   width: 100%;
+  min-width: 0;
   display: block;
   overflow: visible;
 }
-.spark-line {
+/* Line: bright teal, rounded, with a one-shot draw-in. */
+.spark-poly {
   fill: none;
-  stroke-width: 1.6;
+  stroke: #2DD4BF;
+  stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, .25));
-  stroke-dasharray: 260;
-  stroke-dashoffset: 260;
-  animation: spark-draw 900ms cubic-bezier(.2, .8, .25, 1) 120ms forwards;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 1px 3px rgba(45, 212, 191, .45));
+  stroke-dasharray: 200;
+  stroke-dashoffset: 200;
+  animation: spark-draw 1000ms cubic-bezier(.2, .8, .25, 1) 150ms forwards;
 }
 .spark-area {
-  opacity: .28;
-  animation: spark-area-in 900ms cubic-bezier(.2, .8, .25, 1) 200ms both;
+  fill: url(#spark-fill);
+  opacity: 0;
+  animation: spark-area-in 700ms var(--ease-out) 400ms forwards;
 }
-.stat-spark-mint .spark-line   { stroke: #34d5b8; }
-.stat-spark-mint .spark-area   { fill:   #34d5b8; }
-.stat-spark-warn .spark-line   { stroke: #FBBF24; }
-.stat-spark-warn .spark-area   { fill:   #FBBF24; }
-.stat-spark-danger .spark-line { stroke: #F87171; }
-.stat-spark-danger .spark-area { fill:   #F87171; }
+.spark-dot {
+  fill: #2DD4BF;
+  filter: drop-shadow(0 0 4px rgba(45, 212, 191, .8));
+  opacity: 0;
+  animation: spark-dot-in 300ms var(--ease-spring) 1000ms forwards;
+}
+.spark-danger .spark-poly { stroke: #F87171; filter: drop-shadow(0 1px 3px rgba(248, 113, 113, .45)); }
+.spark-danger .spark-dot  { fill: #F87171; filter: drop-shadow(0 0 4px rgba(248, 113, 113, .8)); }
 
-.stat-delta {
+.spark-caption {
   flex: 0 0 auto;
   font-family: var(--font-mono);
   font-size: .74rem;
   font-weight: 650;
-  color: #ffffff;
   white-space: nowrap;
+  color: rgba(255, 255, 255, .8);
 }
-.stat-delta-window {
-  color: rgba(255, 255, 255, .68);
-  font-weight: 500;
-}
-.stat-delta-up      { color: #6EE7B7; }
-.stat-delta-flat    { color: rgba(255, 255, 255, .78); }
-.stat-delta-up-warn { color: #FCA5A5; }
+.spark-up { color: #6EE7B7; }
+.spark-danger-txt { color: #FCA5A5; }
 
-@keyframes spark-draw     { to { stroke-dashoffset: 0; } }
-@keyframes spark-area-in  { from { opacity: 0; } to { opacity: .28; } }
+@keyframes spark-draw    { to { stroke-dashoffset: 0; } }
+@keyframes spark-area-in { to { opacity: .9; } }
+@keyframes spark-dot-in  { to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce), (prefers-reduced-motion: no-preference) {
+  :root.no-motion .spark-poly { animation: none; stroke-dashoffset: 0; }
+  :root.no-motion .spark-area,
+  :root.no-motion .spark-dot { animation: none; opacity: .9; }
+}
 @media (prefers-reduced-motion: reduce) {
-  .spark-line { animation: none; stroke-dashoffset: 0; }
-  .spark-area { animation: none; }
+  .spark-poly { animation: none; stroke-dashoffset: 0; }
+  .spark-area { animation: none; opacity: .9; }
+  .spark-dot  { animation: none; opacity: 1; }
 }
 
 /* ============================================================ BULK ACTION BAR
@@ -3945,3 +3962,39 @@ tr.is-archiving {
   to   { opacity: 1; transform: none; }
 }
 :root.no-motion main.wrap > * { animation: none !important; }
+
+/* ============================================================ PAGE-HEAD PILL
+   The "Worklist" heading rides a glass pill with an icon badge, matching the
+   "All shared reports" badge below it so the two page headings share one
+   rhythm and left edge. */
+.page-head .h-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .4rem .95rem .4rem .5rem;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--border);
+  background: var(--glass-sheen), var(--glass-fill);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: inset 0 1px 0 var(--glass-gloss), var(--shadow-1);
+  margin-bottom: var(--s-2);
+}
+.page-head .h-pill h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  line-height: 1.1;
+}
+.h-pill-ic {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand-soft), var(--brand-strong));
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .35), 0 2px 6px var(--brand-glow);
+}
+.h-pill-ic .icon { width: 17px; height: 17px; }
+.page-head .muted { margin: 0; padding-left: .15rem; }

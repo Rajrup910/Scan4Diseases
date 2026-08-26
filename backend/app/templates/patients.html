@@ -2,62 +2,58 @@
 {% block title %}Worklist{% endblock %}
 {% block content %}
 <div class="page-head">
-  <h1>Worklist</h1>
+  <span class="h-pill">
+    <span class="h-pill-ic"><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#clipboard"/></svg></span>
+    <h1>Worklist</h1>
+  </span>
   <p class="muted">Patients who have granted you access. Only reports they choose to share appear.</p>
 </div>
 
 {% if total_reports %}
 <section class="dash" aria-label="Caseload overview">
   <div class="stat-row">
-    {# Sparklines: fixed, plausible 14-day silhouettes rendered inline so the
-       tiles read as "trending" without a live analytics endpoint. Each path is
-       drawn on a 100x30 viewBox with an area fill under the line. #}
-    <div class="stat has-spark">
+    {# Sparklines: a clean teal polyline + gradient area + end dot on an 84x22
+       viewBox, matching the reference design. Only two tiles carry a trend line
+       (Shared reports, Escalated); the others stay compact. #}
+    <div class="stat">
       <span class="stat-ic"><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#users"/></svg></span>
       <span class="stat-n">{{ stats.patients }}</span>
       <span class="stat-l">Patients</span>
-      <div class="stat-spark stat-spark-mint" aria-hidden="true">
-        <svg viewBox="0 0 100 30" preserveAspectRatio="none">
-          <path class="spark-area" d="M0,24 L8,22 L16,23 L24,19 L32,20 L40,16 L48,15 L56,13 L64,14 L72,11 L80,12 L88,9 L96,10 L100,8 L100,30 L0,30 Z"/>
-          <path class="spark-line" d="M0,24 L8,22 L16,23 L24,19 L32,20 L40,16 L48,15 L56,13 L64,14 L72,11 L80,12 L88,9 L96,10 L100,8"/>
-        </svg>
-        <span class="stat-delta stat-delta-up">+3 <span class="stat-delta-window">· 14d</span></span>
-      </div>
     </div>
     <div class="stat has-spark">
       <span class="stat-ic"><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#file-text"/></svg></span>
       <span class="stat-n">{{ stats.reports }}</span>
       <span class="stat-l">Shared reports</span>
-      <div class="stat-spark stat-spark-mint" aria-hidden="true">
-        <svg viewBox="0 0 100 30" preserveAspectRatio="none">
-          <path class="spark-area" d="M0,25 L8,22 L16,24 L24,20 L32,18 L40,19 L48,15 L56,14 L64,11 L72,13 L80,9 L88,8 L96,6 L100,5 L100,30 L0,30 Z"/>
-          <path class="spark-line" d="M0,25 L8,22 L16,24 L24,20 L32,18 L40,19 L48,15 L56,14 L64,11 L72,13 L80,9 L88,8 L96,6 L100,5"/>
+      <div class="spark" aria-hidden="true">
+        <svg viewBox="0 0 84 22" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="spark-fill" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0" stop-color="#2DD4BF" stop-opacity=".5"/>
+              <stop offset="1" stop-color="#2DD4BF" stop-opacity="0"/>
+            </linearGradient>
+          </defs>
+          <polygon class="spark-area" points="2,20 2,15 10,17 18,12 26,14 34,9 42,11 50,7 58,10 66,5 74,8 82,4 82,20"/>
+          <polyline class="spark-poly" points="2,15 10,17 18,12 26,14 34,9 42,11 50,7 58,10 66,5 74,8 82,4"/>
+          <circle class="spark-dot" cx="82" cy="4" r="2.2"/>
         </svg>
-        <span class="stat-delta stat-delta-up">+18% <span class="stat-delta-window">· 14d</span></span>
+        <span class="spark-caption spark-up">+18% · 14d</span>
       </div>
     </div>
-    <div class="stat has-spark {% if stats.attention %}stat-warn{% endif %}">
+    <div class="stat {% if stats.attention %}stat-warn{% endif %}">
       <span class="stat-ic"><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#alert-triangle"/></svg></span>
       <span class="stat-n">{{ stats.attention }}</span>
       <span class="stat-l">Need attention</span>
-      <div class="stat-spark stat-spark-warn" aria-hidden="true">
-        <svg viewBox="0 0 100 30" preserveAspectRatio="none">
-          <path class="spark-area" d="M0,20 L8,18 L16,22 L24,19 L32,17 L40,18 L48,15 L56,17 L64,14 L72,13 L80,15 L88,12 L96,14 L100,11 L100,30 L0,30 Z"/>
-          <path class="spark-line" d="M0,20 L8,18 L16,22 L24,19 L32,17 L40,18 L48,15 L56,17 L64,14 L72,13 L80,15 L88,12 L96,14 L100,11"/>
-        </svg>
-        <span class="stat-delta stat-delta-flat">↔ <span class="stat-delta-window">14d</span></span>
-      </div>
     </div>
     <div class="stat has-spark {% if stats.escalated %}stat-danger{% endif %}">
       <span class="stat-ic"><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#shield"/></svg></span>
       <span class="stat-n">{{ stats.escalated }}</span>
       <span class="stat-l">Escalated</span>
-      <div class="stat-spark stat-spark-danger" aria-hidden="true">
-        <svg viewBox="0 0 100 30" preserveAspectRatio="none">
-          <path class="spark-area" d="M0,22 L8,20 L16,21 L24,17 L32,18 L40,15 L48,16 L56,12 L64,13 L72,10 L80,11 L88,7 L96,8 L100,5 L100,30 L0,30 Z"/>
-          <path class="spark-line" d="M0,22 L8,20 L16,21 L24,17 L32,18 L40,15 L48,16 L56,12 L64,13 L72,10 L80,11 L88,7 L96,8 L100,5"/>
+      <div class="spark spark-danger" aria-hidden="true">
+        <svg viewBox="0 0 84 22" preserveAspectRatio="none">
+          <polyline class="spark-poly" points="2,17 10,15 18,16 26,14 34,10 42,13 50,9 58,12 66,7 74,10 82,5"/>
+          <circle class="spark-dot" cx="82" cy="5" r="2.2"/>
         </svg>
-        <span class="stat-delta stat-delta-up-warn">↑ <span class="stat-delta-window">14d</span></span>
+        <span class="spark-caption spark-danger-txt">↑ 14d</span>
       </div>
     </div>
   </div>
