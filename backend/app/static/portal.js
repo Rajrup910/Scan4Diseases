@@ -1417,7 +1417,7 @@
       var pivotX = pill ? pill.left + pill.width / 2 : window.innerWidth / 2;
       var pivotY = pill ? pill.top : window.innerHeight - 64;
       var radius = parseFloat(getComputedStyle(dial).getPropertyValue("--arc-radius")) || 152;
-      var ARC_STEP = 42 * Math.PI / 180;                     // 42° between chips
+      var ARC_STEP = 45 * Math.PI / 180;                     // 45° between chips → clean 180° fan
       track.querySelectorAll(".patient-arc-chip").forEach(function (chip, i) {
         var offset = i - activeIndex;
         var halfN = patients.length / 2;

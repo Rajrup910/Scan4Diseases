@@ -950,7 +950,13 @@ table.data tbody tr:hover { background: var(--surface-3); }
 .triage-soon, .triage-see-a-doctor-soon { background: var(--warn-tint); color: var(--warn); border-color: var(--warn-line); }
 .triage-routine, .triage-monitor, .triage-self-monitor { background: var(--ok-tint); color: var(--ok); border-color: var(--ok-line); }
 
-.status-new { background: var(--surface-3); color: var(--ink-soft); }
+/* Neutral but clearly visible pill (a defined slate tint + border) so a "New"
+   status reads as a tag like the triage ones instead of vanishing into the dark. */
+.status-new {
+  background: color-mix(in srgb, var(--ink-faint) 24%, transparent);
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--ink-faint) 55%, transparent);
+}
 .status-under_review { background: var(--info-tint); color: var(--info); border-color: var(--info-line); }
 .status-reviewed { background: var(--ok-tint); color: var(--ok); border-color: var(--ok-line); }
 .status-escalated { background: var(--danger-tint); color: var(--danger); border-color: var(--danger-line); }
@@ -1334,7 +1340,7 @@ table.data tbody tr:hover { background: var(--surface-3); }
   display: flex;
   flex-direction: column;
   border-radius: var(--r-3);
-  background: var(--surface-1) !important;
+  background: var(--surface-2) !important;   /* was --surface-1 (undefined → transparent void) */
   border: 1px solid var(--border-strong);
   /* Tokenised: the lifted-panel shadow and the full-viewport scrim were both
      dark-tuned, so over the light theme the whole page slammed to near-black
@@ -3067,11 +3073,11 @@ body.is-transitioning .flow-takeover,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: .55rem;
-  /* Inflated so the dock reads as the primary nav — matches the green
-     silhouette in the reference. */
-  padding: .7rem .95rem;
+  gap: .4rem;
+  /* Trim so the dock is compact and the reload hub can overhang its border. */
+  padding: .4rem .7rem;
   border-radius: var(--r-pill);
+  overflow: visible;
   border: 1px solid var(--border-strong);
   background: color-mix(in srgb, var(--surface) 38%, transparent);
   backdrop-filter: blur(28px) saturate(160%);
@@ -3136,9 +3142,9 @@ body.is-transitioning .flow-takeover,
   /* Uniform pill footprint so Worklist / Patient / Report read as one even
      three-slot control rather than three different-width tabs. Content is
      centred inside the fixed min-width. */
-  min-width: 122px;
-  gap: .55rem;
-  padding: .7rem 1.15rem;
+  min-width: 120px;
+  gap: .5rem;
+  padding: .55rem .85rem;
   border-radius: var(--r-pill);
   color: var(--ink-soft);
   text-decoration: none;
@@ -3209,9 +3215,9 @@ body.is-transitioning .flow-takeover,
      silhouette and reads as the primary action — a raised "hub" the two nav
      groups sit either side of. The negative vertical margin lets it overhang
      the dock top and bottom equally. */
-  width: 58px;
-  height: 58px;
-  margin: -9px 4px;
+  width: 66px;
+  height: 66px;
+  margin: -14px 6px;   /* overhangs the shorter dock top & bottom — the "poppy" hub */
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, .4);
   background: linear-gradient(135deg, var(--mint) 0%, var(--brand) 60%, var(--brand-strong) 100%);
@@ -3305,8 +3311,12 @@ body.is-transitioning .flow-takeover,
 }
 .patient-arc-chip {
   position: absolute;
-  /* Kept compact so the fan can sit close to the pill without chips colliding. */
-  min-width: 116px;
+  /* Fixed width so every chip is identical — with equal angular steps that makes
+     the edge-to-edge gaps between names uniform (a clean semicircle) regardless
+     of how long or short each name is. */
+  width: 150px;
+  box-sizing: border-box;
+  justify-content: center;
   padding: .42rem .7rem;
   border-radius: var(--r-2);
   border: 1px solid var(--border);
@@ -3342,6 +3352,12 @@ body.is-transitioning .flow-takeover,
 :root[data-theme="dark"] .patient-arc-chip {
   background: rgba(19, 25, 34, .6);
   border-color: rgba(255, 255, 255, .12);
+}
+.patient-arc-chip .name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 .patient-arc-chip .initials {
   display: inline-grid;
@@ -3416,7 +3432,7 @@ body.is-transitioning .flow-takeover,
 :root.no-motion .dock-item.is-arc-locking { animation: none; }
 .dock-item[data-dock-picker="patient"] > span:not(.dock-report-id) {
   display: inline-block;
-  width: 118px;
+  width: 68px;   /* trimmed so the Patient pill matches Worklist/Report width */
   text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3426,7 +3442,7 @@ body.is-transitioning .flow-takeover,
 
 /* ============================================================ 12. ALL SHARED REPORTS TABLE */
 .worklist-section {
-  margin-top: var(--s-6);
+  margin-top: var(--s-8);   /* wider gap from the info widgets above */
   margin-bottom: var(--s-6);
 }
 .worklist-head-row {
