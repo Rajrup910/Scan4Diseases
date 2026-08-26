@@ -3205,23 +3205,30 @@ body.is-transitioning .flow-takeover,
 :root[data-theme="dark"] .dock-sep { background: rgba(255, 255, 255, .16); }
 
 .dock-refresh {
-  width: 44px;
-  height: 44px;
+  /* Deliberately larger than the dock's own height so it breaks the pill's
+     silhouette and reads as the primary action — a raised "hub" the two nav
+     groups sit either side of. The negative vertical margin lets it overhang
+     the dock top and bottom equally. */
+  width: 58px;
+  height: 58px;
+  margin: -9px 4px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, .35);
+  border: 2px solid rgba(255, 255, 255, .4);
   background: linear-gradient(135deg, var(--mint) 0%, var(--brand) 60%, var(--brand-strong) 100%);
   color: #ffffff;
   display: grid;
   place-items: center;
   cursor: pointer;
-  box-shadow: 0 2px 10px var(--brand-glow), inset 0 1px 0 rgba(255, 255, 255, .5);
+  box-shadow:
+    0 6px 18px var(--brand-glow),
+    0 0 0 4px color-mix(in srgb, var(--brand) 14%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, .5);
   transition: transform 220ms cubic-bezier(.34, 1.3, .5, 1),
               filter var(--dur-1) var(--ease-out),
               box-shadow var(--dur-2) var(--ease-out);
   flex-shrink: 0;
-  margin: 0 2px;
 }
-.dock-refresh svg { width: 19px; height: 19px; }
+.dock-refresh svg { width: 24px; height: 24px; }
 .dock-refresh:hover {
   transform: scale(1.1) rotate(-12deg);
   filter: brightness(1.12);
@@ -3258,17 +3265,17 @@ body.is-transitioning .flow-takeover,
 .patient-arc[hidden] { display: none; }
 .patient-arc {
   --arc-size: 420px;
-  /* Wider radius: chips fan far enough apart that adjacent names no longer
-     overlap. JS pivots the whole fan on the Patient dock pill, so the arc
-     literally rotates out of the selected name rather than orbiting a point
-     floating in the middle of the screen. */
-  --arc-radius: 188px;
+  /* Radius tuned so the fan sits CLOSE to the Patient pill (the selected name
+     lifts just above the dock) while the wider angular step in JS still keeps
+     adjacent chips from overlapping. JS pivots the whole fan on the pill, so
+     the arc rotates out of the selected name itself. */
+  --arc-radius: 152px;
   position: fixed;
   inset: 0;
   z-index: 200;
 }
 @media (max-width: 720px) {
-  .patient-arc { --arc-size: 86vw; --arc-radius: 138px; }
+  .patient-arc { --arc-size: 86vw; --arc-radius: 120px; }
 }
 .patient-arc-scrim {
   position: absolute;
@@ -3298,8 +3305,9 @@ body.is-transitioning .flow-takeover,
 }
 .patient-arc-chip {
   position: absolute;
-  min-width: 130px;
-  padding: .55rem .8rem;
+  /* Kept compact so the fan can sit close to the pill without chips colliding. */
+  min-width: 116px;
+  padding: .42rem .7rem;
   border-radius: var(--r-2);
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--surface) 60%, transparent);
@@ -3338,7 +3346,7 @@ body.is-transitioning .flow-takeover,
 .patient-arc-chip .initials {
   display: inline-grid;
   place-items: center;
-  width: 24px; height: 24px;
+  width: 20px; height: 20px;
   border-radius: 50%;
   background: linear-gradient(135deg, var(--brand-soft), var(--brand));
   color: #fff;
@@ -4176,10 +4184,11 @@ body.is-transitioning .flow-takeover,
 tr.is-selected {
   background: color-mix(in srgb, var(--brand) 8%, transparent) !important;
 }
-tr.is-selected::after {
-  /* Landing dot on the row so the SVG line has a visible terminus. */
-  content: "";
-}
+/* NOTE: no `tr.is-selected::after` here. Generated content on a <tr> is wrapped
+   by the browser in an anonymous table-cell, so an ::after gave selected rows a
+   phantom 9th cell that nudged their columns out of alignment with the rest of
+   the table — the "extra row / opacity" glitch on selection. The row's landing
+   dot for the connector wire is drawn in SVG (drawBulkLines), not here. */
 tr.is-archiving {
   animation: row-archive 420ms cubic-bezier(.4, 0, .6, 1) forwards;
 }

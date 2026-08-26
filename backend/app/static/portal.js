@@ -151,6 +151,87 @@
   // Expose for other blocks in this file (and for inline callers).
   window.s4dToast = showToast;
 
+  /* --- 1b. persistent image cache (IndexedDB) --------------------------------------
+     Lesion photos and Grad-CAM overlays are streamed decrypted from the API. To
+     let a doctor re-open a report — or run a comparison days later — WITHOUT
+     re-hitting the server each time, we persist each blob in IndexedDB keyed by
+     report id + kind. The FIRST fetch of an image still goes to the server (and
+     is audit-logged there); every later view is served from the device.
+     This is a deliberate trade of the endpoint's no-store posture for offline
+     recall. Everything fails soft: any IDB or fetch problem falls back to a plain
+     network `src`, so images always load even where IndexedDB is unavailable. */
+  var ImgCache = (function () {
+    var DB = "s4d-img-cache", STORE = "blobs", VER = 1;
+    var TTL_MS = 30 * 24 * 60 * 60 * 1000;   // keep for ~30 days
+    var MAX_ENTRIES = 80;                    // cap store size; evict oldest first
+    var dbp = null;
+    function open() {
+      if (dbp) return dbp;
+      dbp = new Promise(function (resolve, reject) {
+        if (!("indexedDB" in window)) { reject(new Error("no-idb")); return; }
+        var req = indexedDB.open(DB, VER);
+        req.onupgradeneeded = function () {
+          var db = req.result;
+          if (!db.objectStoreNames.contains(STORE)) {
+            db.createObjectStore(STORE, { keyPath: "key" }).createIndex("ts", "ts");
+          }
+        };
+        req.onsuccess = function () { resolve(req.result); };
+        req.onerror = function () { reject(req.error || new Error("idb-open")); };
+      }).catch(function (e) { dbp = null; throw e; });
+      return dbp;
+    }
+    function store(mode) {
+      return open().then(function (db) { return db.transaction(STORE, mode).objectStore(STORE); });
+    }
+    function get(key) {
+      return store("readonly").then(function (os) {
+        return new Promise(function (resolve) {
+          var r = os.get(key);
+          r.onsuccess = function () {
+            var rec = r.result;
+            if (!rec || Date.now() - rec.ts > TTL_MS) return resolve(null);  // miss / stale
+            resolve(rec.blob || null);
+          };
+          r.onerror = function () { resolve(null); };
+        });
+      }).catch(function () { return null; });
+    }
+    function put(key, blob) {
+      return store("readwrite").then(function (os) {
+        os.put({ key: key, blob: blob, ts: Date.now() });
+        var countReq = os.count();
+        countReq.onsuccess = function () {
+          var over = countReq.result - MAX_ENTRIES;
+          if (over <= 0) return;
+          var cur = os.index("ts").openCursor();   // oldest first
+          cur.onsuccess = function () {
+            var c = cur.result;
+            if (c && over > 0) { c.delete(); over--; c.continue(); }
+          };
+        };
+      }).catch(function () {});
+    }
+    // Resolve an <img> from cache-or-network. On a hit the blob becomes an object
+    // URL; on a miss we fetch, cache, then show it. Any failure sets the raw URL
+    // so the element's own onload/onerror still run.
+    function load(img, url, key) {
+      if (!img || !url) return;
+      get(key).then(function (blob) {
+        if (blob) { img.src = URL.createObjectURL(blob); return; }
+        fetch(url, { credentials: "same-origin" })
+          .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.blob(); })
+          .then(function (b) { put(key, b); img.src = URL.createObjectURL(b); })
+          .catch(function () { img.src = url; });
+      });
+    }
+    function clear() {
+      return store("readwrite").then(function (os) { os.clear(); }).catch(function () {});
+    }
+    return { load: load, get: get, put: put, clear: clear };
+  })();
+  window.__s4dImgCache = ImgCache;
+
   /* --- 1c. imagery skeletons -------------------------------------------------------- */
   // The lesion photo and Grad-CAM overlay are lazy-loaded from the API after
   // first paint. CSS holds a shimmering placeholder until the image decodes;
@@ -159,12 +240,18 @@
     var img = fig.querySelector("img");
     if (!img) { fig.classList.add("is-loaded"); return; }
     function done() { fig.classList.add("is-loaded"); }
-    // Cache hits may already be complete before this runs.
-    if (img.complete && img.naturalWidth > 0) { done(); return; }
     img.addEventListener("load", done);
     // The inline onerror swaps in an empty-state panel; clear the skeleton too
     // so the placeholder never outlives the image it was standing in for.
     img.addEventListener("error", done);
+    // Route through the persistent cache when the template opted in (data-cache-
+    // url instead of a hard src); otherwise honour whatever src is already set.
+    var cacheUrl = img.getAttribute("data-cache-url");
+    if (cacheUrl) {
+      ImgCache.load(img, cacheUrl, img.getAttribute("data-cache-key") || cacheUrl);
+    } else if (img.complete && img.naturalWidth > 0) {
+      done();   // a hard-src cache hit may already be complete before this runs
+    }
   });
 
   /* --- 2. shared morph primitive (R5) ---------------------------------------------- */
@@ -1329,8 +1416,8 @@
       // nominal spot if the pill isn't measurable for some reason.
       var pivotX = pill ? pill.left + pill.width / 2 : window.innerWidth / 2;
       var pivotY = pill ? pill.top : window.innerHeight - 64;
-      var radius = parseFloat(getComputedStyle(dial).getPropertyValue("--arc-radius")) || 178;
-      var ARC_STEP = 40 * Math.PI / 180;                     // 40° between chips
+      var radius = parseFloat(getComputedStyle(dial).getPropertyValue("--arc-radius")) || 152;
+      var ARC_STEP = 42 * Math.PI / 180;                     // 42° between chips
       track.querySelectorAll(".patient-arc-chip").forEach(function (chip, i) {
         var offset = i - activeIndex;
         var halfN = patients.length / 2;
@@ -1345,9 +1432,12 @@
         var y = pivotY - radius * Math.cos(angle);
         chip.style.left = x + "px";
         chip.style.top = y + "px";
-        var scale = visible ? Math.max(.66, 1 - absOffset * 0.12) : 0.6;
+        // Steeper falloff: the outermost visible pair (offset 2) sits near the
+        // dock's top edge, so keep it small and faint enough that the graze reads
+        // as a "more this way" hint rather than a chip fighting the dock.
+        var scale = visible ? Math.max(.6, 1 - absOffset * 0.17) : 0.55;
         chip.style.setProperty("--chip-scale", scale);
-        var opacity = visible ? Math.max(.16, 1 - absOffset * 0.34) : 0;
+        var opacity = visible ? Math.max(.12, 1 - absOffset * 0.42) : 0;
         chip.style.setProperty("--chip-opacity", opacity);
         chip.style.pointerEvents = visible ? "auto" : "none";
         chip.style.zIndex = String(10 - Math.floor(absOffset));
@@ -1510,10 +1600,38 @@
       document.querySelectorAll("table.reports-data-table .row-cb:checked")
     );
   }
+  // Slide the rail so its vertical centre lines up with the FIRST selected
+  // row, then leave it there. Only applies in the wide "overhang" layout where
+  // the rail is absolutely positioned to the left of the table; in the narrow
+  // (<=1200px) layout the rail is docked in normal flow, so we leave its top
+  // alone. The position is clamped to the shell so a selection near the very
+  // top or bottom can't push the rail off the table.
+  function positionBulkBar() {
+    if (!bulkBar || !reportsShell || bulkBar.hidden) return;
+    if (getComputedStyle(bulkBar).position !== "absolute") {
+      bulkBar.style.top = "";               // docked layout — CSS owns it
+      return;
+    }
+    var rows = selectedRows();
+    if (!rows.length) return;
+    var firstTr = rows[0].closest("tr");
+    if (!firstTr) return;
+    var shellRect = reportsShell.getBoundingClientRect();
+    var rowRect = firstTr.getBoundingClientRect();
+    var barH = bulkBar.offsetHeight || 0;
+    var rowMidInShell = rowRect.top + rowRect.height / 2 - shellRect.top;
+    var top = rowMidInShell - barH / 2;
+    // Keep the whole rail within the shell's height.
+    var maxTop = Math.max(0, reportsShell.offsetHeight - barH - 4);
+    top = Math.max(4, Math.min(top, maxTop));
+    bulkBar.style.top = top + "px";
+  }
+
   function drawBulkLines() {
     if (!bulkLines || !reportsShell || !bulkBar) return;
     while (bulkLines.firstChild) bulkLines.removeChild(bulkLines.firstChild);
     if (bulkBar.hidden) return;
+    positionBulkBar();
     // The SVG's own bounding rect includes the 124px overhang to the left of
     // the shell — use it as the origin for coordinate math so lines sit
     // pixel-perfectly against the rail and rows regardless of where the shell
@@ -1785,10 +1903,10 @@
         '</div>' +
         '<div class="compare-images">' +
           (imageSrc
-            ? '<div class="compare-image"><img loading="lazy" alt="Lesion photo" src="' + imageSrc + '" onerror="this.parentNode.classList.add(\'compare-image--placeholder\');this.remove();"><span class="compare-image-label">Lesion</span></div>'
+            ? '<div class="compare-image"><img loading="lazy" alt="Lesion photo" data-cache-url="' + imageSrc + '" data-cache-key="report-' + escapeHtml(reportId) + '-image" onerror="this.parentNode.classList.add(\'compare-image--placeholder\');this.remove();"><span class="compare-image-label">Lesion</span></div>'
             : '<div class="compare-image compare-image--placeholder">No lesion image</div>') +
           (camSrc
-            ? '<div class="compare-image"><img loading="lazy" alt="Grad-CAM heatmap" src="' + camSrc + '" onerror="this.parentNode.classList.add(\'compare-image--placeholder\');this.remove();"><span class="compare-image-label">Grad-CAM</span></div>'
+            ? '<div class="compare-image"><img loading="lazy" alt="Grad-CAM heatmap" data-cache-url="' + camSrc + '" data-cache-key="report-' + escapeHtml(reportId) + '-gradcam" onerror="this.parentNode.classList.add(\'compare-image--placeholder\');this.remove();"><span class="compare-image-label">Grad-CAM</span></div>'
             : '<div class="compare-image compare-image--placeholder">No heatmap</div>') +
         '</div>' +
         '<div class="compare-row"><span class="compare-k">Confidence</span>' +
@@ -1804,6 +1922,11 @@
       // popping in all at once.
       col.style.animationDelay = (idx * 70) + "ms";
       compareGrid.appendChild(col);
+      // Resolve the two images from the persistent cache (or network on first
+      // view). Done after insertion so the <img> elements exist in the DOM.
+      col.querySelectorAll("img[data-cache-url]").forEach(function (img) {
+        ImgCache.load(img, img.getAttribute("data-cache-url"), img.getAttribute("data-cache-key"));
+      });
     });
 
     renderCompareDelta();
