@@ -209,21 +209,14 @@
 
     <span class="dock-sep" aria-hidden="true"></span>
 
-    {% if report %}
-    <a class="dock-item is-active" href="/portal/reports/{{ report.id }}"
-       data-dock-report-current="{{ report.id }}">
-      <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#file-text"/></svg>
-      <span>Report</span>
-      <span class="dock-report-id mono">#{{ report.id }}</span>
+    {# The third pivot is the appointment calendar (it replaced the old Report
+       shortcut). Active whenever any /portal/appointments… page is in view. #}
+    {% set on_appts = request.url.path.startswith('/portal/appointments') %}
+    <a class="dock-item{% if on_appts %} is-active{% endif %}" href="/portal/appointments"
+       data-dock-appts title="Appointment calendar">
+      <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#calendar"/></svg>
+      <span>Appointments</span>
     </a>
-    {% else %}
-    <button class="dock-item dock-item-btn" type="button" data-dock-picker="report"
-            title="Open the last report you viewed">
-      <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#file-text"/></svg>
-      <span>Report</span>
-      <span class="dock-report-id mono" data-dock-report-id hidden></span>
-    </button>
-    {% endif %}
   </nav>
 
   {# Semi-circular patient dial — chips fan low above the Patient slot in the

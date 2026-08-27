@@ -1,11 +1,26 @@
 import 'package:flutter/material.dart';
+import '../Appointments/appointmentsScreen.dart';
 import '../Doctors/nearbyDoctorsScreen.dart';
 import '../Guide/skinGuideScreen.dart';
 import '../theme.dart';
+import '../../services/appointments_service.dart';
+import '../../services/sound_service.dart';
 import '../../services/theme_service.dart';
 
-class ServiceScreen extends StatelessWidget {
+class ServiceScreen extends StatefulWidget {
   const ServiceScreen({super.key});
+
+  @override
+  State<ServiceScreen> createState() => _ServiceScreenState();
+}
+
+class _ServiceScreenState extends State<ServiceScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Keep the "your doctor responded" badge on the appointments tile current.
+    AppointmentsService.instance.refreshUnread();
+  }
 
   @override
   Widget build(BuildContext context) => ValueListenableBuilder<ThemeMode>(
@@ -36,6 +51,27 @@ class ServiceScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 20),
+              // Book an appointment — the primary care action, with a live badge
+              // when the doctor has approved / declined / recommended a visit.
+              ValueListenableBuilder<int>(
+                valueListenable: AppointmentsService.instance.unread,
+                builder: (_, unread, __) => _tile(
+                  context,
+                  Icons.event_available_rounded,
+                  'Book an appointment',
+                  'Request a consultation with a verified dermatologist, or review a visit your doctor recommended.',
+                  false,
+                  dark,
+                  badge: unread,
+                  onTap: () {
+                    SoundService.instance.open();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AppointmentsScreen()),
+                    );
+                  },
+                ),
+              ),
               _tile(
                 context,
                 Icons.location_on_outlined,
@@ -97,6 +133,7 @@ class ServiceScreen extends StatelessWidget {
     bool info,
     bool dark, {
     VoidCallback? onTap,
+    int badge = 0,
   }) {
     final ink = dark ? Themes.darkInk : Themes.ink;
     final inkSoft = dark ? Themes.darkInkSoft : Themes.inkSoft;
@@ -133,18 +170,44 @@ class ServiceScreen extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: tile,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: dark
-                          ? Themes.tealGlow.withValues(alpha: 0.27)
-                          : Colors.white.withValues(alpha: 0.85),
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: tile,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: dark
+                              ? Themes.tealGlow.withValues(alpha: 0.27)
+                              : Colors.white.withValues(alpha: 0.85),
+                        ),
+                      ),
+                      child: Icon(icon, color: accent, size: 22),
                     ),
-                  ),
-                  child: Icon(icon, color: accent, size: 22),
+                    if (badge > 0)
+                      Positioned(
+                        right: -5,
+                        top: -5,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          constraints: const BoxConstraints(minWidth: 18),
+                          decoration: BoxDecoration(
+                            color: Themes.danger,
+                            borderRadius: BorderRadius.circular(999),
+                            border: Border.all(
+                                color: dark ? Themes.darkSurface : Colors.white, width: 1.5),
+                          ),
+                          child: Text(
+                            '$badge',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                                color: Colors.white, fontSize: 10.5, fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
                 const SizedBox(width: 14),
                 Expanded(

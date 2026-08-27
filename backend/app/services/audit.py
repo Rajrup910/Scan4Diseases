@@ -47,11 +47,17 @@ ACTION_CONSENT_GRANT = "consent_grant"
 ACTION_CONSENT_REVOKE = "consent_revoke"
 ACTION_REPORT_SHARE = "report_share"
 ACTION_REPORT_UNSHARE = "report_unshare"
+ACTION_APPT_BOOK = "appointment_book"          # patient requested a visit
+ACTION_APPT_RECOMMEND = "appointment_recommend"  # doctor proposed a visit
+ACTION_APPT_APPROVE = "appointment_approve"
+ACTION_APPT_DECLINE = "appointment_decline"
+ACTION_APPT_CANCEL = "appointment_cancel"
 
 # --- target-type vocabulary --------------------------------------------------------------
 
 TARGET_USER = "user"
 TARGET_REPORT = "report"
+TARGET_APPOINTMENT = "appointment"
 
 
 def client_ip(request: Request | None) -> str | None:

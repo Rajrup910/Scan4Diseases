@@ -50,6 +50,26 @@ REPORT_STATUSES = frozenset(
     {REPORT_NEW, REPORT_UNDER_REVIEW, REPORT_REVIEWED, REPORT_ESCALATED}
 )
 
+# --- appointment lifecycle ---
+# A patient books (REQUESTED) and the doctor approves it (CONFIRMED) or declines it
+# (DECLINED); a doctor may also recommend one directly, which is created already CONFIRMED.
+# Either side may CANCEL a live appointment, and a past one may be marked COMPLETED.
+APPT_REQUESTED = "requested"   # patient booked; awaiting doctor approval
+APPT_CONFIRMED = "confirmed"   # approved by the doctor, or doctor-recommended
+APPT_DECLINED = "declined"     # doctor rejected the patient's request
+APPT_CANCELLED = "cancelled"   # cancelled after being live (by doctor or patient)
+APPT_COMPLETED = "completed"   # the visit happened
+APPT_STATUSES = frozenset(
+    {APPT_REQUESTED, APPT_CONFIRMED, APPT_DECLINED, APPT_CANCELLED, APPT_COMPLETED}
+)
+# The two states that still occupy a slot on the calendar / need action.
+APPT_LIVE_STATUSES = frozenset({APPT_REQUESTED, APPT_CONFIRMED})
+
+# Who created (or acted on) an appointment. Stored as plain strings, same rationale
+# as the role/link vocabularies above.
+ACTOR_PATIENT = "patient"
+ACTOR_DOCTOR = "doctor"
+
 
 def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
@@ -181,6 +201,72 @@ class DoctorNote(Base):
     )
 
     report: Mapped["Report"] = relationship(back_populates="notes")
+
+
+class Appointment(Base):
+    """A booked consultation between one patient and one doctor.
+
+    The booking flow is symmetric to the sharing model: a patient may *request* an
+    appointment (which the doctor then approves or declines), and a doctor may *recommend*
+    one directly (created already confirmed). The optional `report_id` links the visit to a
+    specific shared screening so the clinician opens the appointment with the case in hand.
+
+    Times are stored UTC-aware (see `_utcnow`); the app and portal render them in local time.
+    `unread_for_patient` drives the "your doctor responded" cue in the mobile app — it is set
+    whenever the doctor changes the state and cleared once the patient has looked.
+    """
+
+    __tablename__ = "appointments"
+    __table_args__ = (
+        Index("ix_appointments_doctor_time", "doctor_id", "scheduled_for"),
+        Index("ix_appointments_patient_time", "patient_id", "scheduled_for"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    doctor_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    patient_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    # The case this visit is about, if any. SET NULL so deleting a report never orphans the
+    # appointment row; the visit simply loses its linked case.
+    report_id: Mapped[int | None] = mapped_column(
+        ForeignKey("reports.id", ondelete="SET NULL"), nullable=True
+    )
+
+    scheduled_for: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, index=True
+    )
+    duration_minutes: Mapped[int] = mapped_column(default=30, server_default="30", nullable=False)
+    reason: Mapped[str] = mapped_column(Text, nullable=False, default="")
+
+    status: Mapped[str] = mapped_column(
+        String(20), default=APPT_REQUESTED, server_default=APPT_REQUESTED, nullable=False
+    )
+    created_by: Mapped[str] = mapped_column(
+        String(10), default=ACTOR_PATIENT, server_default=ACTOR_PATIENT, nullable=False
+    )
+    # Set when the appointment is cancelled/declined, with a short reason the other party sees.
+    cancelled_by: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    cancel_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # The mobile "your doctor responded" badge: True whenever the doctor last moved the
+    # state, cleared once the patient views their appointments.
+    unread_for_patient: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="0", nullable=False
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow, nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=_utcnow, onupdate=_utcnow, nullable=False
+    )
+
+    doctor: Mapped["User"] = relationship(foreign_keys=[doctor_id])
+    patient: Mapped["User"] = relationship(foreign_keys=[patient_id])
+    report: Mapped["Report | None"] = relationship(foreign_keys=[report_id])
 
 
 class AuditLog(Base):

@@ -25,6 +25,7 @@ from backend.app.db.seed import seed_default_data
 from backend.app.db.session import SessionLocal, init_db
 from backend.app.routes import (
     admin,
+    appointments,
     auth,
     chat,
     doctor,
@@ -265,6 +266,7 @@ def create_app() -> FastAPI:
     app.include_router(chat.router)
     app.include_router(media.router)
     app.include_router(patient_sharing.router)
+    app.include_router(appointments.router)
     app.include_router(doctor.router)
     app.include_router(portal.router)
     app.include_router(admin.router)

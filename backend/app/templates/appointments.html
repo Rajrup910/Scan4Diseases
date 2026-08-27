@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Appointments{% endblock %}
+
+{% block content %}
+<section class="appt-page" data-appt-page data-today="{{ today_key }}">
+
+  <header class="appt-head">
+    <div class="appt-head-left">
+      <h1 class="appt-title">
+        <span class="appt-title-ic" aria-hidden="true">
+          <svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#calendar"/></svg>
+        </span>
+        Appointments
+      </h1>
+      <p class="muted appt-sub">Every booked visit, mapped out. Click one to open its case summary — approve requests, recommend a slot, or cancel and notify the patient.</p>
+    </div>
+    <div class="appt-head-stats">
+      <span class="appt-stat is-pending" title="Requests awaiting your approval">
+        <span class="appt-stat-dot"></span><b>{{ stats.awaiting }}</b> awaiting
+      </span>
+      <span class="appt-stat is-ok" title="Confirmed, upcoming visits">
+        <span class="appt-stat-dot"></span><b>{{ stats.upcoming }}</b> upcoming
+      </span>
+      <button class="btn btn-primary appt-reco-btn" type="button" data-appt-reco-open>
+        <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#plus"/></svg>
+        Recommend a visit
+      </button>
+    </div>
+  </header>
+
+  <div class="appt-layout">
+    <!-- Calendar -->
+    <div class="appt-cal card">
+      <div class="appt-cal-bar">
+        <div class="appt-cal-monthgroup">
+          <button class="appt-nav" type="button" data-appt-prev aria-label="Previous month">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+          </button>
+          <h2 class="appt-month" data-appt-month aria-live="polite">—</h2>
+          <button class="appt-nav" type="button" data-appt-next aria-label="Next month">
+            <svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+          </button>
+        </div>
+        <button class="btn btn-small appt-today-btn" type="button" data-appt-today>Today</button>
+      </div>
+
+      <div class="appt-weekdays" aria-hidden="true">
+        <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+      </div>
+
+      <div class="appt-grid" data-appt-grid role="grid" aria-label="Appointment calendar"></div>
+
+      <div class="appt-legend">
+        <span class="appt-leg"><span class="appt-dot tone-pending"></span> Awaiting approval</span>
+        <span class="appt-leg"><span class="appt-dot tone-ok"></span> Confirmed</span>
+        <span class="appt-leg"><span class="appt-dot tone-muted"></span> Closed</span>
+      </div>
+    </div>
+
+    <!-- Right rail: agenda by default, summary widget slides in on selection -->
+    <aside class="appt-rail" data-appt-rail>
+      <div class="appt-agenda" data-appt-agenda>
+        <header class="appt-agenda-head">
+          <h3>Needs attention</h3>
+          <span class="appt-agenda-count">{{ agenda|length }}</span>
+        </header>
+        {% if agenda %}
+        <ul class="appt-agenda-list">
+          {% for a in agenda %}
+          <li>
+            <button class="appt-agenda-item" type="button" data-appt-open="{{ a.id }}">
+              <span class="appt-agenda-date">
+                <span class="appt-agenda-day">{{ a.day_label }}</span>
+                <span class="appt-agenda-time">{{ a.time_label }}</span>
+              </span>
+              <span class="appt-agenda-body">
+                <span class="appt-agenda-name">{{ a.patient_name }}</span>
+                <span class="appt-agenda-meta">
+                  {% if a.condition %}{{ a.condition }}{% else %}{{ a.reason or 'General consultation' }}{% endif %}
+                </span>
+              </span>
+              <span class="appt-badge tone-{{ a.tone }}">{{ a.status_label }}</span>
+            </button>
+          </li>
+          {% endfor %}
+        </ul>
+        {% else %}
+        <div class="appt-agenda-empty">
+          <svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#check-circle"/></svg>
+          <p>You're all caught up — no pending requests or upcoming visits.</p>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Summary widget (JS-built, slides in) -->
+      <div class="appt-summary" data-appt-summary hidden aria-live="polite"></div>
+    </aside>
+  </div>
+
+  {# All of this doctor's appointments, pre-formatted server-side (local time), so the
+     client can build any month without another round-trip. #}
+  <script type="application/json" data-appt-json>{{ appointments|tojson }}</script>
+</section>
+
+<!-- Recommend-a-visit dialog -->
+<dialog class="appt-reco-dialog" data-appt-reco aria-label="Recommend a visit">
+  <form class="appt-reco-panel" method="post" action="/portal/appointments/recommend" data-appt-reco-form>
+    <header class="appt-reco-headrow">
+      <h2>Recommend a visit</h2>
+      <button class="compare-close-chip" type="button" data-appt-reco-close aria-label="Close">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#x"/></svg>
+      </button>
+    </header>
+    <p class="muted">Offer a consented patient a confirmed slot. It appears in their app right away.</p>
+
+    <label class="appt-field">
+      <span>Patient</span>
+      <select name="patient_id" required>
+        <option value="" disabled selected>Choose a patient…</option>
+        {% for p in patients %}
+        <option value="{{ p.id }}">{{ p.display_name or p.email }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <div class="appt-field-row">
+      <label class="appt-field">
+        <span>Date &amp; time</span>
+        <input type="datetime-local" name="scheduled_for" required data-appt-when>
+      </label>
+      <label class="appt-field appt-field-narrow">
+        <span>Length</span>
+        <select name="duration_minutes">
+          <option value="15">15 min</option>
+          <option value="30" selected>30 min</option>
+          <option value="45">45 min</option>
+          <option value="60">60 min</option>
+        </select>
+      </label>
+    </div>
+
+    <label class="appt-field">
+      <span>Reason <em>(optional)</em></span>
+      <textarea name="reason" rows="2" maxlength="1000" placeholder="e.g. Follow-up on the escalated melanoma screening"></textarea>
+    </label>
+
+    <div class="appt-reco-actions">
+      <button class="btn btn-ghost" type="button" data-appt-reco-close>Cancel</button>
+      <button class="btn btn-primary" type="submit">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#check-circle"/></svg>
+        Send recommendation
+      </button>
+    </div>
+  </form>
+</dialog>
+{% endblock %}

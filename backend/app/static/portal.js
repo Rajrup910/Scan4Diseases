@@ -2361,4 +2361,312 @@
       el.style.fontSize = ".62rem";
     });
   })();
+
+  /* --- appointment calendar (the /portal/appointments page) -----------------------
+     A month grid built entirely client-side from the appointments embedded as JSON,
+     with a slide-in summary widget on the right that fetches one appointment's full
+     case picture on demand. Doctor actions (approve / decline / cancel) are real
+     form POSTs that redirect with a ?flash= so the reload shows a toast; the
+     "Recommend a visit" dialog is a plain POST too. Everything degrades: with JS
+     off, the server-rendered agenda list is still there (only the calendar and the
+     slide-in widget need scripting). */
+  (function () {
+    var page = document.querySelector("[data-appt-page]");
+    if (!page) return;
+
+    function esc(s) {
+      return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+      });
+    }
+    function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
+
+    // --- data ---
+    var appts = [];
+    var jsonEl = page.querySelector("[data-appt-json]");
+    try { appts = JSON.parse((jsonEl && jsonEl.textContent) || "[]"); } catch (e) { appts = []; }
+    var byDate = {};
+    appts.forEach(function (a) { (byDate[a.date_key] = byDate[a.date_key] || []).push(a); });
+    Object.keys(byDate).forEach(function (k) {
+      byDate[k].sort(function (x, y) { return x.time_label < y.time_label ? -1 : 1; });
+    });
+
+    var grid = page.querySelector("[data-appt-grid]");
+    var monthLabel = page.querySelector("[data-appt-month]");
+    var rail = page.querySelector("[data-appt-rail]");
+    var agenda = page.querySelector("[data-appt-agenda]");
+    var summary = page.querySelector("[data-appt-summary]");
+    var todayKey = page.getAttribute("data-today") || "";
+
+    var MONTHS = ["January", "February", "March", "April", "May", "June", "July",
+      "August", "September", "October", "November", "December"];
+    function pad(n) { return (n < 10 ? "0" : "") + n; }
+    function keyOf(y, m, d) { return y + "-" + pad(m + 1) + "-" + pad(d); }
+
+    var tp = (todayKey.split("-"));
+    var today = { y: +tp[0], m: (+tp[1]) - 1, d: +tp[2] };
+    var viewY = today.y, viewM = today.m;
+
+    // --- month grid ---
+    function dayCell(y, m, d, outside) {
+      var dt = new Date(y, m, d);              // normalises month overflow
+      var key = keyOf(dt.getFullYear(), dt.getMonth(), dt.getDate());
+      var cell = document.createElement("div");
+      cell.className = "appt-cell" + (outside ? " is-outside" : "") + (key === todayKey ? " is-today" : "");
+      cell.setAttribute("role", "gridcell");
+      var num = document.createElement("span");
+      num.className = "appt-cell-num";
+      num.textContent = dt.getDate();
+      cell.appendChild(num);
+
+      var items = byDate[key] || [];
+      if (items.length) {
+        if (items.some(function (a) { return a.status === "requested"; })) cell.classList.add("has-pending");
+        var list = document.createElement("div");
+        list.className = "appt-cell-items";
+        items.slice(0, 3).forEach(function (a) {
+          var chip = document.createElement("button");
+          chip.type = "button";
+          chip.className = "appt-chip tone-" + a.tone +
+            (a.status === "cancelled" || a.status === "declined" ? " is-closed" : "");
+          chip.setAttribute("data-appt-open", a.id);
+          var time = document.createElement("span"); time.className = "appt-chip-time"; time.textContent = a.time_label;
+          var nm = document.createElement("span"); nm.className = "appt-chip-name"; nm.textContent = a.patient_name;
+          chip.appendChild(time); chip.appendChild(nm);
+          list.appendChild(chip);
+        });
+        if (items.length > 3) {
+          var more = document.createElement("button");
+          more.type = "button"; more.className = "appt-chip-more";
+          more.textContent = "+" + (items.length - 3) + " more";
+          more.setAttribute("data-appt-open", items[3].id);
+          list.appendChild(more);
+        }
+        cell.appendChild(list);
+      }
+      return cell;
+    }
+
+    function buildGrid(dir) {
+      monthLabel.textContent = MONTHS[viewM] + " " + viewY;
+      var first = new Date(viewY, viewM, 1);
+      var startDow = (first.getDay() + 6) % 7;               // Monday-start
+      var daysInMonth = new Date(viewY, viewM + 1, 0).getDate();
+      var frag = document.createDocumentFragment();
+      var i;
+      for (i = 0; i < startDow; i++) frag.appendChild(dayCell(viewY, viewM, i - startDow + 1, true));
+      for (i = 1; i <= daysInMonth; i++) frag.appendChild(dayCell(viewY, viewM, i, false));
+      var total = startDow + daysInMonth;
+      var trailing = (7 - (total % 7)) % 7;
+      for (i = 1; i <= trailing; i++) frag.appendChild(dayCell(viewY, viewM + 1, i, true));
+
+      grid.innerHTML = "";
+      grid.appendChild(frag);
+      if (!reduce && dir) {
+        var cls = dir > 0 ? "is-slide-next" : "is-slide-prev";
+        grid.classList.remove("is-slide-next", "is-slide-prev");
+        void grid.offsetWidth;
+        grid.classList.add(cls);
+        setTimeout(function () { grid.classList.remove(cls); }, 380);
+      }
+    }
+
+    var prev = page.querySelector("[data-appt-prev]");
+    var next = page.querySelector("[data-appt-next]");
+    var todayBtn = page.querySelector("[data-appt-today]");
+    if (prev) prev.addEventListener("click", function () { Sound.tap(); viewM--; if (viewM < 0) { viewM = 11; viewY--; } buildGrid(-1); });
+    if (next) next.addEventListener("click", function () { Sound.tap(); viewM++; if (viewM > 11) { viewM = 0; viewY++; } buildGrid(1); });
+    if (todayBtn) todayBtn.addEventListener("click", function () { Sound.tap(); viewY = today.y; viewM = today.m; buildGrid(0); });
+
+    // --- summary widget ---
+    function reveal() {
+      if (agenda) agenda.hidden = true;
+      summary.hidden = false;
+      summary.classList.remove("is-in");
+      void summary.offsetWidth;
+      summary.classList.add("is-in");
+    }
+    function closeSummary() {
+      Sound.close();
+      summary.classList.remove("is-in");
+      summary.hidden = true;
+      if (agenda) agenda.hidden = false;
+      page.querySelectorAll(".is-selected").forEach(function (el) { el.classList.remove("is-selected"); });
+    }
+
+    function actionForm(id, action, label, confirmLabel, placeholder) {
+      return '<form method="post" action="/portal/appointments/' + id + '/' + action + '" class="appt-act-form appt-act-danger">'
+        + '<button class="btn btn-ghost appt-act-trigger" type="button">' + esc(label) + '</button>'
+        + '<div class="appt-reason" hidden>'
+        + '<textarea name="reason" rows="2" maxlength="1000" placeholder="' + esc(placeholder) + '"></textarea>'
+        + '<button class="btn btn-danger appt-act-go" type="submit">' + esc(confirmLabel) + '</button>'
+        + '</div></form>';
+    }
+
+    function iconUse(id, cls) {
+      return '<svg class="icon ' + (cls || "") + '" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#' + id + '"/></svg>';
+    }
+
+    function renderSummary(data) {
+      var ap = data.appointment, p = data.patient, cases = data.cases || [];
+      var h = "";
+      h += '<div class="appt-sum-topbar">';
+      h += '<button class="appt-sum-back" type="button" data-appt-sum-close aria-label="Back to agenda">'
+        + '<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg><span>Back</span></button>';
+      h += '<span class="appt-badge tone-' + esc(ap.tone) + '">' + esc(ap.status_label) + '</span>';
+      h += '</div>';
+
+      h += '<div class="appt-sum-patient">';
+      h += '<div class="appt-sum-avatar">' + esc((p.name || "?").charAt(0).toUpperCase()) + '</div>';
+      h += '<div class="appt-sum-pinfo"><div class="appt-sum-pname">' + esc(p.name) + '</div>'
+        + '<div class="appt-sum-pmail mono">' + esc(p.email) + '</div></div>';
+      h += '</div>';
+
+      h += '<div class="appt-sum-pchips">';
+      h += '<span class="appt-chipstat"><b>' + p.report_count + '</b> case' + (p.report_count === 1 ? "" : "s") + '</span>';
+      if (p.escalated) h += '<span class="appt-chipstat is-esc"><b>' + p.escalated + '</b> escalated</span>';
+      h += '<a class="appt-chipstat appt-chip-link" href="' + esc(p.url) + '">Open patient →</a>';
+      h += '</div>';
+
+      h += '<div class="appt-sum-when">' + '<div class="appt-sum-when-ic">' + iconUse("clock", "") + '</div>'
+        + '<div><div class="appt-sum-date">' + esc(ap.date_label) + '</div>'
+        + '<div class="appt-sum-time">' + esc(ap.time_label) + ' · ' + ap.duration + ' min · '
+        + (ap.created_by === "doctor" ? "Recommended by you" : "Requested by patient")
+        + (ap.is_past ? ' · past' : '') + '</div></div></div>';
+
+      if (ap.reason) h += '<div class="appt-sum-reason"><span class="appt-sum-label">Reason for visit</span><p>' + esc(ap.reason) + '</p></div>';
+
+      if (ap.cancel_reason && (ap.status === "cancelled" || ap.status === "declined")) {
+        h += '<div class="appt-sum-cancelnote">' + iconUse("alert-triangle", "icon-sm")
+          + '<div><b>' + (ap.status === "declined" ? "Declined" : "Cancelled") + '</b> — ' + esc(ap.cancel_reason) + '</div></div>';
+      }
+
+      h += '<div class="appt-sum-cases"><div class="appt-sum-label">Cases linked to this patient</div>';
+      if (cases.length) {
+        h += '<ul class="appt-caselist">';
+        cases.forEach(function (c) {
+          h += '<li class="appt-case' + (c.linked ? " is-linked" : "") + '">'
+            + '<a href="' + esc(c.url) + '" class="appt-case-link">'
+            + '<span class="appt-case-tone tone-' + esc(c.tone) + '"></span>'
+            + '<span class="appt-case-main"><span class="appt-case-cond">' + esc(c.condition)
+            + (c.linked ? ' <em class="appt-case-tag">This visit</em>' : '') + '</span>'
+            + '<span class="appt-case-meta">' + esc(c.triage) + ' · ' + esc(c.status)
+            + (c.confidence != null ? ' · ' + c.confidence + '%' : '') + ' · ' + esc(c.date) + '</span></span>'
+            + iconUse("arrow-right", "icon-sm appt-case-arrow") + '</a></li>';
+        });
+        h += '</ul>';
+      } else {
+        h += '<div class="appt-sum-nocase">No shared cases for this patient yet.</div>';
+      }
+      h += '</div>';
+
+      var acts = "";
+      if (ap.can_approve) {
+        acts += '<form method="post" action="/portal/appointments/' + ap.id + '/approve" class="appt-act-form">'
+          + '<button class="btn btn-primary appt-act-approve" type="submit">' + iconUse("check-circle", "icon-sm") + 'Approve request</button></form>';
+      }
+      if (ap.can_decline) acts += actionForm(ap.id, "decline", "Decline", "Confirm decline", "Optional note to the patient…");
+      if (ap.can_cancel) acts += actionForm(ap.id, "cancel", "Cancel visit", "Confirm — notify patient", "Why is this being cancelled? (the patient sees this)");
+      if (acts) h += '<div class="appt-sum-actions">' + acts + '</div>';
+
+      summary.innerHTML = h;
+    }
+
+    function openSummary(id) {
+      Sound.open();
+      buzz(10);
+      page.querySelectorAll(".appt-chip.is-selected,.appt-agenda-item.is-selected,.appt-chip-more.is-selected")
+        .forEach(function (el) { el.classList.remove("is-selected"); });
+      page.querySelectorAll('[data-appt-open="' + id + '"]').forEach(function (el) { el.classList.add("is-selected"); });
+      summary.innerHTML = '<div class="appt-sum-loading">Loading case…</div>';
+      reveal();
+      fetch("/portal/appointments/" + id + "/summary", { headers: { "Accept": "application/json" }, credentials: "same-origin" })
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+        .then(function (data) { renderSummary(data); })
+        .catch(function () { summary.innerHTML = '<div class="appt-sum-empty"><p>Could not load this appointment.</p><button class="btn btn-ghost" type="button" data-appt-sum-close>Back</button></div>'; });
+    }
+
+    // Delegated interactions across the calendar + rail.
+    page.addEventListener("click", function (e) {
+      var opener = e.target.closest("[data-appt-open]");
+      if (opener) { e.preventDefault(); openSummary(opener.getAttribute("data-appt-open")); return; }
+      if (e.target.closest("[data-appt-sum-close]")) { e.preventDefault(); closeSummary(); return; }
+      var trig = e.target.closest(".appt-act-trigger");
+      if (trig) {
+        var form = trig.closest("form");
+        var reason = form.querySelector(".appt-reason");
+        if (reason) reason.hidden = false;
+        trig.hidden = true;
+        var ta = form.querySelector("textarea");
+        if (ta) ta.focus();
+        Sound.tap(); buzz(12);
+        return;
+      }
+    });
+
+    // A firmer buzz when a destructive/confirming action is actually submitted.
+    page.addEventListener("submit", function (e) {
+      if (e.target && e.target.matches && e.target.matches(".appt-act-form")) { buzz([14, 30, 14]); }
+    });
+
+    // --- recommend dialog ---
+    var recoDialog = document.querySelector("[data-appt-reco]");
+    var recoOpen = page.querySelector("[data-appt-reco-open]");
+    function setRecoMin() {
+      if (!recoDialog) return;
+      var input = recoDialog.querySelector("[data-appt-when]");
+      if (!input) return;
+      function isoLocal(dt) {
+        return dt.getFullYear() + "-" + pad(dt.getMonth() + 1) + "-" + pad(dt.getDate())
+          + "T" + pad(dt.getHours()) + ":" + pad(dt.getMinutes());
+      }
+      var now = new Date();
+      input.min = isoLocal(now);
+      if (!input.value) {
+        var def = new Date(now.getTime() + 3600000);
+        def.setMinutes(0, 0, 0);
+        input.value = isoLocal(def);
+      }
+    }
+    if (recoOpen && recoDialog) {
+      recoOpen.addEventListener("click", function () {
+        Sound.open();
+        setRecoMin();
+        if (recoDialog.showModal) { try { recoDialog.showModal(); } catch (e) { recoDialog.setAttribute("open", ""); } }
+        else recoDialog.setAttribute("open", "");
+      });
+      recoDialog.querySelectorAll("[data-appt-reco-close]").forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          Sound.close();
+          if (recoDialog.close) { try { recoDialog.close(); } catch (e) { recoDialog.removeAttribute("open"); } }
+          else recoDialog.removeAttribute("open");
+        });
+      });
+      // Click the backdrop to dismiss.
+      recoDialog.addEventListener("click", function (e) {
+        if (e.target === recoDialog) { Sound.close(); try { recoDialog.close(); } catch (err) {} }
+      });
+    }
+
+    // --- flash toast + deep-link after a POST/redirect ---
+    (function () {
+      var params = new URLSearchParams(location.search);
+      var flash = params.get("flash");
+      var hl = params.get("hl");
+      var MSG = {
+        approved: ["Appointment approved", "The patient has been notified.", false],
+        declined: ["Request declined", "The patient has been notified.", true],
+        cancelled: ["Appointment cancelled", "The patient has been notified.", true],
+        recommended: ["Recommendation sent", "It's now in the patient's app.", false]
+      };
+      if (flash && MSG[flash] && typeof showToast === "function") {
+        showToast(MSG[flash][0], MSG[flash][1], MSG[flash][2]);
+      }
+      if (hl) setTimeout(function () { openSummary(hl); }, 220);
+      if (flash || hl) { try { history.replaceState(null, "", location.pathname); } catch (e) {} }
+    })();
+
+    // First paint.
+    buildGrid(0);
+  })();
 })();

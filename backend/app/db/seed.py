@@ -14,6 +14,11 @@ from sqlalchemy.orm import Session
 
 from backend.app.config import get_settings
 from backend.app.db.models import (
+    ACTOR_DOCTOR,
+    ACTOR_PATIENT,
+    APPT_CANCELLED,
+    APPT_CONFIRMED,
+    APPT_REQUESTED,
     LINK_ACTIVE,
     REPORT_ESCALATED,
     REPORT_NEW,
@@ -21,6 +26,7 @@ from backend.app.db.models import (
     REPORT_UNDER_REVIEW,
     ROLE_DOCTOR,
     ROLE_PATIENT,
+    Appointment,
     DoctorNote,
     DoctorPatient,
     Report,
@@ -239,6 +245,93 @@ def _link_doctor_and_patient(db: Session, doctor_id: int, patient_id: int, conse
     else:
         link.status = LINK_ACTIVE
         link.consented_at = link.consented_at or consented_at
+
+
+def _first_report(db: Session, patient_id: int) -> Report | None:
+    return db.scalar(
+        select(Report)
+        .where(Report.user_id == patient_id)
+        .order_by(Report.created_at.desc())
+    )
+
+
+def _seed_appointments(
+    db: Session,
+    doctor: User,
+    patient_raj: User,
+    patient_ananya: User,
+    now: datetime,
+) -> None:
+    """Seed a spread of demo appointments on the primary doctor's calendar so the portal
+    booking view has content the moment it loads: pending requests to approve, confirmed
+    upcoming visits, and one cancelled visit that shows the notify-the-patient trail.
+
+    Idempotent — skips entirely once this doctor has any appointment."""
+    existing = db.scalar(select(Appointment).where(Appointment.doctor_id == doctor.id))
+    if existing is not None:
+        return
+
+    priya = db.scalar(select(User).where(User.email == "priya@example.com"))
+    sam = db.scalar(select(User).where(User.email == "sam@example.com"))
+    jordan = db.scalar(select(User).where(User.email == "jordan@example.com"))
+
+    def at(days: int, hour: int, minute: int = 0) -> datetime:
+        return (now + timedelta(days=days)).replace(
+            hour=hour, minute=minute, second=0, microsecond=0
+        )
+
+    specs = [
+        # (patient, report, when, duration, reason, status, created_by, cancel_reason)
+        (
+            patient_raj, _first_report(db, patient_raj.id), at(1, 10, 0), 30,
+            "Worried about a mole that seems to be changing shape.",
+            APPT_REQUESTED, ACTOR_PATIENT, None,
+        ),
+        (
+            priya, _first_report(db, priya.id) if priya else None, at(1, 9, 0), 30,
+            "Follow-up after the escalated melanoma screening.",
+            APPT_REQUESTED, ACTOR_PATIENT, None,
+        ),
+        (
+            patient_ananya, _first_report(db, patient_ananya.id), at(3, 15, 30), 30,
+            "Recommended review of the actinic keratosis — cryotherapy options.",
+            APPT_CONFIRMED, ACTOR_DOCTOR, None,
+        ),
+        (
+            sam, _first_report(db, sam.id) if sam else None, at(5, 11, 0), 45,
+            "Squamous cell carcinoma review and biopsy planning.",
+            APPT_CONFIRMED, ACTOR_DOCTOR, None,
+        ),
+        (
+            jordan, _first_report(db, jordan.id) if jordan else None, at(-2, 14, 0), 30,
+            "Seborrheic keratosis re-check.",
+            APPT_CANCELLED, ACTOR_PATIENT, "Clinic closed that afternoon — please rebook.",
+        ),
+    ]
+
+    for patient, report, when, dur, reason, status_, created_by, cancel_reason in specs:
+        if patient is None:
+            continue
+        # A linked report must be shared for the doctor to open it.
+        if report is not None and report.shared_at is None:
+            report.shared_at = report.created_at or now
+        appt = Appointment(
+            doctor_id=doctor.id,
+            patient_id=patient.id,
+            report_id=report.id if report is not None else None,
+            scheduled_for=when.astimezone(timezone.utc),
+            duration_minutes=dur,
+            reason=reason,
+            status=status_,
+            created_by=created_by,
+            cancelled_by=(ACTOR_DOCTOR if cancel_reason else None),
+            cancel_reason=cancel_reason,
+            # A confirmed doctor-recommendation lands unread in the patient's app.
+            unread_for_patient=(status_ == APPT_CONFIRMED and created_by == ACTOR_DOCTOR),
+        )
+        db.add(appt)
+    db.flush()
+    logger.info("Seeded demo appointments for doctor %s", doctor.email)
 
 
 def seed_default_data(db: Session) -> None:
@@ -463,6 +556,9 @@ def seed_default_data(db: Session) -> None:
                             created_at=r_date,
                         )
                     )
+
+    # 4b. Seed demo appointments for the primary doctor's calendar (idempotent).
+    _seed_appointments(db, primary_doctor, patient_raj, patient_ananya, now)
 
     # 5. Ensure all existing & seeded reports have real encrypted sample images & Grad-CAM overlays
     settings = get_settings()

@@ -16,6 +16,7 @@ authorisation decision still funnels through `services.access` via the helpers i
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 from pathlib import Path
 
 import jwt
@@ -28,12 +29,20 @@ from sqlalchemy.orm import Session
 
 from backend.app.config import Settings
 from backend.app.db.models import (
+    ACTOR_DOCTOR,
+    APPT_CANCELLED,
+    APPT_COMPLETED,
+    APPT_CONFIRMED,
+    APPT_DECLINED,
+    APPT_LIVE_STATUSES,
+    APPT_REQUESTED,
     LINK_ACTIVE,
     REPORT_ESCALATED,
     REPORT_NEW,
     REPORT_REVIEWED,
     REPORT_UNDER_REVIEW,
     ROLE_DOCTOR,
+    Appointment,
     DoctorNote,
     DoctorPatient,
     Report,
@@ -73,6 +82,15 @@ STATUS_LABELS = {
     REPORT_UNDER_REVIEW: "Under review",
     REPORT_REVIEWED: "Reviewed",
     REPORT_ESCALATED: "Escalated",
+}
+
+# Appointment status → (human label, tone class used for badges/dots on the calendar).
+APPT_STATUS_META = {
+    APPT_REQUESTED: ("Awaiting approval", "pending"),
+    APPT_CONFIRMED: ("Confirmed", "ok"),
+    APPT_DECLINED: ("Declined", "muted"),
+    APPT_CANCELLED: ("Cancelled", "muted"),
+    APPT_COMPLETED: ("Completed", "info"),
 }
 
 
@@ -713,6 +731,323 @@ async def compare_chat(
         }
     )
 
+
+
+# --- appointments (calendar page + summary widget + doctor actions) ------------------
+
+def _aware(dt: datetime) -> datetime:
+    """SQLite drops tzinfo on read; treat a naive stored time as the UTC we wrote."""
+    return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
+
+
+def _as_local(dt: datetime) -> datetime:
+    """Render a stored (UTC-aware) time in the server's local zone for display."""
+    return _aware(dt).astimezone()
+
+
+def _appt_view(db: Session, a: Appointment) -> dict:
+    """A JSON-able summary of one appointment for the calendar grid and agenda list.
+
+    Times are pre-formatted server-side in local time so the client never has to guess a
+    timezone; `date_key` buckets the appointment into a calendar cell."""
+    local = _as_local(a.scheduled_for)
+    label, tone = APPT_STATUS_META.get(a.status, (a.status.title(), "muted"))
+    patient = a.patient or db.get(User, a.patient_id)
+    p_name = (patient.display_name or patient.email) if patient else "Patient"
+    condition = None
+    if a.report_id is not None:
+        report = a.report or db.get(Report, a.report_id)
+        condition = report.condition if report is not None else None
+    return {
+        "id": a.id,
+        "patient_id": a.patient_id,
+        "patient_name": p_name,
+        "report_id": a.report_id,
+        "condition": condition,
+        "status": a.status,
+        "status_label": label,
+        "tone": tone,
+        "created_by": a.created_by,
+        "reason": a.reason or "",
+        "date_key": local.strftime("%Y-%m-%d"),
+        "time_label": local.strftime("%H:%M"),
+        "day_label": local.strftime("%a %d %b"),
+        "duration": a.duration_minutes,
+        "is_past": _aware(a.scheduled_for) < datetime.now(timezone.utc),
+    }
+
+
+def _doctor_appointment_or_404(db: Session, doctor: User, appt_id: int) -> Appointment:
+    a = db.get(Appointment, appt_id)
+    if a is None or a.doctor_id != doctor.id:
+        raise AppError("not_found", "Appointment not found.", status_code=404)
+    return a
+
+
+def _consented_patients(db: Session, doctor: User) -> list[User]:
+    consented = (
+        (DoctorPatient.patient_id == User.id)
+        & (DoctorPatient.doctor_id == doctor.id)
+        & (DoctorPatient.status == LINK_ACTIVE)
+        & (DoctorPatient.consented_at.is_not(None))
+    )
+    return list(
+        db.scalars(
+            select(User).join(DoctorPatient, consented).order_by(User.display_name, User.email)
+        ).all()
+    )
+
+
+@router.get("/appointments", response_class=HTMLResponse)
+def appointments_page(
+    request: Request,
+    doctor: User = Depends(get_portal_doctor),
+    db: Session = Depends(get_db),
+) -> Response:
+    """The doctor's appointment calendar: every booked visit mapped onto a month grid, with a
+    slide-in summary widget (built client-side) for the one they click. Requests awaiting
+    approval are surfaced up top so the approval flow is one glance away."""
+    rows = db.scalars(
+        select(Appointment)
+        .where(Appointment.doctor_id == doctor.id)
+        .order_by(Appointment.scheduled_for)
+    ).all()
+    views = [_appt_view(db, a) for a in rows]
+
+    now = datetime.now(timezone.utc)
+    awaiting = [v for v, a in zip(views, rows) if a.status == APPT_REQUESTED]
+    upcoming_confirmed = [
+        v for v, a in zip(views, rows)
+        if a.status == APPT_CONFIRMED and _aware(a.scheduled_for) >= now
+    ]
+    # Agenda rail: the next things needing eyes — pending requests first, then upcoming.
+    agenda = awaiting + upcoming_confirmed
+
+    stats = {
+        "awaiting": len(awaiting),
+        "upcoming": len(upcoming_confirmed),
+        "total": len(views),
+    }
+
+    return templates.TemplateResponse(
+        request,
+        "appointments.html",
+        {
+            "doctor": doctor,
+            "appointments": views,
+            "agenda": agenda,
+            "stats": stats,
+            "patients": _consented_patients(db, doctor),
+            "today_key": _as_local(now).strftime("%Y-%m-%d"),
+        },
+    )
+
+
+@router.get("/appointments/{appointment_id}/summary")
+def appointment_summary(
+    appointment_id: int,
+    doctor: User = Depends(get_portal_doctor),
+    db: Session = Depends(get_db),
+) -> Response:
+    """JSON powering the slide-in summary widget: the visit, the patient, and every case
+    (shared report) linked to that patient — the one attached to this visit marked."""
+    a = _doctor_appointment_or_404(db, doctor, appointment_id)
+    patient = a.patient or db.get(User, a.patient_id)
+    local = _as_local(a.scheduled_for)
+    label, tone = APPT_STATUS_META.get(a.status, (a.status.title(), "muted"))
+
+    reports = db.scalars(
+        select(Report)
+        .where(Report.user_id == a.patient_id, Report.shared_at.is_not(None))
+        .order_by(Report.created_at.desc())
+    ).all()
+    cases = [
+        {
+            "id": r.id,
+            "condition": r.condition,
+            "triage": r.triage,
+            "tone": triage_tone(r.triage),
+            "status": STATUS_LABELS.get(r.status, r.status),
+            "confidence": round(r.confidence * 100) if r.confidence is not None else None,
+            "date": _as_local(r.created_at).strftime("%d %b %Y"),
+            "url": f"/portal/reports/{r.id}",
+            "linked": (r.id == a.report_id),
+        }
+        for r in reports
+    ]
+    escalated = sum(1 for r in reports if r.status == REPORT_ESCALATED)
+
+    return JSONResponse(
+        {
+            "appointment": {
+                "id": a.id,
+                "status": a.status,
+                "status_label": label,
+                "tone": tone,
+                "created_by": a.created_by,
+                "date_label": local.strftime("%A, %d %B %Y"),
+                "time_label": local.strftime("%H:%M"),
+                "duration": a.duration_minutes,
+                "reason": a.reason or "",
+                "cancel_reason": a.cancel_reason or "",
+                "cancelled_by": a.cancelled_by,
+                "report_id": a.report_id,
+                "can_approve": a.status == APPT_REQUESTED,
+                "can_decline": a.status == APPT_REQUESTED,
+                # A pending request is closed with Decline; only a confirmed visit is Cancelled.
+                "can_cancel": a.status == APPT_CONFIRMED,
+                "is_past": _aware(a.scheduled_for) < datetime.now(timezone.utc),
+            },
+            "patient": {
+                "id": a.patient_id,
+                "name": (patient.display_name or patient.email) if patient else "Patient",
+                "email": patient.email if patient else "",
+                "url": f"/portal/patients/{a.patient_id}",
+                "report_count": len(reports),
+                "escalated": escalated,
+            },
+            "cases": cases,
+        }
+    )
+
+
+def _back_to_appointments(flash: str | None = None, hl: int | None = None) -> RedirectResponse:
+    url = "/portal/appointments"
+    params = []
+    if flash:
+        params.append(f"flash={flash}")
+    if hl is not None:
+        params.append(f"hl={hl}")
+    if params:
+        url += "?" + "&".join(params)
+    return RedirectResponse(url, status_code=status.HTTP_303_SEE_OTHER)
+
+
+@router.post("/appointments/{appointment_id}/approve")
+def approve_appointment(
+    appointment_id: int,
+    request: Request,
+    doctor: User = Depends(get_portal_doctor),
+    db: Session = Depends(get_db),
+) -> Response:
+    """Approve a patient's booking request → confirmed, and flag it unread so the patient's
+    app shows 'your doctor approved this visit'."""
+    a = _doctor_appointment_or_404(db, doctor, appointment_id)
+    if a.status != APPT_REQUESTED:
+        return _back_to_appointments(hl=a.id)
+    a.status = APPT_CONFIRMED
+    a.unread_for_patient = True
+    db.commit()
+    audit.record(
+        db, doctor.id, audit.ACTION_APPT_APPROVE,
+        target_type=audit.TARGET_APPOINTMENT, target_id=a.id, ip=audit.client_ip(request),
+    )
+    return _back_to_appointments(flash="approved", hl=a.id)
+
+
+@router.post("/appointments/{appointment_id}/decline")
+def decline_appointment(
+    appointment_id: int,
+    request: Request,
+    doctor: User = Depends(get_portal_doctor),
+    db: Session = Depends(get_db),
+    reason: str = Form(default=""),
+) -> Response:
+    """Decline a booking request → declined, with an optional reason the patient will see."""
+    a = _doctor_appointment_or_404(db, doctor, appointment_id)
+    if a.status != APPT_REQUESTED:
+        return _back_to_appointments(hl=a.id)
+    a.status = APPT_DECLINED
+    a.cancelled_by = ACTOR_DOCTOR
+    a.cancel_reason = (reason or "").strip() or None
+    a.unread_for_patient = True
+    db.commit()
+    audit.record(
+        db, doctor.id, audit.ACTION_APPT_DECLINE,
+        target_type=audit.TARGET_APPOINTMENT, target_id=a.id, ip=audit.client_ip(request),
+    )
+    return _back_to_appointments(flash="declined", hl=a.id)
+
+
+@router.post("/appointments/{appointment_id}/cancel")
+def cancel_appointment_portal(
+    appointment_id: int,
+    request: Request,
+    doctor: User = Depends(get_portal_doctor),
+    db: Session = Depends(get_db),
+    reason: str = Form(default=""),
+) -> Response:
+    """Cancel a live appointment and notify the patient — the cancel reason and the unread
+    flag are what the patient's app surfaces as 'your doctor cancelled this visit'."""
+    a = _doctor_appointment_or_404(db, doctor, appointment_id)
+    if a.status not in APPT_LIVE_STATUSES:
+        return _back_to_appointments(hl=a.id)
+    a.status = APPT_CANCELLED
+    a.cancelled_by = ACTOR_DOCTOR
+    a.cancel_reason = (reason or "").strip() or None
+    a.unread_for_patient = True
+    db.commit()
+    audit.record(
+        db, doctor.id, audit.ACTION_APPT_CANCEL,
+        target_type=audit.TARGET_APPOINTMENT, target_id=a.id, ip=audit.client_ip(request),
+    )
+    return _back_to_appointments(flash="cancelled", hl=a.id)
+
+
+@router.post("/appointments/recommend")
+def recommend_appointment(
+    request: Request,
+    doctor: User = Depends(get_portal_doctor),
+    db: Session = Depends(get_db),
+    patient_id: int = Form(...),
+    scheduled_for: str = Form(...),
+    duration_minutes: int = Form(default=30),
+    reason: str = Form(default=""),
+    report_id: str = Form(default=""),
+) -> Response:
+    """The doctor recommends a visit to a consented patient. Created already confirmed (a
+    recommendation is an offer of a slot) and flagged unread so it lands in the patient's app.
+    A tampered/invalid form value is ignored rather than 500 — the page just reloads."""
+    # The patient must be one who has consented to this doctor.
+    link = _active_link(db, doctor, patient_id)
+    if link is None:
+        return _back_to_appointments()
+
+    try:
+        # datetime-local sends "YYYY-MM-DDTHH:MM" (naive, local). astimezone() on a naive
+        # value assumes the server's local zone; converting to UTC gives what we store.
+        when = datetime.fromisoformat(scheduled_for).astimezone(timezone.utc)
+    except (ValueError, TypeError):
+        return _back_to_appointments()
+
+    dur = max(10, min(180, int(duration_minutes or 30)))
+
+    linked_report_id: int | None = None
+    rid = (report_id or "").strip()
+    if rid.isdigit():
+        report = db.get(Report, int(rid))
+        # Only link a report that belongs to this patient and is shared.
+        if report is not None and report.user_id == patient_id and report.shared_at is not None:
+            linked_report_id = report.id
+
+    a = Appointment(
+        doctor_id=doctor.id,
+        patient_id=patient_id,
+        report_id=linked_report_id,
+        scheduled_for=when,
+        duration_minutes=dur,
+        reason=(reason or "").strip(),
+        status=APPT_CONFIRMED,
+        created_by=ACTOR_DOCTOR,
+        unread_for_patient=True,
+    )
+    db.add(a)
+    db.commit()
+    audit.record(
+        db, doctor.id, audit.ACTION_APPT_RECOMMEND,
+        target_type=audit.TARGET_APPOINTMENT, target_id=a.id, ip=audit.client_ip(request),
+    )
+    return _back_to_appointments(flash="recommended", hl=a.id)
 
 
 # --- mutations (form POST -> redirect back) ------------------------------------------

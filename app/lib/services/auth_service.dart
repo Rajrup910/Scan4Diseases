@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 
 import '../config.dart';
 import '../Screens/app_data.dart';
+import 'appointments_service.dart';
 
 /// The signed-in user, as returned by the backend.
 class AuthUser {
@@ -158,6 +159,7 @@ class AuthService {
     _token = null;
     user.value = null;
     AppData.clear();
+    AppointmentsService.instance.clear();
     await _storage.delete(key: _kTokenKey);
   }
 
