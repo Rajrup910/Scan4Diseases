@@ -555,10 +555,47 @@
     });
   });
 
-  /* --- 6. ambient background parallax --------------------------------------------- */
+  /* --- 6. ambient background video & parallax ------------------------------------- */
   var bgVideo = document.querySelector("[data-bg-video]");
   if (bgVideo) {
     bgVideo.style.transform = "scale(1.08)";
+
+    function playBgVideo() {
+      if (!bgVideo) return;
+      if (root.classList.contains("no-motion")) return;
+      if (bgVideo.paused) {
+        var p = bgVideo.play();
+        if (p && typeof p.catch === "function") {
+          p.catch(function () {});
+        }
+      }
+    }
+
+    // Start playback immediately and on media load events
+    playBgVideo();
+    bgVideo.addEventListener("canplay", playBgVideo);
+    bgVideo.addEventListener("loadeddata", playBgVideo);
+
+    // Auto-resume if interrupted by browser backgrounding or view transitions
+    bgVideo.addEventListener("pause", function () {
+      if (!root.classList.contains("no-motion") && !document.hidden) {
+        requestAnimationFrame(playBgVideo);
+      }
+    });
+
+    // Resume when page/tab becomes visible, gains focus, or navigates
+    window.addEventListener("pageshow", playBgVideo);
+    window.addEventListener("focus", playBgVideo);
+    document.addEventListener("visibilitychange", function () {
+      if (!document.hidden) playBgVideo();
+    });
+
+    // Ensure playback kicks off on first user interaction if browser autoplay was deferred
+    ["pointerdown", "touchstart", "keydown", "wheel", "scroll"].forEach(function (evt) {
+      window.addEventListener(evt, playBgVideo, { passive: true, once: true });
+    });
+
+    // Ambient mouse parallax
     if (!reduce) {
       window.addEventListener("pointermove", function (e) {
         var x = e.clientX / window.innerWidth - 0.5;
@@ -2274,6 +2311,16 @@
       document.querySelectorAll("[data-motion-toggle]").forEach(function (b) {
         b.setAttribute("aria-pressed", reduced ? "true" : "false");
       });
+      if (bgVideo) {
+        if (reduced) {
+          try { bgVideo.pause(); } catch (e) {}
+        } else {
+          try {
+            var p = bgVideo.play();
+            if (p && typeof p.catch === "function") p.catch(function () {});
+          } catch (e) {}
+        }
+      }
     }
     applyMotion(motionReduced());
     function toggleMotion() {

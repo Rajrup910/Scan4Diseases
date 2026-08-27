@@ -4342,45 +4342,77 @@ tr.is-archiving {
   padding-bottom: .85rem;
   line-height: 1.35;
 }
-.reports-data-table th.th-cb,
-.reports-data-table td.td-cb          { width: 44px; padding-left: 14px; padding-right: 4px; }
-.reports-data-table th:nth-child(2),
-.reports-data-table td.date-cell      { width: 118px; }
-.reports-data-table th:nth-child(3),
-.reports-data-table td:nth-child(3)   { width: 148px; }   /* Patient */
-.reports-data-table th:nth-child(5),
-.reports-data-table td.conf-cell      { width: 130px; }
-.reports-data-table th:nth-child(6),
-.reports-data-table td:nth-child(6)   { width: 170px; }   /* Triage */
-.reports-data-table th:nth-child(7),
-.reports-data-table td:nth-child(7)   { width: 120px; }   /* Status */
-.reports-data-table th:last-child,
-.reports-data-table td:last-child     { width: 96px; text-align: right; padding-right: 14px; }
+.reports-data-table:not(.patient-reports-table) th.th-cb,
+.reports-data-table:not(.patient-reports-table) td.td-cb          { width: 44px; padding-left: 14px; padding-right: 4px; }
+.reports-data-table:not(.patient-reports-table) th:nth-child(2),
+.reports-data-table:not(.patient-reports-table) td.date-cell      { width: 118px; }
+.reports-data-table:not(.patient-reports-table) th:nth-child(3),
+.reports-data-table:not(.patient-reports-table) td:nth-child(3)   { width: 148px; }   /* Patient */
+.reports-data-table:not(.patient-reports-table) th:nth-child(5),
+.reports-data-table:not(.patient-reports-table) td.conf-cell      { width: 130px; }
+.reports-data-table:not(.patient-reports-table) th:nth-child(6),
+.reports-data-table:not(.patient-reports-table) td:nth-child(6)   { width: 220px; }   /* Triage */
+.reports-data-table:not(.patient-reports-table) th:nth-child(7),
+.reports-data-table:not(.patient-reports-table) td:nth-child(7)   { width: 120px; }   /* Status */
+.reports-data-table:not(.patient-reports-table) th:last-child,
+.reports-data-table:not(.patient-reports-table) td:last-child     { width: 96px; text-align: right; padding-right: 14px; }
 
 .reports-data-table.patient-reports-table {
   table-layout: auto;
   width: 100%;
 }
 .reports-data-table.patient-reports-table th.th-cb,
-.reports-data-table.patient-reports-table td.td-cb { width: 38px; padding-left: 10px; padding-right: 2px; }
+.reports-data-table.patient-reports-table td.td-cb { width: 36px; min-width: 36px; padding-left: 10px; padding-right: 2px; }
 .reports-data-table.patient-reports-table th.th-date,
-.reports-data-table.patient-reports-table td.date-cell { width: 95px; font-size: .8rem; white-space: nowrap; }
+.reports-data-table.patient-reports-table td.date-cell { width: 94px; min-width: 94px; font-size: .8rem; white-space: nowrap; }
 .reports-data-table.patient-reports-table th.th-cond,
 .reports-data-table.patient-reports-table td.condition-cell {
-  min-width: 120px;
-  max-width: 180px;
+  min-width: 100px;
+  max-width: 140px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .reports-data-table.patient-reports-table th.th-conf,
-.reports-data-table.patient-reports-table td.conf-cell { width: 95px; white-space: nowrap; }
+.reports-data-table.patient-reports-table td.conf-cell { width: 90px; min-width: 90px; white-space: nowrap; }
 .reports-data-table.patient-reports-table th.th-triage,
-.reports-data-table.patient-reports-table td:nth-child(5) { width: 145px; max-width: 165px; }
+.reports-data-table.patient-reports-table td.triage-cell,
+.reports-data-table.patient-reports-table td:nth-child(5) {
+  width: auto;
+  min-width: 135px;
+  max-width: 175px;
+}
 .reports-data-table.patient-reports-table th.th-status,
-.reports-data-table.patient-reports-table td:nth-child(6) { width: 85px; }
+.reports-data-table.patient-reports-table td.status-cell,
+.reports-data-table.patient-reports-table td:nth-child(6) {
+  width: 76px;
+  min-width: 76px;
+  text-align: center;
+}
 .reports-data-table.patient-reports-table th.th-action,
-.reports-data-table.patient-reports-table td:last-child { width: 75px; text-align: right; padding-right: 10px; }
+.reports-data-table.patient-reports-table td.row-action,
+.reports-data-table.patient-reports-table td:last-child {
+  width: 72px;
+  min-width: 72px;
+  text-align: right;
+  padding-right: 10px;
+}
+
+.reports-data-table.patient-reports-table td.triage-cell .badge {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  width: 100%;
+  display: inline-flex;
+}
+.reports-data-table.patient-reports-table td.status-cell .badge {
+  min-width: 0;
+  max-width: 100%;
+  width: auto;
+  display: inline-flex;
+  justify-content: center;
+  padding: .22rem .6rem;
+}
 
 .reports-data-table td.date-cell {
   font-family: var(--font-mono);
@@ -4424,18 +4456,11 @@ tr.is-archiving {
   text-overflow: ellipsis;
 }
 .reports-data-table .badge > * { min-width: 0; }
-/* The Triage column previously centred long text with overflow:hidden, which
-   chopped BOTH ends of "Prompt dermatologist consultation" and left a
-   middle-slice like "mpt dermatologist consultat". Left-align so the label
-   reads from the start and ellipsis ends it cleanly. */
-.reports-data-table td:nth-child(6) .badge { min-width: 148px; max-width: 100%; display: block; }
-.reports-data-table td:nth-child(7) .badge { min-width: 96px; max-width: 100%; }
-/* Give the triage column a bit more room so common labels fit without any
-   truncation at all. */
-.reports-data-table th:nth-child(6),
-.reports-data-table td:nth-child(6) { width: 220px; }
-.reports-data-table td:nth-child(6) { overflow: hidden; }
-.reports-data-table td:nth-child(6) .badge {
+/* The Triage column in worklist */
+.reports-data-table:not(.patient-reports-table) td:nth-child(6) .badge { min-width: 148px; max-width: 100%; display: block; }
+.reports-data-table:not(.patient-reports-table) td:nth-child(7) .badge { min-width: 96px; max-width: 100%; }
+.reports-data-table:not(.patient-reports-table) td:nth-child(6) { overflow: hidden; }
+.reports-data-table:not(.patient-reports-table) td:nth-child(6) .badge {
   padding-left: .7rem;
   padding-right: .7rem;
 }

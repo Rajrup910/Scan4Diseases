@@ -133,7 +133,7 @@
           <span class="muted">—</span>
           {% endif %}
         </td>
-        <td>
+        <td class="triage-cell">
           {# Marquee the triage label so the full phrase (e.g. "Prompt
              dermatologist consultation") stays legible and scrolls inside the
              fixed badge slot — identical to the main worklist for uniformity. #}
@@ -144,7 +144,7 @@
             </span>
           </span>
         </td>
-        <td><span class="badge status-{{ r.status }}">{{ status_labels.get(r.status, r.status) }}</span></td>
+        <td class="status-cell"><span class="badge status-{{ r.status }}">{{ status_labels.get(r.status, r.status) }}</span></td>
         <td class="row-action">
           <a class="btn btn-small btn-open" href="/portal/reports/{{ r.id }}">
             Open <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#arrow-right"/></svg>

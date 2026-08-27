@@ -19,7 +19,7 @@ class VideoBackground extends StatefulWidget {
   State<VideoBackground> createState() => _VideoBackgroundState();
 }
 
-class _VideoBackgroundState extends State<VideoBackground> {
+class _VideoBackgroundState extends State<VideoBackground> with WidgetsBindingObserver {
   VideoPlayerController? _controller;
   bool _ready = false;
   bool _failed = false;
@@ -27,7 +27,17 @@ class _VideoBackgroundState extends State<VideoBackground> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _init();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _controller != null && _ready) {
+      if (!_controller!.value.isPlaying) {
+        _controller!.play();
+      }
+    }
   }
 
   Future<void> _init() async {
@@ -46,6 +56,7 @@ class _VideoBackgroundState extends State<VideoBackground> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller?.dispose();
     super.dispose();
   }
