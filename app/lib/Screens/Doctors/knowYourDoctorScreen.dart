@@ -161,12 +161,35 @@ class _KnowYourDoctorScreenState extends State<KnowYourDoctorScreen> {
 
         final filtered = _selectedFilter == 'All'
             ? _doctors
-            : _doctors.where((d) => d.specialties.any((s) => s.toLowerCase().contains(_selectedFilter.toLowerCase()))).toList();
+            : _doctors
+                .where((d) => d.specialties.any((s) =>
+                    s.toLowerCase().contains(_selectedFilter.toLowerCase())))
+                .toList();
 
         return Scaffold(
           body: Stack(
             children: [
-              Themes.emeraldWavesGradient(dark: dark),
+              Positioned.fill(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: dark
+                          ? [
+                              const Color(0xFF0F1B18),
+                              const Color(0xFF0F1117),
+                              const Color(0xFF161920),
+                            ]
+                          : [
+                              const Color(0xFFE6F3EF),
+                              const Color(0xFFF4F6F9),
+                              Colors.white,
+                            ],
+                    ),
+                  ),
+                ),
+              ),
               SafeArea(
                 child: CustomScrollView(
                   physics: const BouncingScrollPhysics(),
@@ -188,9 +211,12 @@ class _KnowYourDoctorScreenState extends State<KnowYourDoctorScreen> {
                                   child: Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: dark
-                                        ? Themes.liquidGlassDecoration(radius: 12, dark: true)
-                                        : Themes.liquidGlassDecoration(radius: 12),
-                                    child: Icon(Icons.arrow_back_rounded, color: ink, size: 20),
+                                        ? Themes.liquidGlassDecoration(
+                                            radius: 12, dark: true)
+                                        : Themes.liquidGlassDecoration(
+                                            radius: 12),
+                                    child: Icon(Icons.arrow_back_rounded,
+                                        color: ink, size: 20),
                                   ),
                                 ),
                                 const SizedBox(width: 12),
@@ -211,7 +237,8 @@ class _KnowYourDoctorScreenState extends State<KnowYourDoctorScreen> {
                                 fontSize: 22,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: -0.4,
-                                shadows: dark ? Themes.onMediaDark : Themes.onMedia,
+                                shadows:
+                                    dark ? Themes.onMediaDark : Themes.onMedia,
                               ),
                             ),
                             const SizedBox(height: 6),
@@ -221,7 +248,8 @@ class _KnowYourDoctorScreenState extends State<KnowYourDoctorScreen> {
                                 color: inkSoft,
                                 fontSize: 13.5,
                                 height: 1.4,
-                                shadows: dark ? Themes.onMediaDark : Themes.onMedia,
+                                shadows:
+                                    dark ? Themes.onMediaDark : Themes.onMedia,
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -240,7 +268,8 @@ class _KnowYourDoctorScreenState extends State<KnowYourDoctorScreen> {
                           (context, index) {
                             final doc = filtered[index];
                             final isExpanded = _expandedDoctorId == doc.id;
-                            return _buildDoctorCard(context, doc, dark, ink, inkSoft, accent, isExpanded);
+                            return _buildDoctorCard(context, doc, dark, ink,
+                                inkSoft, accent, isExpanded);
                           },
                           childCount: filtered.length,
                         ),
@@ -260,7 +289,8 @@ class _KnowYourDoctorScreenState extends State<KnowYourDoctorScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: dark
-          ? Themes.liquidGlassDecoration(radius: 16, dark: true, topAlpha: 0.85, bottomAlpha: 0.70)
+          ? Themes.liquidGlassDecoration(
+              radius: 16, dark: true, topAlpha: 0.85, bottomAlpha: 0.70)
           : Themes.liquidGlassDecoration(radius: 16),
       child: Row(
         children: [
@@ -319,23 +349,30 @@ class _KnowYourDoctorScreenState extends State<KnowYourDoctorScreen> {
               },
               borderRadius: BorderRadius.circular(20),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
                 decoration: BoxDecoration(
                   color: isSel
                       ? accent.withValues(alpha: 0.20)
-                      : (dark ? const Color(0xFF161B24) : Colors.white.withValues(alpha: 0.75)),
+                      : (dark
+                          ? const Color(0xFF161B24)
+                          : Colors.white.withValues(alpha: 0.75)),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: isSel
                         ? accent
-                        : (dark ? Themes.darkBorder : Colors.white.withValues(alpha: 0.85)),
+                        : (dark
+                            ? Themes.darkBorder
+                            : Colors.white.withValues(alpha: 0.85)),
                     width: isSel ? 1.4 : 1.0,
                   ),
                 ),
                 child: Text(
                   f == 'All' ? 'All Specialists' : f,
                   style: TextStyle(
-                    color: isSel ? accent : (dark ? Themes.darkInkSoft : Themes.inkSoft),
+                    color: isSel
+                        ? accent
+                        : (dark ? Themes.darkInkSoft : Themes.inkSoft),
                     fontSize: 12.5,
                     fontWeight: isSel ? FontWeight.w700 : FontWeight.w500,
                   ),
@@ -357,12 +394,14 @@ class _KnowYourDoctorScreenState extends State<KnowYourDoctorScreen> {
     Color accent,
     bool isExpanded,
   ) {
-    final tile = dark ? Themes.darkBrandTint : Themes.brandTint.withValues(alpha: 0.70);
+    final tile =
+        dark ? Themes.darkBrandTint : Themes.brandTint.withValues(alpha: 0.70);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: dark
-          ? Themes.liquidGlassDecoration(radius: 18, dark: true, topAlpha: 0.88, bottomAlpha: 0.74)
+          ? Themes.liquidGlassDecoration(
+              radius: 18, dark: true, topAlpha: 0.88, bottomAlpha: 0.74)
           : Themes.liquidGlassDecoration(radius: 18),
       child: Material(
         color: Colors.transparent,
@@ -402,7 +441,12 @@ class _KnowYourDoctorScreenState extends State<KnowYourDoctorScreen> {
                       ),
                       child: Center(
                         child: Text(
-                          doc.name.replaceFirst('Dr. ', '').split(' ').map((p) => p.isNotEmpty ? p[0] : '').take(2).join(),
+                          doc.name
+                              .replaceFirst('Dr. ', '')
+                              .split(' ')
+                              .map((p) => p.isNotEmpty ? p[0] : '')
+                              .take(2)
+                              .join(),
                           style: TextStyle(
                             color: accent,
                             fontSize: 16,
@@ -431,16 +475,20 @@ class _KnowYourDoctorScreenState extends State<KnowYourDoctorScreen> {
                               ),
                               const SizedBox(width: 6),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 6, vertical: 2),
                                 decoration: BoxDecoration(
                                   color: Themes.routine.withValues(alpha: 0.14),
                                   borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(color: Themes.routine.withValues(alpha: 0.35)),
+                                  border: Border.all(
+                                      color: Themes.routine
+                                          .withValues(alpha: 0.35)),
                                 ),
                                 child: const Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.check_circle_rounded, color: Themes.routine, size: 11),
+                                    Icon(Icons.check_circle_rounded,
+                                        color: Themes.routine, size: 11),
                                     SizedBox(width: 3),
                                     Text(
                                       'VERIFIED',
@@ -468,7 +516,8 @@ class _KnowYourDoctorScreenState extends State<KnowYourDoctorScreen> {
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              const Icon(Icons.star_rounded, color: Color(0xFFEAB308), size: 15),
+                              const Icon(Icons.star_rounded,
+                                  color: Color(0xFFEAB308), size: 15),
                               const SizedBox(width: 3),
                               Text(
                                 '${doc.rating}',
@@ -487,9 +536,14 @@ class _KnowYourDoctorScreenState extends State<KnowYourDoctorScreen> {
                                 ),
                               ),
                               const SizedBox(width: 8),
-                              Container(width: 3, height: 3, decoration: BoxDecoration(color: inkSoft, shape: BoxShape.circle)),
+                              Container(
+                                  width: 3,
+                                  height: 3,
+                                  decoration: BoxDecoration(
+                                      color: inkSoft, shape: BoxShape.circle)),
                               const SizedBox(width: 8),
-                              Icon(Icons.work_outline_rounded, size: 13, color: inkSoft),
+                              Icon(Icons.work_outline_rounded,
+                                  size: 13, color: inkSoft),
                               const SizedBox(width: 3),
                               Text(
                                 doc.experience,
@@ -505,7 +559,9 @@ class _KnowYourDoctorScreenState extends State<KnowYourDoctorScreen> {
                       ),
                     ),
                     Icon(
-                      isExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                      isExpanded
+                          ? Icons.keyboard_arrow_up_rounded
+                          : Icons.keyboard_arrow_down_rounded,
                       color: inkSoft,
                       size: 22,
                     ),
@@ -517,7 +573,8 @@ class _KnowYourDoctorScreenState extends State<KnowYourDoctorScreen> {
                   runSpacing: 5,
                   children: doc.specialties.map((s) {
                     return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: tile,
                         borderRadius: BorderRadius.circular(8),
@@ -540,7 +597,9 @@ class _KnowYourDoctorScreenState extends State<KnowYourDoctorScreen> {
                 ),
                 if (isExpanded) ...[
                   const SizedBox(height: 14),
-                  Divider(height: 1, color: dark ? Themes.darkBorder : Themes.borderSubtle),
+                  Divider(
+                      height: 1,
+                      color: dark ? Themes.darkBorder : Themes.borderSubtle),
                   const SizedBox(height: 12),
                   _buildDetailRow(
                     Icons.badge_outlined,
@@ -595,10 +654,12 @@ class _KnowYourDoctorScreenState extends State<KnowYourDoctorScreen> {
                             SoundService.instance.open();
                             Navigator.push(
                               context,
-                              MaterialPageRoute(builder: (_) => const AppointmentsScreen()),
+                              MaterialPageRoute(
+                                  builder: (_) => const AppointmentsScreen()),
                             );
                           },
-                          icon: const Icon(Icons.calendar_month_rounded, size: 16),
+                          icon: const Icon(Icons.calendar_month_rounded,
+                              size: 16),
                           label: const Text('Book Visit'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Themes.brand,
@@ -641,7 +702,8 @@ class _KnowYourDoctorScreenState extends State<KnowYourDoctorScreen> {
               children: [
                 TextSpan(
                   text: '$label: ',
-                  style: TextStyle(fontWeight: FontWeight.w700, color: inkSoft),
+                  style:
+                      TextStyle(fontWeight: FontWeight.w700, color: inkSoft),
                 ),
                 TextSpan(
                   text: value,
