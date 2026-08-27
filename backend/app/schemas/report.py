@@ -27,4 +27,5 @@ class ReportOut(BaseModel):
     triage: str
     explanation: str
     symptoms: dict[str, Any]
+    shared_at: datetime | None = None
     created_at: datetime

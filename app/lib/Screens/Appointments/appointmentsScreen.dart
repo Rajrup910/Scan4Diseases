@@ -52,7 +52,8 @@ class _StatusStyle {
 /// prominent "Book an appointment" action. Doctor responses (approve / decline / cancel /
 /// recommend) surface here with a status badge and, where relevant, the doctor's note.
 class AppointmentsScreen extends StatefulWidget {
-  const AppointmentsScreen({super.key});
+  final bool isTab;
+  const AppointmentsScreen({super.key, this.isTab = false});
 
   @override
   State<AppointmentsScreen> createState() => _AppointmentsScreenState();
@@ -86,6 +87,127 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
         final dark = ThemeService.instance.isDark(context);
         final ink = dark ? Themes.darkInk : Themes.ink;
         final inkSoft = dark ? Themes.darkInkSoft : Themes.inkSoft;
+        final onMedia = dark ? Themes.onMediaDark : Themes.onMedia;
+
+        final content = ValueListenableBuilder<List<Appointment>>(
+          valueListenable: AppointmentsService.instance.items,
+          builder: (context, list, _) {
+            return ValueListenableBuilder<bool>(
+              valueListenable: AppointmentsService.instance.loading,
+              builder: (context, loading, __) {
+                final upcoming = list
+                    .where((a) => a.isLive && !a.isPast)
+                    .toList()
+                  ..sort((x, y) => x.scheduledFor.compareTo(y.scheduledFor));
+                final closed = list
+                    .where((a) => !(a.isLive && !a.isPast))
+                    .toList()
+                  ..sort((x, y) => y.scheduledFor.compareTo(x.scheduledFor));
+
+                return RefreshIndicator(
+                  onRefresh: () => AppointmentsService.instance.refresh(),
+                  child: ListView(
+                    padding: EdgeInsets.fromLTRB(
+                      widget.isTab ? 20 : 16,
+                      12,
+                      widget.isTab ? 20 : 16,
+                      widget.isTab ? 120 : 40,
+                    ),
+                    children: [
+                      if (widget.isTab) ...[
+                        Row(
+                          children: [
+                            Themes.sectionHeaderPill('Appointments',
+                                dark: dark, icon: Icons.calendar_month_rounded),
+                            const Spacer(),
+                            Container(
+                              height: 36,
+                              width: 36,
+                              decoration: dark
+                                  ? Themes.liquidGlassDecoration(radius: 10, dark: true, topAlpha: 0.85, bottomAlpha: 0.70)
+                                  : Themes.liquidGlassDecoration(radius: 10),
+                              child: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(10),
+                                  onTap: () {
+                                    SoundService.instance.refresh();
+                                    AppointmentsService.instance.refresh();
+                                  },
+                                  child: Center(
+                                    child: Icon(
+                                      Icons.refresh_rounded,
+                                      color: dark ? Themes.tealLight : Themes.brand,
+                                      size: 19,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                      ],
+                      Text(
+                        'Book a consultation with a verified dermatologist, or review a visit '
+                        'your doctor recommended. You approve every booking; your doctor '
+                        'approves every request.',
+                        style: TextStyle(
+                          color: inkSoft,
+                          height: 1.4,
+                          fontSize: 13.5,
+                          shadows: widget.isTab ? onMedia : null,
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      _BookButton(onTap: () => _openBooking()),
+                      const SizedBox(height: 20),
+                      if (loading && list.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 48),
+                          child: Center(child: CircularProgressIndicator()),
+                        )
+                      else if (list.isEmpty)
+                        _EmptyState(dark: dark)
+                      else ...[
+                        if (upcoming.isNotEmpty) ...[
+                          _groupHeader('Upcoming', upcoming.length, ink),
+                          const SizedBox(height: 10),
+                          for (var i = 0; i < upcoming.length; i++)
+                            _AppointmentCard(
+                              appt: upcoming[i],
+                              dark: dark,
+                              index: i,
+                              onCancel: () => _confirmCancel(upcoming[i], dark),
+                            ),
+                        ],
+                        if (closed.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          _groupHeader('Past & closed', closed.length, ink),
+                          const SizedBox(height: 10),
+                          for (var i = 0; i < closed.length; i++)
+                            _AppointmentCard(
+                              appt: closed[i],
+                              dark: dark,
+                              index: i,
+                              onRebook: (closed[i].isCancelled || closed[i].isDeclined)
+                                  ? () => _openBooking(rebook: closed[i])
+                                  : null,
+                            ),
+                        ],
+                      ],
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+
+        if (widget.isTab) {
+          return content;
+        }
+
         return Scaffold(
           backgroundColor: dark ? Themes.darkCanvas : Themes.canvas,
           appBar: AppBar(
@@ -101,76 +223,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
               ),
             ],
           ),
-          body: ValueListenableBuilder<List<Appointment>>(
-            valueListenable: AppointmentsService.instance.items,
-            builder: (context, list, _) {
-              return ValueListenableBuilder<bool>(
-                valueListenable: AppointmentsService.instance.loading,
-                builder: (context, loading, __) {
-                  final upcoming = list
-                      .where((a) => a.isLive && !a.isPast)
-                      .toList()
-                    ..sort((x, y) => x.scheduledFor.compareTo(y.scheduledFor));
-                  final closed = list
-                      .where((a) => !(a.isLive && !a.isPast))
-                      .toList()
-                    ..sort((x, y) => y.scheduledFor.compareTo(x.scheduledFor));
-
-                  return RefreshIndicator(
-                    onRefresh: () => AppointmentsService.instance.refresh(),
-                    child: ListView(
-                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 40),
-                      children: [
-                        Text(
-                          'Book a consultation with a verified dermatologist, or review a visit '
-                          'your doctor recommended. You approve every booking; your doctor '
-                          'approves every request.',
-                          style: TextStyle(color: inkSoft, height: 1.4, fontSize: 13.5),
-                        ),
-                        const SizedBox(height: 14),
-                        _BookButton(onTap: () => _openBooking()),
-                        const SizedBox(height: 20),
-                        if (loading && list.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 48),
-                            child: Center(child: CircularProgressIndicator()),
-                          )
-                        else if (list.isEmpty)
-                          _EmptyState(dark: dark)
-                        else ...[
-                          if (upcoming.isNotEmpty) ...[
-                            _groupHeader('Upcoming', upcoming.length, ink),
-                            const SizedBox(height: 10),
-                            for (var i = 0; i < upcoming.length; i++)
-                              _AppointmentCard(
-                                appt: upcoming[i],
-                                dark: dark,
-                                index: i,
-                                onCancel: () => _confirmCancel(upcoming[i], dark),
-                              ),
-                          ],
-                          if (closed.isNotEmpty) ...[
-                            const SizedBox(height: 8),
-                            _groupHeader('Past & closed', closed.length, ink),
-                            const SizedBox(height: 10),
-                            for (var i = 0; i < closed.length; i++)
-                              _AppointmentCard(
-                                appt: closed[i],
-                                dark: dark,
-                                index: i,
-                                onRebook: (closed[i].isCancelled || closed[i].isDeclined)
-                                    ? () => _openBooking(rebook: closed[i])
-                                    : null,
-                              ),
-                          ],
-                        ],
-                      ],
-                    ),
-                  );
-                },
-              );
-            },
-          ),
+          body: content,
         );
       },
     );

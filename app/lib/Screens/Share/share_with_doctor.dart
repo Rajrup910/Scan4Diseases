@@ -81,6 +81,7 @@ class _ShareSheetState extends State<_ShareSheet> {
         imagePath: report.imagePath,
         gradcamUrl: widget.gradcamUrl,
       );
+      AppData.refresh();
       if (!mounted) return;
       Navigator.pop(context);
       showDialog(

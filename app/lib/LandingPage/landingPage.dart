@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import '../Screens/Appointments/appointmentsScreen.dart';
@@ -35,14 +36,8 @@ class _MyLandingPageState extends State<MyLandingPage> {
     AppointmentsService.instance.refresh();
   }
 
-  /// Index reserved for the dedicated Appointments window. It isn't a body tab
-  /// (the screen brings its own Scaffold) — selecting it pushes a full route.
-  static const int _appointmentsTab = 5;
-
   void _openAppointments() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const AppointmentsScreen()),
-    );
+    if (mounted) setState(() => _currentIndex = 2);
   }
 
   /// The Home slide-to-start action fires this: the whole mobile screen turns
@@ -55,7 +50,7 @@ class _MyLandingPageState extends State<MyLandingPage> {
 
   void _onWashPeak() {
     // Crest reached: swap tab cleanly while obscured under the lush brand veil
-    setState(() => _currentIndex = 2);
+    setState(() => _currentIndex = 5);
   }
 
   void _onWashComplete() {
@@ -91,21 +86,20 @@ class _MyLandingPageState extends State<MyLandingPage> {
     );
   }
 
-  // Reports, New Screening and Care & Tools each render their own large header in-body,
+  // Reports, Appointments, New Screening and Care & Tools each render their own header in-body,
   // so the app-bar title is left blank there to avoid showing the title twice.
-  final _titles = ['Home', '', '', '', 'Profile'];
+  final _titles = ['Home', '', '', '', 'Profile', ''];
 
-  // The pill tabs; index 2 (New screening) is the standout accent action — the
-  // "+" button set apart from the pill, exactly like the Neurotrace mock. Index
-  // 5 (Appointments) opens its own full-screen window rather than a body tab.
+  // The pill tabs; index 5 (New screening) is the standout accent action — the
+  // "+" button set apart from the pill, exactly like the Neurotrace mock.
   static const _tabs = <NeuroTab>[
     NeuroTab(Icons.home_rounded, 0, 'Home'),
     NeuroTab(Icons.assignment_rounded, 1, 'Reports'),
-    NeuroTab(Icons.calendar_month_rounded, _appointmentsTab, 'Appointments'),
+    NeuroTab(Icons.calendar_month_rounded, 2, 'Appointments'),
     NeuroTab(Icons.grid_view_rounded, 3, 'Services'),
     NeuroTab(Icons.person_rounded, 4, 'Profile'),
   ];
-  static const _action = NeuroTab(Icons.add_rounded, 2, 'New screening');
+  static const _action = NeuroTab(Icons.add_rounded, 5, 'New screening');
 
   @override
   Widget build(BuildContext context) {
@@ -115,9 +109,10 @@ class _MyLandingPageState extends State<MyLandingPage> {
         onOpenReports: () => setState(() => _currentIndex = 1),
       ),
       const ReportScreen(),
-      UploadScreen(camera: widget.firstCam),
+      const AppointmentsScreen(isTab: true),
       const ServiceScreen(),
       const YouScreen(),
+      UploadScreen(camera: widget.firstCam),
     ];
     // The live video backdrop sits behind the whole shell so the motion carries
     // through every tab; the frosted bar and content float over it. Falls back to
@@ -131,7 +126,8 @@ class _MyLandingPageState extends State<MyLandingPage> {
               backgroundColor: Colors.transparent,
               elevation: 0,
               scrolledUnderElevation: 0,
-              title: Text(_titles[_currentIndex], style: const TextStyle(fontWeight: FontWeight.w700)),
+              title: Text(_currentIndex < _titles.length ? _titles[_currentIndex] : '',
+                  style: const TextStyle(fontWeight: FontWeight.w700)),
               actions: [
                 ValueListenableBuilder<int>(
                   valueListenable: AppNotifications.instance.unread,
@@ -152,15 +148,6 @@ class _MyLandingPageState extends State<MyLandingPage> {
               ],
             ),
             // Fade-through between tabs instead of a hard IndexedStack swap.
-            //
-            // Every child stays mounted, so state survives the switch (scroll
-            // offsets, form input, chat history, the running video backdrop).
-            // Rather than a plain crossfade — where both tabs are half-visible
-            // in the middle and the content muddles — this follows the Material
-            // fade-through shape: the outgoing tab clears out over the first
-            // ~35% of the 300ms, then the incoming one rises over the
-            // remainder while scaling 0.97 → 1.0. Hand-rolled with interval
-            // curves so the app takes no extra package dependency.
             body: SafeArea(
               bottom: false,
               child: Stack(
@@ -171,9 +158,6 @@ class _MyLandingPageState extends State<MyLandingPage> {
                     child: AnimatedOpacity(
                       opacity: isActive ? 1.0 : 0.0,
                       duration: const Duration(milliseconds: 300),
-                      // Incoming waits out the outgoing tab's exit; outgoing
-                      // leaves promptly. The two intervals are what turn a
-                      // crossfade into a fade-through.
                       curve: isActive
                           ? const Interval(0.35, 1.0, curve: Curves.easeOutCubic)
                           : const Interval(0.0, 0.35, curve: Curves.easeInCubic),
@@ -193,16 +177,7 @@ class _MyLandingPageState extends State<MyLandingPage> {
             bottomNavigationBar: FloatingTabBar(
               currentIndex: _currentIndex,
               onSelect: (i) {
-                // Switching tabs is routine navigation: a subtle haptic tick
-                // only — no click sound (the old tap cue on every tab press was
-                // the "sound on every click" the audit flagged). Haptics fire
-                // independently of the sound preference.
                 Haptics.instance.selection();
-                // Appointments is a dedicated window, not a body tab.
-                if (i == _appointmentsTab) {
-                  _openAppointments();
-                  return;
-                }
                 if (i != _currentIndex) setState(() => _currentIndex = i);
               },
               tabs: _tabs,
@@ -229,57 +204,91 @@ class _MyLandingPageState extends State<MyLandingPage> {
     AppointmentsService.instance.refresh();
     showModalBottomSheet(
       context: context,
-      showDragHandle: true,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      showDragHandle: false,
       isScrollControlled: true,
       builder: (sheetCtx) {
         // Mark read after the sheet is built so the badge clears once opened.
         WidgetsBinding.instance.addPostFrameCallback((_) => AppNotifications.instance.markAllRead());
         final dark = Theme.of(sheetCtx).brightness == Brightness.dark;
         final inkSoft = dark ? Themes.darkInkSoft : Themes.inkSoft;
-        return DraggableScrollableSheet(
-          initialChildSize: 0.6,
-          minChildSize: 0.35,
-          maxChildSize: 0.9,
-          expand: false,
-          builder: (_, scrollCtrl) => ValueListenableBuilder<List<AppNotification>>(
-            valueListenable: AppNotifications.instance.items,
-            builder: (_, notes, __) => ListView(
-              controller: scrollCtrl,
-              padding: const EdgeInsets.fromLTRB(20, 4, 20, 30),
-              children: [
-                Row(
-                  children: [
-                    const Text('Notifications',
-                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-                    const Spacer(),
-                    if (notes.isNotEmpty)
-                      TextButton.icon(
-                        onPressed: _openAppointments,
-                        icon: const Icon(Icons.calendar_month_rounded, size: 18),
-                        label: const Text('Appointments'),
+        return ClipRRect(
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+            child: Container(
+              decoration: Themes.liquidGlassDecoration(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+                dark: dark,
+                topAlpha: dark ? 0.88 : 0.82,
+                bottomAlpha: dark ? 0.72 : 0.65,
+              ),
+              child: DraggableScrollableSheet(
+                initialChildSize: 0.6,
+                minChildSize: 0.35,
+                maxChildSize: 0.9,
+                expand: false,
+                builder: (_, scrollCtrl) => ValueListenableBuilder<List<AppNotification>>(
+                  valueListenable: AppNotifications.instance.items,
+                  builder: (_, notes, __) => ListView(
+                    controller: scrollCtrl,
+                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 30),
+                    children: [
+                      Center(
+                        child: Container(
+                          width: 40,
+                          height: 4,
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: (dark ? Colors.white : Colors.black).withValues(alpha: 0.20),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
                       ),
-                  ],
+                      Row(
+                        children: [
+                          Text('Notifications',
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                                color: dark ? Themes.darkInk : Themes.ink,
+                              )),
+                          const Spacer(),
+                          if (notes.isNotEmpty)
+                            TextButton.icon(
+                              onPressed: () {
+                                Navigator.pop(sheetCtx);
+                                _openAppointments();
+                              },
+                              icon: const Icon(Icons.calendar_month_rounded, size: 18),
+                              label: const Text('Appointments'),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      if (notes.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 36),
+                          child: Column(children: [
+                            Icon(Icons.notifications_off_outlined, size: 40, color: inkSoft),
+                            const SizedBox(height: 10),
+                            Text("You're all caught up",
+                                style: TextStyle(fontWeight: FontWeight.w700, color: inkSoft)),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Approvals, cancellations and visits your doctor recommends will show up here.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(fontSize: 12.5, color: inkSoft, height: 1.4),
+                            ),
+                          ]),
+                        )
+                      else
+                        for (final n in notes) _notificationTile(n, dark),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 6),
-                if (notes.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 36),
-                    child: Column(children: [
-                      Icon(Icons.notifications_off_outlined, size: 40, color: inkSoft),
-                      const SizedBox(height: 10),
-                      Text("You're all caught up",
-                          style: TextStyle(fontWeight: FontWeight.w700, color: inkSoft)),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Approvals, cancellations and visits your doctor recommends will show up here.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 12.5, color: inkSoft, height: 1.4),
-                      ),
-                    ]),
-                  )
-                else
-                  for (final n in notes) _notificationTile(n, dark),
-              ],
+              ),
             ),
           ),
         );

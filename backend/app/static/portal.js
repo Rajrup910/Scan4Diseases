@@ -2397,6 +2397,7 @@
     var agenda = page.querySelector("[data-appt-agenda]");
     var summary = page.querySelector("[data-appt-summary]");
     var todayKey = page.getAttribute("data-today") || "";
+    var activeFilter = null; // "awaiting" | "upcoming" | "cancelled" | null
 
     var MONTHS = ["January", "February", "March", "April", "May", "June", "July",
       "August", "September", "October", "November", "December"];
@@ -2406,6 +2407,81 @@
     var tp = (todayKey.split("-"));
     var today = { y: +tp[0], m: (+tp[1]) - 1, d: +tp[2] };
     var viewY = today.y, viewM = today.m;
+
+    function matchesFilter(a, filter) {
+      if (!filter) return true;
+      if (filter === "awaiting") return a.status === "requested";
+      if (filter === "upcoming") return a.status === "confirmed" && !a.is_past;
+      if (filter === "cancelled") return a.status === "cancelled" || a.status === "declined";
+      return true;
+    }
+
+    function renderAgenda(filter) {
+      if (!agenda) return;
+      var headTitle = agenda.querySelector(".appt-agenda-head h3");
+      var headCount = agenda.querySelector(".appt-agenda-count");
+      var listEl = agenda.querySelector(".appt-agenda-list");
+      var emptyEl = agenda.querySelector(".appt-agenda-empty");
+
+      var filtered = appts.filter(function (a) {
+        if (!filter) {
+          return a.status === "requested" || (a.status === "confirmed" && !a.is_past);
+        }
+        return matchesFilter(a, filter);
+      });
+
+      if (filter === "awaiting") {
+        if (headTitle) headTitle.textContent = "Awaiting approval";
+      } else if (filter === "upcoming") {
+        if (headTitle) headTitle.textContent = "Upcoming visits";
+      } else if (filter === "cancelled") {
+        if (headTitle) headTitle.textContent = "Cancelled & declined";
+      } else {
+        if (headTitle) headTitle.textContent = "Needs attention";
+      }
+
+      if (headCount) headCount.textContent = filtered.length;
+
+      if (filtered.length) {
+        var html = "";
+        filtered.forEach(function (a) {
+          html += '<li>'
+            + '<button class="appt-agenda-item" type="button" data-appt-open="' + a.id + '">'
+            + '<span class="appt-agenda-date">'
+            + '<span class="appt-agenda-day">' + esc(a.day_label) + '</span>'
+            + '<span class="appt-agenda-time">' + esc(a.time_label) + '</span>'
+            + '</span>'
+            + '<span class="appt-agenda-body">'
+            + '<span class="appt-agenda-name">' + esc(a.patient_name) + '</span>'
+            + '<span class="appt-agenda-meta">' + esc(a.condition || a.reason || 'General consultation') + '</span>'
+            + '</span>'
+            + '<span class="appt-badge tone-' + esc(a.tone) + '">' + esc(a.status_label) + '</span>'
+            + '</button>'
+            + '</li>';
+        });
+        if (!listEl) {
+          listEl = document.createElement("ul");
+          listEl.className = "appt-agenda-list";
+          agenda.appendChild(listEl);
+        }
+        listEl.innerHTML = html;
+        listEl.hidden = false;
+        if (emptyEl) emptyEl.hidden = true;
+      } else {
+        if (listEl) listEl.hidden = true;
+        if (!emptyEl) {
+          emptyEl = document.createElement("div");
+          emptyEl.className = "appt-agenda-empty";
+          agenda.appendChild(emptyEl);
+        }
+        var msg = filter === "cancelled" ? "No cancelled or declined visits."
+          : filter === "awaiting" ? "No requests awaiting approval."
+          : filter === "upcoming" ? "No upcoming confirmed visits."
+          : "You're all caught up — no pending requests or upcoming visits.";
+        emptyEl.innerHTML = '<svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#check-circle"/></svg><p>' + esc(msg) + '</p>';
+        emptyEl.hidden = false;
+      }
+    }
 
     // --- month grid ---
     function dayCell(y, m, d, outside) {
@@ -2419,7 +2495,10 @@
       num.textContent = dt.getDate();
       cell.appendChild(num);
 
-      var items = byDate[key] || [];
+      var rawItems = byDate[key] || [];
+      var items = rawItems.filter(function (a) {
+        return matchesFilter(a, activeFilter);
+      });
       if (items.length) {
         if (items.some(function (a) { return a.status === "requested"; })) cell.classList.add("has-pending");
         var list = document.createElement("div");
@@ -2526,14 +2605,21 @@
               + '</button>'
             + '</div>'
           + '</div>'
-          // Gate 2 — second confirmation (revealed after the slide completes).
+          // Gate 2 — a themed confirmation popup (revealed after the slide
+          // completes). It's a fixed overlay, but stays inside the <form> so its
+          // submit button still posts the cancellation.
           + '<div class="appt-confirm2" hidden>'
-            + '<p class="appt-confirm2-msg">'
-              + '<svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#alert-triangle"/></svg>'
-              + 'This cancels the visit and notifies the patient. This can’t be undone.</p>'
-            + '<div class="appt-confirm2-row">'
-              + '<button class="btn btn-ghost appt-confirm2-keep" type="button">Keep visit</button>'
-              + '<button class="btn btn-danger btn-danger-gloss appt-act-go" type="submit">Confirm cancel and notify patient</button>'
+            + '<div class="appt-confirm2-backdrop" data-appt-confirm-dismiss aria-hidden="true"></div>'
+            + '<div class="appt-confirm2-panel" role="alertdialog" aria-modal="true" aria-label="Confirm cancellation">'
+              + '<span class="appt-confirm2-ic" aria-hidden="true">'
+                + '<svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#alert-triangle"/></svg>'
+              + '</span>'
+              + '<h4 class="appt-confirm2-title">Cancel this visit?</h4>'
+              + '<p class="appt-confirm2-msg">This cancels the visit and notifies the patient. This can’t be undone.</p>'
+              + '<div class="appt-confirm2-row">'
+                + '<button class="btn btn-ghost appt-confirm2-keep" type="button">Keep visit</button>'
+                + '<button class="btn btn-danger btn-danger-gloss appt-act-go" type="submit">Confirm cancel and notify patient</button>'
+              + '</div>'
             + '</div>'
           + '</div>'
         + '</div></form>';
@@ -2624,6 +2710,20 @@
 
     // Delegated interactions across the calendar + rail.
     page.addEventListener("click", function (e) {
+      var filterBtn = e.target.closest("[data-appt-filter]");
+      if (filterBtn) {
+        e.preventDefault();
+        var f = filterBtn.getAttribute("data-appt-filter");
+        activeFilter = (activeFilter === f) ? null : f;
+        page.querySelectorAll("[data-appt-filter]").forEach(function (b) {
+          b.classList.toggle("is-active", b.getAttribute("data-appt-filter") === activeFilter);
+        });
+        Sound.tap();
+        buzz(10);
+        renderAgenda(activeFilter);
+        buildGrid(0);
+        return;
+      }
       var opener = e.target.closest("[data-appt-open]");
       if (opener) { e.preventDefault(); openSummary(opener.getAttribute("data-appt-open")); return; }
       if (e.target.closest("[data-appt-sum-close]")) { e.preventDefault(); closeSummary(); return; }
@@ -2638,13 +2738,25 @@
         Sound.tap(); buzz(12);
         return;
       }
-      // "Keep visit" — step back from the second gate, reset the slider.
-      var keep = e.target.closest(".appt-confirm2-keep");
+      // "Keep visit" (or tapping the popup backdrop) — step back from the
+      // confirmation popup and reset the slider.
+      var keep = e.target.closest(".appt-confirm2-keep, [data-appt-confirm-dismiss]");
       if (keep) {
         var kform = keep.closest("[data-appt-cancel]");
         if (kform) resetCancel(kform);
         Sound.tap();
         return;
+      }
+    });
+
+    // Escape closes the confirmation popup, like any modal.
+    page.addEventListener("keydown", function (e) {
+      if (e.key !== "Escape") return;
+      var openGate = page.querySelector("[data-appt-cancel] .appt-confirm2:not([hidden])");
+      if (openGate) {
+        e.preventDefault();
+        resetCancel(openGate.closest("[data-appt-cancel]"));
+        Sound.tap();
       }
     });
 

@@ -60,27 +60,27 @@ class FloatingTabBar extends StatelessWidget {
                               Themes.darkSurface.withValues(alpha: 0.70),
                             ]
                           : [
-                              Colors.white.withValues(alpha: 0.32),
-                              Colors.white.withValues(alpha: 0.18),
+                              Colors.white.withValues(alpha: 0.82),
+                              const Color(0xFFF1F5F9).withValues(alpha: 0.68),
                             ],
                     ),
                     borderRadius: BorderRadius.circular(28),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: dark ? 0.25 : 0.55),
-                      width: 1.0,
+                      color: dark
+                          ? Themes.tealGlow.withValues(alpha: 0.25)
+                          : Colors.white.withValues(alpha: 0.85),
+                      width: 1.1,
                     ),
                     boxShadow: [
-                      // Depth only — the earlier white glow (alpha .55) was the
-                      // source of the "glossy" look in light mode; it is gone.
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: dark ? 0.35 : 0.10),
+                        color: Colors.black.withValues(alpha: dark ? 0.35 : 0.09),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
                     ],
                   ),
                   child: Row(
-                    // Equal, flexible slots so any number of tabs (five, here)
+                    // Equal, flexible slots so any number of tabs
                     // share the pill width without ever overflowing on narrow
                     // devices; each tab centres a fixed-size touch target.
                     children: [
@@ -125,8 +125,8 @@ class _TabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final activeInk = dark ? Colors.white : Themes.ink;
-    final idleInk = dark ? Themes.darkInkSoft : Themes.inkMuted;
+    final activeInk = dark ? Colors.white : Themes.brand;
+    final idleInk = dark ? Themes.darkInkSoft : const Color(0xFF334155);
     return Semantics(
       button: true,
       selected: selected,
@@ -144,16 +144,20 @@ class _TabButton extends StatelessWidget {
           height: 44,
           decoration: BoxDecoration(
             color: selected
-                ? (dark ? Colors.white.withValues(alpha: 0.18) : Colors.white.withValues(alpha: 0.58))
+                ? (dark ? Colors.white.withValues(alpha: 0.18) : Themes.brandTint.withValues(alpha: 0.85))
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(14),
             border: selected
-                ? Border.all(color: Colors.white.withValues(alpha: dark ? 0.30 : 0.60), width: 1)
+                ? Border.all(
+                    color: dark
+                        ? Colors.white.withValues(alpha: 0.30)
+                        : Themes.brand.withValues(alpha: 0.35),
+                    width: 1.1)
                 : null,
             boxShadow: selected
                 ? [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.06),
+                      color: (dark ? Colors.black : Themes.brand).withValues(alpha: dark ? 0.20 : 0.08),
                       blurRadius: 6,
                       offset: const Offset(0, 2),
                     ),
@@ -166,7 +170,18 @@ class _TabButton extends StatelessWidget {
             scale: selected ? 1.12 : 1.0,
             duration: const Duration(milliseconds: 240),
             curve: Curves.easeOutBack,
-            child: Icon(tab.icon, size: 23, color: selected ? activeInk : idleInk),
+            child: Icon(
+              tab.icon,
+              size: 23,
+              color: selected ? activeInk : idleInk,
+              shadows: [
+                Shadow(
+                  color: (dark ? Colors.black : Colors.white).withValues(alpha: 0.40),
+                  blurRadius: 3,
+                  offset: const Offset(0, 1),
+                ),
+              ],
+            ),
           ),
         ),
         ),

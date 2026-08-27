@@ -141,6 +141,41 @@ class _ReportSummaryContent extends StatelessWidget {
                         Text('Model match score: ', style: TextStyle(fontSize: 13, color: inkSoft)),
                         Text('${(report.confidence! * 100).toStringAsFixed(1)}%',
                             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: ink)),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: report.isShared
+                                ? (dark ? Themes.tealLight : Themes.routine).withValues(alpha: dark ? 0.22 : 0.12)
+                                : (dark ? Colors.white : Colors.black).withValues(alpha: dark ? 0.08 : 0.04),
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(
+                              color: report.isShared
+                                  ? (dark ? Themes.tealLight : Themes.routine).withValues(alpha: dark ? 0.55 : 0.35)
+                                  : (dark ? Themes.darkBorder : Themes.border).withValues(alpha: 0.85),
+                              width: 0.85,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                report.isShared ? Icons.check_circle_rounded : Icons.lock_outline_rounded,
+                                size: 11,
+                                color: report.isShared ? (dark ? Themes.tealLight : Themes.routine) : inkSoft,
+                              ),
+                              const SizedBox(width: 3.5),
+                              Text(
+                                report.isShared ? 'Shared with doctor' : 'Not shared',
+                                style: TextStyle(
+                                  color: report.isShared ? (dark ? Themes.tealLight : Themes.routine) : inkSoft,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 10.5,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ],

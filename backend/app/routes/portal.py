@@ -871,12 +871,14 @@ def appointments_page(
         v for v, a in zip(views, rows)
         if a.status == APPT_CONFIRMED and _aware(a.scheduled_for) >= now
     ]
+    cancelled = [v for v, a in zip(views, rows) if a.status in ("cancelled", "declined")]
     # Agenda rail: the next things needing eyes — pending requests first, then upcoming.
     agenda = awaiting + upcoming_confirmed
 
     stats = {
         "awaiting": len(awaiting),
         "upcoming": len(upcoming_confirmed),
+        "cancelled": len(cancelled),
         "total": len(views),
     }
 

@@ -18,6 +18,8 @@ class ScreeningReport {
   final String explanation;
   final String? imagePath;
   final Map<String, dynamic> symptoms;
+  final bool isShared;
+  final DateTime? sharedAt;
 
   ScreeningReport({
     this.id,
@@ -29,6 +31,8 @@ class ScreeningReport {
     required this.explanation,
     this.imagePath,
     this.symptoms = const {},
+    this.isShared = false,
+    this.sharedAt,
   });
 
   /// Payload sent to `POST /reports`. Excludes the local image path.
@@ -41,18 +45,23 @@ class ScreeningReport {
         'symptoms': symptoms,
       };
 
-  factory ScreeningReport.fromJson(Map<String, dynamic> j, {String? localImagePath}) =>
-      ScreeningReport(
-        id: j['id'] as int?,
-        date: DateTime.tryParse('${j['created_at']}')?.toLocal() ?? DateTime.now(),
-        condition: '${j['condition'] ?? 'Screening result'}',
-        predictedClass: j['predicted_class'] as String?,
-        confidence: j['confidence'] is num ? (j['confidence'] as num).toDouble() : null,
-        triage: '${j['triage'] ?? ''}',
-        explanation: '${j['explanation'] ?? ''}',
-        symptoms: j['symptoms'] is Map ? Map<String, dynamic>.from(j['symptoms'] as Map) : const {},
-        imagePath: localImagePath,
-      );
+  factory ScreeningReport.fromJson(Map<String, dynamic> j, {String? localImagePath}) {
+    final rawSharedAt = j['shared_at'];
+    final parsedSharedAt = rawSharedAt != null ? DateTime.tryParse('$rawSharedAt')?.toLocal() : null;
+    return ScreeningReport(
+      id: j['id'] as int?,
+      date: DateTime.tryParse('${j['created_at']}')?.toLocal() ?? DateTime.now(),
+      condition: '${j['condition'] ?? 'Screening result'}',
+      predictedClass: j['predicted_class'] as String?,
+      confidence: j['confidence'] is num ? (j['confidence'] as num).toDouble() : null,
+      triage: '${j['triage'] ?? ''}',
+      explanation: '${j['explanation'] ?? ''}',
+      symptoms: j['symptoms'] is Map ? Map<String, dynamic>.from(j['symptoms'] as Map) : const {},
+      imagePath: localImagePath,
+      isShared: parsedSharedAt != null || j['is_shared'] == true,
+      sharedAt: parsedSharedAt,
+    );
+  }
 }
 
 /// The user's reports, synced with the backend. Screens listen to [reports].

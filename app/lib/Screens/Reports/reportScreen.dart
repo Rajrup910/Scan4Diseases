@@ -7,6 +7,7 @@ import '../Upload/ResultData.dart';
 import '../../services/theme_service.dart';
 import 'compareScreen.dart';
 import 'reportSummarySheet.dart';
+import '../Share/share_with_doctor.dart';
 
 class ReportScreen extends StatefulWidget {
   const ReportScreen({super.key});
@@ -17,7 +18,7 @@ class ReportScreen extends StatefulWidget {
 
 class _ReportScreenState extends State<ReportScreen> {
   String _searchQuery = '';
-  String _filterTriage = 'all'; // 'all' | 'urgent' | 'prompt' | 'routine'
+  String _filterTriage = 'all'; // 'all' | 'shared' | 'urgent' | 'prompt' | 'routine'
 
   @override
   Widget build(BuildContext context) => ValueListenableBuilder<ThemeMode>(
@@ -36,6 +37,7 @@ class _ReportScreenState extends State<ReportScreen> {
                 r.triage.toLowerCase().contains(_searchQuery.toLowerCase());
             final triageLower = r.triage.toLowerCase();
             final matchesTriage = switch (_filterTriage) {
+              'shared' => r.isShared,
               'urgent' => triageLower.contains('urgent'),
               'prompt' => triageLower.contains('prompt') || triageLower.contains('soon'),
               'routine' => triageLower.contains('routine') || (!triageLower.contains('urgent') && !triageLower.contains('prompt')),
@@ -158,6 +160,9 @@ class _ReportScreenState extends State<ReportScreen> {
                   child: Row(
                     children: [
                       _filterChip('All', 'all', reports.length, dark),
+                      const SizedBox(width: 8),
+                      _filterChip('Shared', 'shared',
+                          reports.where((r) => r.isShared).length, dark),
                       const SizedBox(width: 8),
                       _filterChip('Urgent', 'urgent',
                           reports.where((r) => r.triage.toLowerCase().contains('urgent')).length, dark),
@@ -425,7 +430,74 @@ class _ReportScreenState extends State<ReportScreen> {
                     Text(r.condition,
                         style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: ink)),
                     const SizedBox(height: 4),
-                    Text(_date(r.date), style: TextStyle(color: inkSoft, fontSize: 12.5)),
+                    Row(
+                      children: [
+                        Text(_date(r.date), style: TextStyle(color: inkSoft, fontSize: 12)),
+                        const SizedBox(width: 8),
+                        if (r.isShared)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: (dark ? Themes.tealLight : Themes.routine).withValues(alpha: dark ? 0.22 : 0.12),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: (dark ? Themes.tealLight : Themes.routine).withValues(alpha: dark ? 0.55 : 0.35),
+                                width: 0.85,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.check_circle_rounded, size: 11, color: dark ? Themes.tealLight : Themes.routine),
+                                const SizedBox(width: 3.5),
+                                Text(
+                                  'Shared',
+                                  style: TextStyle(
+                                    color: dark ? Themes.tealLight : Themes.routine,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 10,
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        else
+                          Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => showShareWithDoctorSheet(context, r),
+                              borderRadius: BorderRadius.circular(6),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                decoration: BoxDecoration(
+                                  color: (dark ? Colors.white : Colors.black).withValues(alpha: dark ? 0.08 : 0.04),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: (dark ? Themes.darkBorder : Themes.border).withValues(alpha: 0.85),
+                                    width: 0.85,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.lock_outline_rounded, size: 10, color: inkSoft),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      'Not shared',
+                                      style: TextStyle(
+                                        color: inkSoft,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 10,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
                     const SizedBox(height: 6),
                     Container(
                       height: 24,

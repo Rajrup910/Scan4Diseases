@@ -15,12 +15,15 @@
       <p class="muted appt-sub">Every booked visit, mapped out. Click one to open its case summary — approve requests, recommend a slot, or cancel and notify the patient.</p>
     </div>
     <div class="appt-head-stats">
-      <span class="appt-stat is-pending" title="Requests awaiting your approval">
+      <button class="appt-stat is-pending" type="button" data-appt-filter="awaiting" title="Filter by requests awaiting your approval">
         <span class="appt-stat-dot"></span><b>{{ stats.awaiting }}</b> awaiting
-      </span>
-      <span class="appt-stat is-ok" title="Confirmed, upcoming visits">
+      </button>
+      <button class="appt-stat is-ok" type="button" data-appt-filter="upcoming" title="Filter by confirmed upcoming visits">
         <span class="appt-stat-dot"></span><b>{{ stats.upcoming }}</b> upcoming
-      </span>
+      </button>
+      <button class="appt-stat is-cancelled" type="button" data-appt-filter="cancelled" title="Filter by cancelled visits">
+        <span class="appt-stat-dot"></span><b>{{ stats.cancelled }}</b> cancelled
+      </button>
       <button class="btn btn-primary appt-reco-btn" type="button" data-appt-reco-open>
         <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#plus"/></svg>
         Recommend a visit
