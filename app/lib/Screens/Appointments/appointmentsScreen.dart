@@ -148,15 +148,21 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> {
                         ),
                         const SizedBox(height: 10),
                       ],
-                      Text(
-                        'Book a consultation with a verified dermatologist, or review a visit '
-                        'your doctor recommended. You approve every booking; your doctor '
-                        'approves every request.',
-                        style: TextStyle(
-                          color: inkSoft,
-                          height: 1.4,
-                          fontSize: 13.5,
-                          shadows: widget.isTab ? onMedia : null,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: dark
+                            ? Themes.liquidGlassDecoration(radius: 14, dark: true, topAlpha: 0.72, bottomAlpha: 0.52)
+                            : Themes.liquidGlassDecoration(radius: 14, topAlpha: 0.75, bottomAlpha: 0.55),
+                        child: Text(
+                          'Book a consultation with a verified dermatologist, or review a visit '
+                          'your doctor recommended. You approve every booking; your doctor '
+                          'approves every request.',
+                          style: TextStyle(
+                            color: dark ? Themes.darkInk : Themes.ink,
+                            height: 1.35,
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 14),

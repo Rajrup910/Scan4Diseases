@@ -41,38 +41,23 @@ class _ServiceScreenState extends State<ServiceScreen> {
                 child: Themes.sectionHeaderPill('Care & Tools',
                     dark: dark, icon: Icons.dashboard_customize_rounded),
               ),
-              const SizedBox(height: 10),
-              Text(
-                'Evidence-grounded tools to support your skin screening journey.',
-                style: TextStyle(
-                  color: ink,
-                  fontSize: 13.5,
-                  height: 1.35,
-                  shadows: dark ? Themes.onMediaDark : Themes.onMedia,
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: dark
+                    ? Themes.liquidGlassDecoration(radius: 14, dark: true, topAlpha: 0.72, bottomAlpha: 0.52)
+                    : Themes.liquidGlassDecoration(radius: 14, topAlpha: 0.75, bottomAlpha: 0.55),
+                child: Text(
+                  'Evidence-grounded tools to support your skin screening journey.',
+                  style: TextStyle(
+                    color: dark ? Themes.darkInk : Themes.ink,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    height: 1.35,
+                  ),
                 ),
               ),
-              const SizedBox(height: 20),
-              // Book an appointment — the primary care action, with a live badge
-              // when the doctor has approved / declined / recommended a visit.
-              ValueListenableBuilder<int>(
-                valueListenable: AppointmentsService.instance.unread,
-                builder: (_, unread, __) => _tile(
-                  context,
-                  Icons.event_available_rounded,
-                  'Book an appointment',
-                  'Request a consultation with a verified dermatologist, or review a visit your doctor recommended.',
-                  false,
-                  dark,
-                  badge: unread,
-                  onTap: () {
-                    SoundService.instance.open();
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const AppointmentsScreen()),
-                    );
-                  },
-                ),
-              ),
+              const SizedBox(height: 16),
               _tile(
                 context,
                 Icons.verified_user_outlined,
