@@ -18,6 +18,125 @@
     });
   })();
 
+  /* --- 0b. sound theme ------------------------------------------------------------
+     A cohesive, DELIBERATELY SUBTLE audio layer, synthesised live with the Web
+     Audio API — no sample files to ship, and every cue is a soft, short, low-gain
+     tone so it reads as tactile feedback, never a jingle. One shared, lazily
+     created AudioContext (browsers require a user gesture before audio, so it is
+     unlocked on the first pointer/key event). Muteable via the header speaker
+     toggle; the choice persists in localStorage and is mirrored on <html> as
+     data-sound so the icon reflects state even before this script runs.
+     The same palette is mirrored in the Flutter app's SoundService so web and
+     app feel like one product. */
+  var Sound = (function () {
+    var KEY = "s4d-sound";
+    var enabled = true;
+    try { enabled = localStorage.getItem(KEY) !== "off"; } catch (e) {}
+    document.documentElement.setAttribute("data-sound", enabled ? "on" : "off");
+
+    var ctx = null, master = null;
+    function ensureCtx() {
+      if (ctx) return ctx;
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      try {
+        ctx = new AC();
+        master = ctx.createGain();
+        master.gain.value = 0.85;   // per-cue gains stay low; this is a safety ceiling
+        master.connect(ctx.destination);
+      } catch (e) { ctx = null; }
+      return ctx;
+    }
+    function resume() {
+      var c = ensureCtx();
+      if (c && c.state === "suspended") c.resume().catch(function () {});
+    }
+    // Unlock the context on the first gesture (autoplay policy).
+    ["pointerdown", "keydown", "touchstart"].forEach(function (ev) {
+      window.addEventListener(ev, resume, { passive: true });
+    });
+
+    // One shaped voice: an oscillator with an optional pitch glide, a soft
+    // gain envelope, and an optional lowpass so nothing is ever harsh.
+    function voice(o) {
+      var c = ensureCtx();
+      if (!c) return;
+      if (c.state === "suspended") c.resume().catch(function () {});
+      var t0 = c.currentTime + (o.delay || 0);
+      var dur = o.dur || 0.12;
+      var osc = c.createOscillator();
+      var gain = c.createGain();
+      osc.type = o.type || "sine";
+      osc.frequency.setValueAtTime(o.freq, t0);
+      if (o.to) {
+        var glide = o.glide === "linear" ? "linearRampToValueAtTime" : "exponentialRampToValueAtTime";
+        osc.frequency[glide](Math.max(1, o.to), t0 + dur);
+      }
+      if (o.detune) osc.detune.setValueAtTime(o.detune, t0);
+      var peak = o.gain == null ? 0.05 : o.gain;
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(peak, t0 + (o.attack || 0.006));
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      var tail = osc;
+      if (o.cutoff) {
+        var lp = c.createBiquadFilter();
+        lp.type = "lowpass";
+        lp.frequency.value = o.cutoff;
+        osc.connect(lp); lp.connect(gain);
+      } else {
+        osc.connect(gain);
+      }
+      gain.connect(master);
+      osc.start(t0);
+      osc.stop(t0 + dur + 0.03);
+    }
+    function seq(notes) { if (enabled) notes.forEach(voice); }
+
+    var api = {
+      isOn: function () { return enabled; },
+      set: function (on) {
+        enabled = !!on;
+        try { localStorage.setItem(KEY, enabled ? "on" : "off"); } catch (e) {}
+        document.documentElement.setAttribute("data-sound", enabled ? "on" : "off");
+      },
+      toggle: function () { api.set(!enabled); return enabled; },
+
+      // Soft muted click — the workhorse for buttons, links, chips.
+      tap: function () { seq([{ freq: 320, to: 190, type: "triangle", gain: 0.035, dur: 0.055, cutoff: 1800 }]); },
+      // Barely-there hover tick.
+      hover: function () { seq([{ freq: 660, type: "sine", gain: 0.014, dur: 0.04, cutoff: 2600 }]); },
+      // Two-note affirm for a state flip (theme / sound / motion).
+      toggleTick: function () { seq([
+        { freq: 520, type: "sine", gain: 0.04, dur: 0.07 },
+        { freq: 780, type: "sine", gain: 0.04, dur: 0.09, delay: 0.06 }
+      ]); },
+      // Panels rising / settling.
+      open: function () { seq([
+        { freq: 440, to: 660, type: "sine", gain: 0.035, dur: 0.13, cutoff: 2600 },
+        { freq: 880, type: "sine", gain: 0.02, dur: 0.10, delay: 0.05 }
+      ]); },
+      close: function () { seq([{ freq: 620, to: 380, type: "sine", gain: 0.03, dur: 0.12, cutoff: 2200 }]); },
+      // Refresh whoosh — quick upward triangle sweep.
+      refresh: function () { seq([{ freq: 300, to: 900, type: "triangle", gain: 0.03, dur: 0.22, cutoff: 3200 }]); },
+      // Outgoing message blip.
+      send: function () { seq([{ freq: 540, to: 820, type: "sine", gain: 0.03, dur: 0.10 }]); },
+      // Warm major arpeggio — E5 · G#5 · B5 · E6 — quiet and brief.
+      success: function () { seq([
+        { freq: 659.25, type: "sine", gain: 0.05, dur: 0.16 },
+        { freq: 830.61, type: "sine", gain: 0.05, dur: 0.16, delay: 0.075 },
+        { freq: 987.77, type: "sine", gain: 0.05, dur: 0.18, delay: 0.15 },
+        { freq: 1318.5, type: "sine", gain: 0.045, dur: 0.30, delay: 0.225 }
+      ]); },
+      // Gentle two-note descent for a failed action — soft, not a buzzer.
+      error: function () { seq([
+        { freq: 300, type: "triangle", gain: 0.045, dur: 0.16, cutoff: 1400 },
+        { freq: 220, type: "triangle", gain: 0.05, dur: 0.26, cutoff: 1200, delay: 0.12, detune: -8 }
+      ]); }
+    };
+    return api;
+  })();
+  window.s4dSound = Sound;
+
   /* --- 1. theme toggle ------------------------------------------------------------- */
   var root = document.documentElement;
   function currentTheme() {
@@ -45,9 +164,53 @@
   }
   document.querySelectorAll("[data-theme-toggle]").forEach(function (btn) {
     btn.addEventListener("click", function () {
+      Sound.toggleTick();
       swapTheme(currentTheme() === "dark" ? "light" : "dark");
     });
   });
+
+  // Sound on/off — persists via the Sound module. Play a confirming tick when
+  // switching ON so the user hears that audio is live (silence would be
+  // ambiguous); switching OFF is silent by definition.
+  document.querySelectorAll("[data-sound-toggle]").forEach(function (btn) {
+    btn.setAttribute("aria-pressed", Sound.isOn() ? "true" : "false");
+    btn.addEventListener("click", function () {
+      var on = Sound.toggle();
+      btn.setAttribute("aria-pressed", on ? "true" : "false");
+      if (on) Sound.toggleTick();
+    });
+  });
+
+  /* --- 1c. ambient interaction sounds ---------------------------------------------
+     One delegated click handler gives the whole UI a soft tap on any meaningful
+     control. Controls that already emit a *dedicated* cue (theme/sound toggles,
+     dock refresh, the palette/dial openers, the login submit) are skipped so
+     they never double up. Capture phase so the tap is scheduled before a link
+     navigates away. */
+  (function () {
+    var TAP_SEL = "button, .btn, .dock-item, [role='menuitem'], .tab, .seg, .cmdk-item, .patient-arc-chip, .account-trigger";
+    var SKIP_SEL = "[data-theme-toggle],[data-sound-toggle],[data-dock-refresh],[data-cmdk-open],[data-dock-picker],[data-patient-dial-close]";
+    document.addEventListener("click", function (e) {
+      var t = e.target;
+      if (!t || !t.closest) return;
+      if (t.closest(SKIP_SEL)) return;
+      if (t.closest("[data-login-form]") && t.closest("button[type='submit']")) return;
+      var el = t.closest(TAP_SEL);
+      if (!el || el.disabled || el.classList.contains("is-disabled")) return;
+      Sound.tap();
+    }, true);
+
+    // A whisper-quiet tick when the pointer first lands on a dock pill — the dock
+    // is a small, discrete set of targets, so this stays tasteful rather than
+    // chattering the way a hover sound on every link would.
+    document.addEventListener("pointerover", function (e) {
+      if (!e.target || !e.target.closest) return;
+      var el = e.target.closest(".dock-item:not(.is-disabled)");
+      if (!el) return;
+      if (e.relatedTarget && el.contains(e.relatedTarget)) return;   // still inside
+      Sound.hover();
+    }, true);
+  })();
 
   /* --- 1b. toasts ------------------------------------------------------------------ */
   // Completion feedback for actions that POST and redirect. Because the page
@@ -96,9 +259,12 @@
     el.appendChild(disc);
     el.appendChild(body);
     layer.appendChild(el);
+    // A toast is the visual confirmation of a completed action — pair it with
+    // the matching audio cue so success/failure is felt as well as seen.
+    if (isError) Sound.error(); else Sound.success();
 
-    // Auto-dismiss after 3s, with a short leave animation.
-    var life = setTimeout(function () { dismiss(); }, 3000);
+    // Auto-dismiss after ~3.8s (enough to read a two-line toast), short leave anim.
+    var life = setTimeout(function () { dismiss(); }, 3800);
     function dismiss() {
       clearTimeout(life);
       if (!el.parentNode) return;
@@ -830,6 +996,7 @@
         var card = document.querySelector(".login-card");
         if (!result.ok) {
           // Authentication failed: render subtle glossy ruby cross in background of logo
+          Sound.error();
           delete loginForm.dataset.going;
           var msg = (result.data && result.data.error) ? result.data.error : "Email or password is incorrect.";
           
@@ -859,6 +1026,7 @@
         }
 
         // Authentication succeeded: render sleek blurry glossy emerald tick in the background of the logo
+        Sound.success();
         if (card) {
           card.classList.remove("is-auth-error");
           card.classList.add("is-auth-success");
@@ -992,6 +1160,7 @@
     var searchTimer = null;
 
     function openCmdk() {
+      Sound.open();
       if (typeof cmdk.showModal === "function") {
         cmdk.showModal();
       } else {
@@ -1262,6 +1431,7 @@
   var dockRefresh = document.querySelector("[data-dock-refresh]");
   if (dockRefresh) {
     dockRefresh.addEventListener("click", function () {
+      Sound.refresh();
       dockRefresh.classList.add("is-spinning");
       try {
         sessionStorage.setItem(TOAST_KEY, JSON.stringify({
@@ -1416,31 +1586,27 @@
       // nominal spot if the pill isn't measurable for some reason.
       var pivotX = pill ? pill.left + pill.width / 2 : window.innerWidth / 2;
       var pivotY = pill ? pill.top : window.innerHeight - 64;
-      var radius = parseFloat(getComputedStyle(dial).getPropertyValue("--arc-radius")) || 152;
-      var ARC_STEP = 45 * Math.PI / 180;                     // 45° between chips → clean 180° fan
+      var radius = parseFloat(getComputedStyle(dial).getPropertyValue("--arc-radius")) || 146;
+      var ARC_STEP = 60 * Math.PI / 180;                     // 60° between chips
       track.querySelectorAll(".patient-arc-chip").forEach(function (chip, i) {
         var offset = i - activeIndex;
         var halfN = patients.length / 2;
         if (offset > halfN) offset -= patients.length;
         else if (offset < -halfN) offset += patients.length;
-        var angle = offset * ARC_STEP;                       // 0 = straight up from pill
-        var visibleSpan = 2;                                 // selected + 2 either side
         var absOffset = Math.abs(offset);
-        var visible = absOffset <= visibleSpan;
-        // Origin at the pill; selected chip lifts straight up out of it.
+        // Show the selected name + one either side, ALL the same size (a clean,
+        // uniform 3-up fan — no shrunken "1st/5th" chips). Spinning cycles the
+        // rest in. The selected chip is distinguished by its highlight, not size.
+        var visible = absOffset <= 1;
+        var angle = offset * ARC_STEP;                       // 0 = straight up from pill
         var x = pivotX + radius * Math.sin(angle);
         var y = pivotY - radius * Math.cos(angle);
         chip.style.left = x + "px";
         chip.style.top = y + "px";
-        // Steeper falloff: the outermost visible pair (offset 2) sits near the
-        // dock's top edge, so keep it small and faint enough that the graze reads
-        // as a "more this way" hint rather than a chip fighting the dock.
-        var scale = visible ? Math.max(.6, 1 - absOffset * 0.17) : 0.55;
-        chip.style.setProperty("--chip-scale", scale);
-        var opacity = visible ? Math.max(.12, 1 - absOffset * 0.42) : 0;
-        chip.style.setProperty("--chip-opacity", opacity);
+        chip.style.setProperty("--chip-scale", visible ? 1 : 0.9);
+        chip.style.setProperty("--chip-opacity", visible ? (offset === 0 ? 1 : 0.85) : 0);
         chip.style.pointerEvents = visible ? "auto" : "none";
-        chip.style.zIndex = String(10 - Math.floor(absOffset));
+        chip.style.zIndex = String(offset === 0 ? 4 : 2);
       });
     }
 
@@ -1466,6 +1632,7 @@
       window.location.href = p.href;
     }
     function show() {
+      Sound.open();
       dial.hidden = false;
       dial.setAttribute("aria-hidden", "false");
       dial.classList.remove("is-ready");
@@ -1526,8 +1693,8 @@
     // you mid-scroll, and on a slow first paint a stray wheel tick could commit
     // and navigate before you'd even read the fan. Enter or a click still
     // commit instantly for anyone who wants speed.
-    var SETTLE_IDLE_MS = 1500;
-    var SETTLE_LAND_MS = 340;
+    var SETTLE_IDLE_MS = 1150;
+    var SETTLE_LAND_MS = 260;
     var settleTimer = null;
     function armSettle() {
       // Slot-machine behaviour: after the wheel goes quiet, the name that has
@@ -1538,7 +1705,7 @@
       // Extra breathing room right after opening so an accidental scroll during
       // the entrance (or while the page is still settling) can't trap you into
       // a patient before the dial has even finished appearing.
-      var grace = Math.max(0, 700 - (Date.now() - openedAt));
+      var grace = Math.max(0, 500 - (Date.now() - openedAt));
       settleTimer = setTimeout(function () {
         settleTimer = null;
         var activeChip = track.querySelector(".patient-arc-chip.is-active");
@@ -1552,6 +1719,7 @@
     }
     function close() {
       cancelSettle();
+      if (!dial.hidden) Sound.close();
       dial.hidden = true;
       dial.setAttribute("aria-hidden", "true");
       document.body.style.overflow = "";
@@ -2002,6 +2170,7 @@
       var msg = (compareChatInput.value || "").trim();
       if (!msg) return;
       if (!compareSession.reports.length) return;
+      Sound.send();
       appendChat("user", msg);
       compareChatInput.value = "";
       compareChatInput.style.height = "";

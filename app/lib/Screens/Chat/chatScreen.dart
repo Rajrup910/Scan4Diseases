@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../services/chat_service.dart';
 import '../../services/language_service.dart';
+import '../../services/sound_service.dart';
 import '../theme.dart';
 import '../widgets/app_logo_mark.dart';
 import '../widgets/markdown_text.dart';
@@ -61,6 +62,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _send(String text) async {
     final message = text.trim();
     if (message.isEmpty || _loading) return;
+    SoundService.instance.send();
     setState(() {
       _messages.add(_Msg('user', message));
       _loading = true;

@@ -359,7 +359,7 @@ body::before {
    Also exclude the floating dock, its dial, and the modal dialogs so they
    keep their intended position (fixed / grid overlay) instead of being
    forced into `position: relative` and dropping into the page flow. */
-body > *:not(.bg-stage):not(.site-header):not(.flow-takeover):not(.dock):not(.patient-arc):not(dialog) {
+body > *:not(.bg-stage):not(.site-header):not(.flow-takeover):not(.dock):not(.patient-arc):not(.toast-layer):not(dialog) {
   position: relative;
   z-index: 1;
 }
@@ -726,6 +726,15 @@ main.wrap { flex: 0 1 auto; padding-top: var(--s-5); padding-bottom: 108px; }
   :root:not([data-theme="light"]) .theme-toggle .icon-sun { display: block; }
   :root:not([data-theme="light"]) .theme-toggle .icon-moon { display: none; }
 }
+
+/* Sound toggle — shares the theme-toggle chrome. Speaker-with-waves when audio
+   feedback is on, speaker-with-x when the viewer has muted it (root carries
+   data-sound="off"). A muted control also dims a touch to read as "off". */
+.sound-toggle .icon-sound-off { display: none; }
+.sound-toggle .icon-sound-on  { display: block; }
+:root[data-sound="off"] .sound-toggle .icon-sound-on  { display: none; }
+:root[data-sound="off"] .sound-toggle .icon-sound-off { display: block; }
+:root[data-sound="off"] .sound-toggle { color: var(--ink-faint); }
 
 /* --- buttons --- */
 .btn {
@@ -2456,37 +2465,86 @@ body.is-transitioning .flow-takeover,
   align-items: center;
   gap: 0.5rem;
 }
+/* Dual counter-rotating ring. The old spinner drove `spin-rim`, which only
+   animates the `--angle` custom property (consumed by a different, conic
+   element) — the border ring itself never turned, so it sat dead-still. These
+   two arcs spin on real `transform` at different speeds and directions, and
+   the whole rig breathes, so "Authenticating" reads as active work. */
 .login-btn-spinner {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, 0.35);
-  border-top-color: #ffffff;
-  animation: spin-rim 0.75s linear infinite;
+  position: relative;
+  width: 15px;
+  height: 15px;
   flex: none;
+  animation: btn-spinner-breathe 1.4s ease-in-out infinite;
+}
+.login-btn-spinner::before,
+.login-btn-spinner::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid transparent;
+}
+.login-btn-spinner::before {
+  inset: 0;
+  border-top-color: #ffffff;
+  border-right-color: rgba(255, 255, 255, .5);
+  animation: btn-spin 0.68s cubic-bezier(.55, .15, .45, .85) infinite;
+}
+.login-btn-spinner::after {
+  inset: 3px;
+  border-bottom-color: rgba(255, 255, 255, .85);
+  animation: btn-spin 1.0s linear infinite reverse;
+}
+@keyframes btn-spin { to { transform: rotate(360deg); } }
+@keyframes btn-spinner-breathe {
+  0%, 100% { transform: scale(1);    opacity: .9; }
+  50%      { transform: scale(1.08); opacity: 1;  }
 }
 .login-btn-dots {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  margin-left: 1px;
+  gap: 3px;
+  margin-left: 2px;
 }
 .login-btn-dots > span {
   width: 3px;
   height: 3px;
   border-radius: 50%;
   background: currentColor;
-  opacity: .2;
-  animation: btn-dot-bounce 1.2s ease-in-out infinite;
+  opacity: .25;
+  /* A travelling wave: each dot lifts, brightens and swells slightly in turn,
+     then hands off to the next — reads livelier than a flat blink. */
+  animation: btn-dot-wave 1.05s cubic-bezier(.4, 0, .2, 1) infinite;
 }
-.login-btn-dots > span:nth-child(2) { animation-delay: .18s; }
-.login-btn-dots > span:nth-child(3) { animation-delay: .36s; }
-@keyframes btn-dot-bounce {
-  0%, 60%, 100% { opacity: .2; transform: translateY(0); }
-  30%           { opacity: 1;  transform: translateY(-3px); }
+.login-btn-dots > span:nth-child(2) { animation-delay: .14s; }
+.login-btn-dots > span:nth-child(3) { animation-delay: .28s; }
+@keyframes btn-dot-wave {
+  0%, 70%, 100% { opacity: .25; transform: translateY(0) scale(1); }
+  35%           { opacity: 1;   transform: translateY(-3.5px) scale(1.35); }
+}
+/* The word itself catches a soft light sweep so the label feels alive too. */
+.login-btn-word {
+  background: linear-gradient(100deg,
+    rgba(255, 255, 255, .78) 20%, #ffffff 42%, rgba(255, 255, 255, .78) 64%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: btn-word-shimmer 1.9s ease-in-out infinite;
+}
+@keyframes btn-word-shimmer {
+  0%   { background-position: 140% 0; }
+  100% { background-position: -40% 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .login-btn-dots > span { animation: none; opacity: .7; }
+  .login-btn-spinner { animation: none; }
+  .login-btn-spinner::before { animation: btn-spin 0.9s linear infinite; }
+  .login-btn-spinner::after,
+  .login-btn-dots > span,
+  .login-btn-word { animation: none; }
+  .login-btn-word { -webkit-text-fill-color: currentColor; color: currentColor; }
+  .login-btn-dots > span { opacity: .7; }
 }
 
 .flow-takeover.is-fading-out {
@@ -2698,16 +2756,19 @@ body.is-transitioning .flow-takeover,
    after its lifetime and the layer stays out of the pointer path. */
 .toast-layer {
   position: fixed;
-  right: var(--s-4);
+  left: 50%;
+  transform: translateX(-50%);            /* centred horizontally at the top */
+  right: auto;
   top: calc(var(--s-4) + 56px);           /* clears the sticky site-header */
   z-index: 99999;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: var(--s-2);
   pointer-events: none;
 }
 @media (max-width: 720px) {
-  .toast-layer { top: calc(var(--s-4) + 56px); right: var(--s-3); left: var(--s-3); }
+  .toast-layer { top: calc(var(--s-4) + 56px); }
 }
 @keyframes toast-in-top {
   from { opacity: 0; transform: translateY(-14px); }
@@ -2774,7 +2835,7 @@ body.is-transitioning .flow-takeover,
 @keyframes toast-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(14px); } }
 
 @media (max-width: 520px) {
-  .toast-layer { left: var(--s-4); right: var(--s-4); }
+  .toast-layer { left: var(--s-4); right: var(--s-4); transform: none; align-items: stretch; }
   .toast { min-width: 0; max-width: none; }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -3064,6 +3125,60 @@ body.is-transitioning .flow-takeover,
    subtle idle bob (--dock-idle) keeps it feeling alive without competing
    with the content. The dock is position:fixed so it never scrolls with the
    page. */
+
+/* Dock theming tokens — resolved by EFFECTIVE theme: the explicit data-theme
+   attribute, OR the OS colour preference when the viewer has never toggled (no
+   saved theme, so no attribute is set). The old rules keyed the dock's light
+   slab off `:root:not([data-theme="dark"])`, which ALSO matched a dark-OS
+   visitor with no saved theme — leaving a light dock with dark ink that turned
+   invisible on hover once the background followed the (dark) surface tokens.
+   Routing every dock colour through these tokens keeps ink and slab in the same
+   theme in all four states. */
+:root {
+  --dock-bg: rgba(255, 255, 255, 0.28);
+  --dock-border: rgba(200, 210, 225, 0.8);
+  --dock-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .95),
+    0 16px 38px rgba(16, 24, 40, .2),
+    0 2px 6px rgba(16, 24, 40, .08);
+  --dock-ink: #1E293B;
+  --dock-ink-strong: #0F172A;
+  --dock-chip-bg: rgba(15, 23, 42, .12);
+  --dock-chip-ink: #0F172A;
+  --dock-chip-active-bg: rgba(255, 255, 255, .3);
+  --dock-chip-active-ink: #06251f;
+}
+:root[data-theme="dark"] {
+  --dock-bg: rgba(20, 26, 36, 0.22);
+  --dock-border: rgba(255, 255, 255, 0.14);
+  --dock-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .18),
+    0 18px 44px rgba(0, 0, 0, .6),
+    0 0 30px rgba(47, 185, 163, .18);
+  --dock-ink: var(--ink-soft);
+  --dock-ink-strong: var(--ink);
+  --dock-chip-bg: rgba(255, 255, 255, .25);
+  --dock-chip-ink: #ffffff;
+  --dock-chip-active-bg: rgba(255, 255, 255, .3);
+  --dock-chip-active-ink: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --dock-bg: rgba(20, 26, 36, 0.22);
+    --dock-border: rgba(255, 255, 255, 0.14);
+    --dock-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, .18),
+      0 18px 44px rgba(0, 0, 0, .6),
+      0 0 30px rgba(47, 185, 163, .18);
+    --dock-ink: var(--ink-soft);
+    --dock-ink-strong: var(--ink);
+    --dock-chip-bg: rgba(255, 255, 255, .25);
+    --dock-chip-ink: #ffffff;
+    --dock-chip-active-bg: rgba(255, 255, 255, .3);
+    --dock-chip-active-ink: #ffffff;
+  }
+}
+
 .dock {
   position: fixed;
   bottom: 26px;
@@ -3078,46 +3193,24 @@ body.is-transitioning .flow-takeover,
   padding: .4rem .7rem;
   border-radius: var(--r-pill);
   overflow: visible;
-  border: 1px solid var(--border-strong);
-  background: color-mix(in srgb, var(--surface) 38%, transparent);
-  backdrop-filter: blur(28px) saturate(160%);
-  -webkit-backdrop-filter: blur(28px) saturate(160%);
-  box-shadow:
-    inset 0 1px 0 var(--glass-gloss),
-    0 14px 40px rgba(0, 0, 0, .3),
-    0 2px 8px rgba(0, 0, 0, .14);
+  border: 1px solid var(--dock-border);
+  background: var(--dock-bg);
+  backdrop-filter: blur(36px) saturate(180%);
+  -webkit-backdrop-filter: blur(36px) saturate(180%);
+  box-shadow: var(--dock-shadow);
   width: max-content;
   max-width: calc(100vw - 32px);
   box-sizing: border-box;
   animation: dock-entrance 420ms cubic-bezier(.16, 1, .3, 1), dock-idle 6.5s ease-in-out 900ms infinite;
   transition: transform var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out), border-color var(--dur-2) var(--ease-out);
 }
-:root[data-theme="dark"] .dock {
-  background: rgba(20, 26, 36, 0.22);
-  border-color: rgba(255, 255, 255, 0.14);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    0 18px 44px rgba(0, 0, 0, .6),
-    0 0 30px rgba(47, 185, 163, .18);
-  backdrop-filter: blur(36px) saturate(180%);
-  -webkit-backdrop-filter: blur(36px) saturate(180%);
-}
-:root:not([data-theme="dark"]) .dock {
-  background: rgba(255, 255, 255, 0.28);
-  border-color: rgba(200, 210, 225, 0.8);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, .95),
-    0 16px 38px rgba(16, 24, 40, .2),
-    0 2px 6px rgba(16, 24, 40, .08);
-  backdrop-filter: blur(36px) saturate(180%);
-  -webkit-backdrop-filter: blur(36px) saturate(180%);
-}
-/* Dock text (Worklist / Patient / Report) was washing out against the
-   ambient background in light mode. Force a darker ink and re-drop the
-   subtle text shadow so it stays readable regardless of video content. */
-:root:not([data-theme="dark"]) .dock .dock-item { color: #1E293B; }
-:root:not([data-theme="dark"]) .dock .dock-item.is-active { color: #ffffff; }
-:root:not([data-theme="dark"]) .dock .dock-item:hover:not(.is-disabled) { color: #0F172A; }
+/* Dock text (Worklist / Patient / Report) — driven by the effective-theme
+   tokens above so it stays legible over the ambient video in every state:
+   a strong ink in light, a light ink in dark, and — crucially — never a dark
+   ink on the dark slab a dark-OS visitor gets before they have toggled. */
+.dock .dock-item { color: var(--dock-ink); }
+.dock .dock-item.is-active { color: #ffffff; }
+.dock .dock-item:hover:not(.is-disabled) { color: var(--dock-ink-strong); }
 .dock:hover {
   animation-play-state: paused;
   transform: translateX(-50%) translateY(-4px);
@@ -3175,27 +3268,22 @@ body.is-transitioning .flow-takeover,
   cursor: default;
   pointer-events: none;
 }
+/* Report-id chip — themed through the same effective-theme tokens: a subtle
+   dark-on-grey in light, translucent-white-on-dark in dark. When the Report
+   pill is ACTIVE the chip sits on gradient teal, so the active tokens paint it
+   for legibility on that fill. */
 .dock-report-id {
   font-family: var(--font-mono);
   font-size: .8rem;
   padding: .12rem .45rem;
   border-radius: var(--r-pill);
-  background: rgba(255, 255, 255, .25);
-  color: #ffffff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3);
+  background: var(--dock-chip-bg);
+  color: var(--dock-chip-ink);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5);
 }
-/* The bright-white chip was reading as invisible against the light theme's
-   bright dock background — recolour with dark ink on a subtle grey. */
-:root:not([data-theme="dark"]) .dock-report-id {
-  background: rgba(15, 23, 42, .12);
-  color: #0F172A;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .55);
-}
-/* Same story on the ACTIVE state — when the Report pill is filled the chip
-   sits on gradient teal, so paint it dark for legibility. */
-:root:not([data-theme="dark"]) .dock-item.is-active .dock-report-id {
-  background: rgba(255, 255, 255, .3);
-  color: #06251f;
+.dock-item.is-active .dock-report-id {
+  background: var(--dock-chip-active-bg);
+  color: var(--dock-chip-active-ink);
 }
 
 /* Thin vertical separators flanking the central refresh, so the three nav
@@ -3275,13 +3363,13 @@ body.is-transitioning .flow-takeover,
      lifts just above the dock) while the wider angular step in JS still keeps
      adjacent chips from overlapping. JS pivots the whole fan on the pill, so
      the arc rotates out of the selected name itself. */
-  --arc-radius: 152px;
+  --arc-radius: 146px;
   position: fixed;
   inset: 0;
   z-index: 200;
 }
 @media (max-width: 720px) {
-  .patient-arc { --arc-size: 86vw; --arc-radius: 120px; }
+  .patient-arc { --arc-size: 86vw; --arc-radius: 118px; }
 }
 .patient-arc-scrim {
   position: absolute;
@@ -3312,9 +3400,9 @@ body.is-transitioning .flow-takeover,
 .patient-arc-chip {
   position: absolute;
   /* Fixed width so every chip is identical — with equal angular steps that makes
-     the edge-to-edge gaps between names uniform (a clean semicircle) regardless
-     of how long or short each name is. */
-  width: 150px;
+     the edge-to-edge gaps between names uniform (a clean fan) regardless of how
+     long or short each name is. */
+  width: 128px;
   box-sizing: border-box;
   justify-content: center;
   padding: .42rem .7rem;
@@ -3372,13 +3460,20 @@ body.is-transitioning .flow-takeover,
   flex: none;
 }
 .patient-arc-chip.is-active {
-  border-color: var(--brand);
+  /* Opaque, theme-correct pill so the selected name is always legible (in light
+     mode the old translucent fill let it wash out) and reads as the clear highlight. */
+  background: var(--surface);
   color: var(--ink);
+  border-color: var(--brand);
   box-shadow:
     inset 0 1px 0 var(--glass-gloss),
     0 0 0 3px color-mix(in srgb, var(--brand) 30%, transparent),
     0 14px 32px color-mix(in srgb, var(--brand) 40%, transparent);
   z-index: 3;
+}
+:root[data-theme="dark"] .patient-arc-chip.is-active { background: var(--surface-2); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .patient-arc-chip.is-active { background: var(--surface-2); }
 }
 /* "Landing" flash — the chip locks in with a quick brand pulse just before
    the dial auto-navigates (slot-machine settle). */

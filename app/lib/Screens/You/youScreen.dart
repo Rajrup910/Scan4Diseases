@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
 import '../../services/language_service.dart';
 import '../../services/motion_service.dart';
+import '../../services/sound_service.dart';
 import '../../services/theme_service.dart';
 import '../theme.dart';
 import '../app_data.dart';
@@ -78,6 +79,8 @@ class YouScreen extends StatelessWidget {
                   _themeRow(context, dark),
                   const Divider(),
                   _motionRow(context, dark),
+                  const Divider(),
+                  _soundRow(context, dark),
                   const Divider(),
                   _languageRow(context, dark),
                   const Divider(),
@@ -221,6 +224,42 @@ class YouScreen extends StatelessWidget {
               onChanged: forcedByOs ? null : (v) => MotionService.instance.set(v),
             ),
             onTap: forcedByOs ? null : () => MotionService.instance.toggle(),
+          );
+        },
+      );
+
+  /// Interaction-sound toggle. Sits with the appearance controls because, like
+  /// the motion switch, it tunes the app's ambient feel — the subtle taps and
+  /// the login success/error cues — without changing behaviour.
+  Widget _soundRow(BuildContext context, bool dark) => ValueListenableBuilder<bool>(
+        valueListenable: SoundService.instance.enabled,
+        builder: (_, on, __) {
+          final ink = dark ? Themes.darkInk : Themes.ink;
+          final inkSoft = dark ? Themes.darkInkSoft : Themes.inkSoft;
+          final accent = dark ? Themes.tealLight : Themes.brand;
+          return ListTile(
+            leading: Icon(
+              on ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+              color: accent,
+              size: 20,
+            ),
+            title: Text('Interaction sounds',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: ink)),
+            subtitle: Text(
+              on ? 'Subtle taps and success/error cues' : 'Silent',
+              style: TextStyle(fontSize: 12, color: inkSoft),
+            ),
+            trailing: Switch.adaptive(
+              value: on,
+              activeThumbColor: Themes.tealGlow,
+              trackOutlineColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) return Themes.tealGlow;
+                return dark ? Themes.darkBorder : const Color(0xFFB4BBC7);
+              }),
+              trackOutlineWidth: WidgetStateProperty.all(1.4),
+              onChanged: (v) => SoundService.instance.setEnabled(v),
+            ),
+            onTap: () => SoundService.instance.toggleEnabled(),
           );
         },
       );

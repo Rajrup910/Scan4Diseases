@@ -8,6 +8,7 @@ import 'services/auth_service.dart';
 import 'services/language_service.dart';
 import 'services/motion_service.dart';
 import 'services/self_exam_reminder.dart';
+import 'services/sound_service.dart';
 import 'services/theme_service.dart';
 
 Future<void> main() async {
@@ -20,6 +21,7 @@ Future<void> main() async {
   await LanguageService.instance.load();
   await ThemeService.instance.load();
   await MotionService.instance.load();
+  await SoundService.instance.load();
   await SelfExamReminder.load();
   runApp(const Scan4DiseasesApp());
 }

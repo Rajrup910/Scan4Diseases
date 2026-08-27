@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../theme.dart';
 import '../app_data.dart';
 import '../../services/language_service.dart';
+import '../../services/sound_service.dart';
 import 'DiagnoseAPI.dart';
 import 'ResultData.dart';
 import 'widgets/SymptomsList.dart';
@@ -89,6 +90,7 @@ class _UploadScreenState extends State<UploadScreen> {
       // copy carries the server id needed to share this screening with a doctor.
       final saved = await AppData.addReport(report);
       if (!mounted) return;
+      SoundService.instance.success();
       Navigator.push(context, MaterialPageRoute(builder: (_) => DiagnosisResultsUI(diagnosisData: result, report: saved)));
       // Clear the form now (behind the results page) so returning to the Screen
       // tab shows a fresh questionnaire instead of the answers just submitted.
@@ -96,6 +98,7 @@ class _UploadScreenState extends State<UploadScreen> {
     } catch (e) {
       log('Prediction error: $e');
       if (mounted) {
+        SoundService.instance.error();
         final msg = e is ApiException
             ? e.message
             : 'Could not reach the screening service. Check that the backend is '

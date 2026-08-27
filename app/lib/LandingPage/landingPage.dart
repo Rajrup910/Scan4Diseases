@@ -10,6 +10,7 @@ import '../Screens/widgets/video_background.dart';
 import '../Screens/widgets/floating_tab_bar.dart';
 import '../Screens/widgets/slide_to_start.dart';
 import '../services/self_exam_reminder.dart';
+import '../services/sound_service.dart';
 
 class MyLandingPage extends StatefulWidget {
   final CameraDescription? firstCam;
@@ -159,7 +160,10 @@ class _MyLandingPageState extends State<MyLandingPage> {
             ),
             bottomNavigationBar: FloatingTabBar(
               currentIndex: _currentIndex,
-              onSelect: (i) => setState(() => _currentIndex = i),
+              onSelect: (i) {
+                if (i != _currentIndex) SoundService.instance.tap();
+                setState(() => _currentIndex = i);
+              },
               tabs: _tabs,
               action: _action,
             ),

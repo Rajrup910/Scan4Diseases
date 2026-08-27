@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../config.dart';
 import '../../services/auth_service.dart';
 import '../../services/motion_service.dart';
+import '../../services/sound_service.dart';
 import '../../services/theme_service.dart';
 import '../theme.dart';
 import '../widgets/video_background.dart';
@@ -67,6 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
       if (!mounted) return;
       // Trigger the green login success flourish
+      SoundService.instance.success();
       setState(() {
         _loading = false;
         _authenticatedUser = authUser;
@@ -75,6 +77,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } catch (e) {
       if (mounted) {
         final errorText = e.toString().replaceAll('Exception: ', '').trim();
+        SoundService.instance.error();
         setState(() {
           _loading = false;
           _showFailureVeil = true;
