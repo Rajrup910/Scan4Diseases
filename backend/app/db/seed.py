@@ -128,8 +128,8 @@ DEMO_PATIENTS = [
         ],
     ),
     (
-        "Sam Rivera",
-        "sam@example.com",
+        "Aarav Patel",
+        "aarav@example.com",
         [
             dict(
                 condition="Squamous cell carcinoma",
@@ -154,8 +154,8 @@ DEMO_PATIENTS = [
         ],
     ),
     (
-        "Jordan Lee",
-        "jordan@example.com",
+        "Rohan Sen",
+        "rohan@example.com",
         [
             dict(
                 condition="Seborrheic keratosis",
@@ -180,7 +180,7 @@ DEMO_PATIENTS = [
             ),
         ],
     ),
-    ("Maria Gomez", "maria@example.com", []),
+    ("Neha Deshmukh", "neha@example.com", []),
 ]
 
 
@@ -272,8 +272,8 @@ def _seed_appointments(
         return
 
     priya = db.scalar(select(User).where(User.email == "priya@example.com"))
-    sam = db.scalar(select(User).where(User.email == "sam@example.com"))
-    jordan = db.scalar(select(User).where(User.email == "jordan@example.com"))
+    aarav = db.scalar(select(User).where(User.email == "aarav@example.com"))
+    rohan = db.scalar(select(User).where(User.email == "rohan@example.com"))
 
     def at(days: int, hour: int, minute: int = 0) -> datetime:
         return (now + timedelta(days=days)).replace(
@@ -298,12 +298,12 @@ def _seed_appointments(
             APPT_CONFIRMED, ACTOR_DOCTOR, None,
         ),
         (
-            sam, _first_report(db, sam.id) if sam else None, at(5, 11, 0), 45,
+            aarav, _first_report(db, aarav.id) if aarav else None, at(5, 11, 0), 45,
             "Squamous cell carcinoma review and biopsy planning.",
             APPT_CONFIRMED, ACTOR_DOCTOR, None,
         ),
         (
-            jordan, _first_report(db, jordan.id) if jordan else None, at(-2, 14, 0), 30,
+            rohan, _first_report(db, rohan.id) if rohan else None, at(-2, 14, 0), 30,
             "Seborrheic keratosis re-check.",
             APPT_CANCELLED, ACTOR_PATIENT, "Clinic closed that afternoon — please rebook.",
         ),

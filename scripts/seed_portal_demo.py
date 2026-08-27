@@ -55,7 +55,7 @@ def main() -> int:
     print(f"  2. {PATIENT_2_NAME}")
     print(f"     Email:    {PATIENT_2_EMAIL}")
     print(f"     Password: {PATIENT_2_PASSWORD}")
-    print(f"  3. Demo Patients: priya@example.com, sam@example.com, jordan@example.com")
+    print(f"  3. Demo Patients: priya@example.com, aarav@example.com, rohan@example.com, neha@example.com")
     print(f"     Password: 12345678")
     print("=" * 60 + "\n")
     return 0

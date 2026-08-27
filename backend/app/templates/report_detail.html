@@ -138,6 +138,21 @@
       {% endif %}
 
     </section>
+
+    <!-- Follow-up Action Panel: Recommend a visit to fill gap -->
+    <section class="card imagery-panel imagery-action-panel">
+      <div class="panel-head">
+        <h2><svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#calendar"/></svg> Clinical follow-up</h2>
+        <span class="badge badge-subtle">Consultation</span>
+      </div>
+      <p class="muted reco-callout-text">
+        Recommend a follow-up consultation with {{ patient.display_name or (patient.email.split('@')[0]) }} for this screening.
+      </p>
+      <button class="btn btn-primary btn-block appt-reco-btn" type="button" data-appt-reco-open>
+        <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#plus"/></svg>
+        Recommend a visit
+      </button>
+    </section>
   </div>
 </div>
 
@@ -225,4 +240,49 @@
   </form>
   <p class="ai-chat-foot muted">Responses are AI-generated screening support, not a diagnosis or a second opinion.</p>
 </section>
+
+<!-- Recommend-a-visit dialog -->
+<dialog class="appt-reco-dialog" data-appt-reco aria-label="Recommend a visit">
+  <form class="appt-reco-panel" method="post" action="/portal/appointments/recommend" data-appt-reco-form>
+    <input type="hidden" name="redirect_to" value="/portal/reports/{{ report.id }}">
+    <input type="hidden" name="patient_id" value="{{ patient.id }}">
+    <input type="hidden" name="report_id" value="{{ report.id }}">
+    <header class="appt-reco-headrow">
+      <h2>Recommend a visit</h2>
+      <button class="compare-close-chip" type="button" data-appt-reco-close aria-label="Close">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#x"/></svg>
+      </button>
+    </header>
+    <p class="muted">Offer {{ patient.display_name or (patient.email.split('@')[0]) }} a confirmed consultation slot.</p>
+
+    <div class="appt-field-row">
+      <label class="appt-field">
+        <span>Date &amp; time</span>
+        <input type="datetime-local" name="scheduled_for" required data-appt-when>
+      </label>
+      <label class="appt-field appt-field-narrow">
+        <span>Length</span>
+        <select name="duration_minutes">
+          <option value="15">15 min</option>
+          <option value="30" selected>30 min</option>
+          <option value="45">45 min</option>
+          <option value="60">60 min</option>
+        </select>
+      </label>
+    </div>
+
+    <label class="appt-field">
+      <span>Reason <em>(optional)</em></span>
+      <textarea name="reason" rows="2" maxlength="1000" placeholder="e.g. Follow-up consultation for {{ report.condition }}">Follow-up consultation for {{ report.condition }}</textarea>
+    </label>
+
+    <div class="appt-reco-actions">
+      <button class="btn btn-ghost" type="button" data-appt-reco-close>Cancel</button>
+      <button class="btn btn-primary" type="submit">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#check-circle"/></svg>
+        Send recommendation
+      </button>
+    </div>
+  </form>
+</dialog>
 {% endblock %}

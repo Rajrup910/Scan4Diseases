@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../Appointments/appointmentsScreen.dart';
+import '../Doctors/knowYourDoctorScreen.dart';
 import '../Doctors/nearbyDoctorsScreen.dart';
 import '../Guide/skinGuideScreen.dart';
 import '../theme.dart';
@@ -71,6 +72,21 @@ class _ServiceScreenState extends State<ServiceScreen> {
                     );
                   },
                 ),
+              ),
+              _tile(
+                context,
+                Icons.verified_user_outlined,
+                'Know your doctor',
+                'Meet your verified clinical dermatologists, their medical credentials, registration, and clinical focus areas.',
+                false,
+                dark,
+                onTap: () {
+                  SoundService.instance.open();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const KnowYourDoctorScreen()),
+                  );
+                },
               ),
               _tile(
                 context,

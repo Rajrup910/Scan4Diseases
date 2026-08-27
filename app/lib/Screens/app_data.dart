@@ -69,21 +69,55 @@ class AppData {
   static final ValueNotifier<List<ScreeningReport>> reports = ValueNotifier([]);
   static final ValueNotifier<bool> loading = ValueNotifier(false);
 
+  /// In-memory cache mapping report IDs and condition dates to device-local image paths
+  /// so that syncing with the server or sharing never loses the local photo preview.
+  static final Map<int, String> _localImageCacheById = {};
+  static final Map<String, String> _localImageCacheBySignature = {};
+
+  static void cacheLocalImage(ScreeningReport report) {
+    if (report.imagePath != null && report.imagePath!.isNotEmpty) {
+      if (report.id != null) {
+        _localImageCacheById[report.id!] = report.imagePath!;
+      }
+      final key = '${report.condition}_${report.date.year}_${report.date.month}_${report.date.day}';
+      _localImageCacheBySignature[key] = report.imagePath!;
+    }
+  }
+
+  static String? getCachedLocalImage(int? id, String condition, DateTime date) {
+    if (id != null && _localImageCacheById.containsKey(id)) {
+      return _localImageCacheById[id];
+    }
+    final key = '${condition}_${date.year}_${date.month}_${date.day}';
+    return _localImageCacheBySignature[key];
+  }
+
   static Uri _uri(String path) => Uri.parse('${ApiConfig.baseUrl}$path');
 
   /// Pull the signed-in user's reports from the server. Silently keeps the
   /// current list on failure so a flaky connection never blanks the history.
+  /// Seamlessly re-attaches existing device-local photo paths to the fetched records.
   static Future<void> refresh() async {
     if (!AuthService.instance.isAuthenticated) return;
     loading.value = true;
     try {
+      for (final r in reports.value) {
+        cacheLocalImage(r);
+      }
+
       final res = await http.get(_uri('/reports'), headers: AuthService.instance.authHeaders);
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         if (data is List) {
           reports.value = data
               .whereType<Map<String, dynamic>>()
-              .map((e) => ScreeningReport.fromJson(e))
+              .map((e) {
+                final id = e['id'] as int?;
+                final cond = '${e['condition'] ?? ''}';
+                final dt = DateTime.tryParse('${e['created_at']}')?.toLocal() ?? DateTime.now();
+                final localImg = getCachedLocalImage(id, cond, dt);
+                return ScreeningReport.fromJson(e, localImagePath: localImg);
+              })
               .toList();
         }
       }
@@ -101,6 +135,7 @@ class AppData {
   /// Returns the stored report: the server-saved one (with an `id`, so it can be shared
   /// with a doctor) on success, or the local-only copy (no `id`) if the save failed.
   static Future<ScreeningReport> addReport(ScreeningReport report) async {
+    cacheLocalImage(report);
     try {
       final res = await http.post(
         _uri('/reports'),
@@ -112,7 +147,8 @@ class AppData {
           jsonDecode(res.body) as Map<String, dynamic>,
           localImagePath: report.imagePath,
         );
-        reports.value = [saved, ...reports.value];
+        cacheLocalImage(saved);
+        reports.value = [saved, ...reports.value.where((r) => r.id != saved.id)];
         return saved;
       }
     } catch (_) {

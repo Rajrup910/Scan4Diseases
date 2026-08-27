@@ -964,15 +964,16 @@ def appointment_summary(
     )
 
 
-def _back_to_appointments(flash: str | None = None, hl: int | None = None) -> RedirectResponse:
-    url = "/portal/appointments"
+def _back_to_appointments(flash: str | None = None, hl: int | None = None, redirect_to: str | None = None) -> RedirectResponse:
+    url = redirect_to if (redirect_to and redirect_to.startswith("/portal")) else "/portal/appointments"
     params = []
     if flash:
         params.append(f"flash={flash}")
     if hl is not None:
         params.append(f"hl={hl}")
     if params:
-        url += "?" + "&".join(params)
+        sep = "&" if "?" in url else "?"
+        url += sep + "&".join(params)
     return RedirectResponse(url, status_code=status.HTTP_303_SEE_OTHER)
 
 
@@ -1057,6 +1058,7 @@ def recommend_appointment(
     duration_minutes: int = Form(default=30),
     reason: str = Form(default=""),
     report_id: str = Form(default=""),
+    redirect_to: str = Form(default=""),
 ) -> Response:
     """The doctor recommends a visit to a consented patient. Created already confirmed (a
     recommendation is an offer of a slot) and flagged unread so it lands in the patient's app.
@@ -1064,14 +1066,14 @@ def recommend_appointment(
     # The patient must be one who has consented to this doctor.
     link = _active_link(db, doctor, patient_id)
     if link is None:
-        return _back_to_appointments()
+        return _back_to_appointments(redirect_to=redirect_to)
 
     try:
         # datetime-local sends "YYYY-MM-DDTHH:MM" (naive, local). astimezone() on a naive
         # value assumes the server's local zone; converting to UTC gives what we store.
         when = datetime.fromisoformat(scheduled_for).astimezone(timezone.utc)
     except (ValueError, TypeError):
-        return _back_to_appointments()
+        return _back_to_appointments(redirect_to=redirect_to)
 
     dur = max(10, min(180, int(duration_minutes or 30)))
 
@@ -1100,7 +1102,7 @@ def recommend_appointment(
         db, doctor.id, audit.ACTION_APPT_RECOMMEND,
         target_type=audit.TARGET_APPOINTMENT, target_id=a.id, ip=audit.client_ip(request),
     )
-    return _back_to_appointments(flash="recommended", hl=a.id)
+    return _back_to_appointments(flash="recommended", hl=a.id, redirect_to=redirect_to)
 
 
 # --- mutations (form POST -> redirect back) ------------------------------------------

@@ -2605,12 +2605,9 @@
               + '</button>'
             + '</div>'
           + '</div>'
-          // Gate 2 — a themed confirmation popup (revealed after the slide
-          // completes). It's a fixed overlay, but stays inside the <form> so its
-          // submit button still posts the cancellation.
-          + '<div class="appt-confirm2" hidden>'
-            + '<div class="appt-confirm2-backdrop" data-appt-confirm-dismiss aria-hidden="true"></div>'
-            + '<div class="appt-confirm2-panel" role="alertdialog" aria-modal="true" aria-label="Confirm cancellation">'
+          // Gate 2 — native dialog modal overlay that is centered over the full screen.
+          + '<dialog class="appt-confirm2-dialog" data-appt-cancel-dialog aria-label="Confirm cancellation">'
+            + '<div class="appt-confirm2-panel" role="alertdialog" aria-modal="true">'
               + '<span class="appt-confirm2-ic" aria-hidden="true">'
                 + '<svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#alert-triangle"/></svg>'
               + '</span>'
@@ -2621,7 +2618,7 @@
                 + '<button class="btn btn-danger btn-danger-gloss appt-act-go" type="submit">Confirm cancel and notify patient</button>'
               + '</div>'
             + '</div>'
-          + '</div>'
+          + '</dialog>'
         + '</div></form>';
     }
 
@@ -2740,10 +2737,17 @@
       }
       // "Keep visit" (or tapping the popup backdrop) — step back from the
       // confirmation popup and reset the slider.
-      var keep = e.target.closest(".appt-confirm2-keep, [data-appt-confirm-dismiss]");
+      var keep = e.target.closest(".appt-confirm2-keep");
       if (keep) {
         var kform = keep.closest("[data-appt-cancel]");
         if (kform) resetCancel(kform);
+        Sound.tap();
+        return;
+      }
+      var cancelDlg = e.target.closest("[data-appt-cancel-dialog]");
+      if (cancelDlg && e.target === cancelDlg) {
+        var cform = cancelDlg.closest("[data-appt-cancel]");
+        if (cform) resetCancel(cform);
         Sound.tap();
         return;
       }
@@ -2752,10 +2756,10 @@
     // Escape closes the confirmation popup, like any modal.
     page.addEventListener("keydown", function (e) {
       if (e.key !== "Escape") return;
-      var openGate = page.querySelector("[data-appt-cancel] .appt-confirm2:not([hidden])");
-      if (openGate) {
+      var openDialog = page.querySelector("[data-appt-cancel] [data-appt-cancel-dialog][open]");
+      if (openDialog) {
         e.preventDefault();
-        resetCancel(openGate.closest("[data-appt-cancel]"));
+        resetCancel(openDialog.closest("[data-appt-cancel]"));
         Sound.tap();
       }
     });
@@ -2764,22 +2768,30 @@
     // the second confirmation gate. Keyboard users can advance it with the
     // arrow/enter keys on the focused thumb.
     function resetCancel(form) {
+      if (!form) return;
       var slide = form.querySelector("[data-appt-slide]");
-      var gate2 = form.querySelector(".appt-confirm2");
+      var dlg = form.querySelector("[data-appt-cancel-dialog]");
       if (slide) { slide.hidden = false; slide.classList.remove("is-armed"); var th = slide.querySelector(".appt-slide-thumb"); if (th) th.style.left = ""; }
-      if (gate2) gate2.hidden = true;
+      if (dlg) {
+        if (dlg.close) { try { dlg.close(); } catch (err) { dlg.removeAttribute("open"); } }
+        else dlg.removeAttribute("open");
+      }
     }
     function completeSlide(form) {
+      if (!form) return;
       var slide = form.querySelector("[data-appt-slide]");
-      var gate2 = form.querySelector(".appt-confirm2");
+      var dlg = form.querySelector("[data-appt-cancel-dialog]");
       if (slide) slide.classList.add("is-armed");
       Sound.tap(); buzz([12, 24, 12]);
-      // Let the fill finish, then cross-fade to the second gate.
+      // Let the fill finish, then open the centered modal dialog.
       setTimeout(function () {
         if (slide) slide.hidden = true;
-        if (gate2) {
-          gate2.hidden = false;
-          gate2.classList.remove("is-in"); void gate2.offsetWidth; gate2.classList.add("is-in");
+        if (dlg) {
+          if (dlg.showModal) {
+            try { dlg.showModal(); } catch (err) { dlg.setAttribute("open", ""); }
+          } else {
+            dlg.setAttribute("open", "");
+          }
         }
       }, 240);
     }
@@ -2839,16 +2851,22 @@
       if (e.target && e.target.matches && e.target.matches(".appt-act-form")) { buzz([14, 30, 14]); }
     });
 
-    // --- recommend dialog ---
+    // First paint.
+    buildGrid(0);
+  })();
+
+  // --- Global recommend-a-visit dialog and flash toast listener (works on all pages) ---
+  (function () {
     var recoDialog = document.querySelector("[data-appt-reco]");
-    var recoOpen = page.querySelector("[data-appt-reco-open]");
+    var recoOpenBtns = document.querySelectorAll("[data-appt-reco-open]");
     function setRecoMin() {
       if (!recoDialog) return;
       var input = recoDialog.querySelector("[data-appt-when]");
       if (!input) return;
+      function pad2(n) { return String(n).padStart(2, "0"); }
       function isoLocal(dt) {
-        return dt.getFullYear() + "-" + pad(dt.getMonth() + 1) + "-" + pad(dt.getDate())
-          + "T" + pad(dt.getHours()) + ":" + pad(dt.getMinutes());
+        return dt.getFullYear() + "-" + pad2(dt.getMonth() + 1) + "-" + pad2(dt.getDate())
+          + "T" + pad2(dt.getHours()) + ":" + pad2(dt.getMinutes());
       }
       var now = new Date();
       input.min = isoLocal(now);
@@ -2858,12 +2876,14 @@
         input.value = isoLocal(def);
       }
     }
-    if (recoOpen && recoDialog) {
-      recoOpen.addEventListener("click", function () {
-        Sound.open();
-        setRecoMin();
-        if (recoDialog.showModal) { try { recoDialog.showModal(); } catch (e) { recoDialog.setAttribute("open", ""); } }
-        else recoDialog.setAttribute("open", "");
+    if (recoDialog && recoOpenBtns.length) {
+      recoOpenBtns.forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          Sound.open();
+          setRecoMin();
+          if (recoDialog.showModal) { try { recoDialog.showModal(); } catch (e) { recoDialog.setAttribute("open", ""); } }
+          else recoDialog.setAttribute("open", "");
+        });
       });
       recoDialog.querySelectorAll("[data-appt-reco-close]").forEach(function (btn) {
         btn.addEventListener("click", function () {
@@ -2872,31 +2892,24 @@
           else recoDialog.removeAttribute("open");
         });
       });
-      // Click the backdrop to dismiss.
       recoDialog.addEventListener("click", function (e) {
         if (e.target === recoDialog) { Sound.close(); try { recoDialog.close(); } catch (err) {} }
       });
     }
 
-    // --- flash toast + deep-link after a POST/redirect ---
-    (function () {
-      var params = new URLSearchParams(location.search);
-      var flash = params.get("flash");
-      var hl = params.get("hl");
-      var MSG = {
-        approved: ["Appointment approved", "The patient has been notified.", false],
-        declined: ["Request declined", "The patient has been notified.", true],
-        cancelled: ["Appointment cancelled", "The patient has been notified.", true],
-        recommended: ["Recommendation sent", "It's now in the patient's app.", false]
-      };
-      if (flash && MSG[flash] && typeof showToast === "function") {
-        showToast(MSG[flash][0], MSG[flash][1], MSG[flash][2]);
-      }
-      if (hl) setTimeout(function () { openSummary(hl); }, 220);
-      if (flash || hl) { try { history.replaceState(null, "", location.pathname); } catch (e) {} }
-    })();
-
-    // First paint.
-    buildGrid(0);
+    // Flash toast listener
+    var params = new URLSearchParams(location.search);
+    var flash = params.get("flash");
+    var hl = params.get("hl");
+    var MSG = {
+      approved: ["Appointment approved", "The patient has been notified.", false],
+      declined: ["Request declined", "The patient has been notified.", true],
+      cancelled: ["Appointment cancelled", "The patient has been notified.", true],
+      recommended: ["Recommendation sent", "It's now in the patient's app.", false]
+    };
+    if (flash && MSG[flash] && typeof showToast === "function") {
+      showToast(MSG[flash][0], MSG[flash][1], MSG[flash][2]);
+    }
+    if (flash || hl) { try { history.replaceState(null, "", location.pathname); } catch (e) {} }
   })();
 })();
