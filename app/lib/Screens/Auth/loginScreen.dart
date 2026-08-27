@@ -2,7 +2,6 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 
-import '../../config.dart';
 import '../../services/auth_service.dart';
 import '../../services/motion_service.dart';
 import '../../services/sound_service.dart';
@@ -87,72 +86,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  /// Let the user point the app at whichever backend address is reachable, without an app
-  /// rebuild. This is the fix for a laptop whose Wi-Fi (DHCP) IP keeps changing.
-  Future<void> _serverSettings() async {
-    final controller = TextEditingController(text: ApiConfig.baseUrl);
-    final action = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Server settings'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Backend address. Use the laptop\'s Wi-Fi IP and port 8000 '
-                '(e.g. 192.168.1.7:8000). The phone and laptop must be on the same Wi-Fi, '
-                'and the backend must be running.',
-                style: TextStyle(fontSize: 13, color: Themes.muted),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: controller,
-                autocorrect: false,
-                keyboardType: TextInputType.url,
-                decoration: const InputDecoration(
-                  labelText: 'Backend URL',
-                  prefixIcon: Icon(Icons.dns_outlined),
-                  hintText: 'http://192.168.1.7:8000',
-                ),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, 'reset'),
-            child: const Text('Reset to default'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, 'cancel'),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, controller.text),
-            child: const Text('Save'),
-          ),
-        ],
-      ),
-    );
-    if (action == null || action == 'cancel') return;
-    if (action == 'reset') {
-      await ApiConfig.setBaseUrl(null);
-    } else {
-      await ApiConfig.setBaseUrl(action);
-    }
-    if (mounted) {
-      setState(() {});
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Backend set to ${ApiConfig.baseUrl}'),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     // Rebuild when the theme flips so both the form chrome and the new
@@ -172,16 +105,6 @@ class _LoginScreenState extends State<LoginScreen> {
         body: SafeArea(
           child: Stack(
             children: [
-              // Server-settings icon (kept where it was — tucked into a corner
-              // for advanced use).
-              Align(
-                alignment: Alignment.topLeft,
-                child: IconButton(
-                  tooltip: 'Server settings',
-                  icon: Icon(Icons.settings_ethernet, color: dark ? Themes.darkInkSoft : Themes.muted),
-                  onPressed: _loading ? null : _serverSettings,
-                ),
-              ),
               // Top-right frosted chip: theme + motion, both live-updating via
               // ValueListenableBuilder — visible BEFORE sign-in so a user
               // arriving in the wrong theme can flip it without hunting for

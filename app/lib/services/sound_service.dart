@@ -59,34 +59,67 @@ class SoundService {
     } catch (_) {
       // Non-fatal: keep the default.
     }
+    // Treat these as UI sounds, not media: on Android don't request audio focus
+    // (so we never duck the user's music and never fight for focus on rapid
+    // taps — a common cause of dropped/no playback); on iOS use the ambient
+    // category so the cues mix with other audio and honour the silent switch.
+    try {
+      await AudioPlayer.global.setAudioContext(
+        AudioContext(
+          android: const AudioContextAndroid(
+            isSpeakerphoneOn: false,
+            contentType: AndroidContentType.sonification,
+            usageType: AndroidUsageType.assistanceSonification,
+            audioFocus: AndroidAudioFocus.none,
+          ),
+          // `ambient` already mixes with other audio and respects the silent
+          // switch; passing mixWithOthers here would trip the plugin's own
+          // assert (it's only allowed on playback/playAndRecord/multiRoute).
+          iOS: AudioContextIOS(
+            category: AVAudioSessionCategory.ambient,
+          ),
+        ),
+      );
+    } catch (_) {
+      // Non-fatal: default context still plays.
+    }
     await _warm();
   }
 
   Future<void> _warm() async {
     if (_warmed) return;
     _warmed = true;
+    // Pre-create one player per cue so the first real play has no allocation
+    // latency. We intentionally do NOT use lowLatency/SoundPool here: on Android
+    // its load is asynchronous and a `resume()` fired immediately after can play
+    // before the clip has loaded — which is exactly the "no sound" symptom. The
+    // default media player, driven with stop()+play(AssetSource), plays every
+    // time.
     for (final entry in _assets.entries) {
-      try {
-        final player = AudioPlayer(playerId: 's4d_${entry.key}');
-        await player.setReleaseMode(ReleaseMode.stop);
-        await player.setPlayerMode(PlayerMode.lowLatency);
-        await player.setSource(AssetSource(entry.value));
-        _players[entry.key] = player;
-      } catch (_) {
-        // Skip any cue that fails to load; the rest still work.
-      }
+      _playerFor(entry.key);
     }
+  }
+
+  AudioPlayer _playerFor(String key) {
+    var player = _players[key];
+    if (player == null) {
+      player = AudioPlayer(playerId: 's4d_$key');
+      player.setReleaseMode(ReleaseMode.stop);
+      _players[key] = player;
+    }
+    return player;
   }
 
   Future<void> _play(String key, {double volume = 0.6}) async {
     if (!enabled.value) return;
-    await _warm();
-    final player = _players[key];
-    if (player == null) return;
+    final path = _assets[key];
+    if (path == null) return;
+    final player = _playerFor(key);
     try {
-      await player.setVolume(volume);
-      await player.seek(Duration.zero);
-      await player.resume();
+      // stop() first so a rapid re-trigger restarts cleanly; play() sets the
+      // source and starts in one call, so playback never races an async load.
+      await player.stop();
+      await player.play(AssetSource(path), volume: volume);
     } catch (_) {
       // Best-effort: never let a sound failure surface to the user.
     }
@@ -104,40 +137,40 @@ class SoundService {
   /// Soft muted click — the workhorse for buttons, chips, list rows.
   Future<void> tap() {
     _haptic(HapticFeedback.selectionClick);
-    return _play('tap', volume: 0.5);
+    return _play('tap', volume: 0.8);
   }
 
   /// Two-note affirm for a state flip (theme / sound / a switch).
   Future<void> toggle() {
     _haptic(HapticFeedback.selectionClick);
-    return _play('toggle', volume: 0.6);
+    return _play('toggle', volume: 0.9);
   }
 
   /// A panel / sheet rising into view.
-  Future<void> open() => _play('open', volume: 0.55);
+  Future<void> open() => _play('open', volume: 0.85);
 
   /// A panel / sheet dismissed.
-  Future<void> close() => _play('close', volume: 0.5);
+  Future<void> close() => _play('close', volume: 0.8);
 
   /// Pull-to-refresh / reload whoosh.
-  Future<void> refresh() => _play('refresh', volume: 0.55);
+  Future<void> refresh() => _play('refresh', volume: 0.85);
 
   /// Outgoing chat message blip.
   Future<void> send() {
     _haptic(HapticFeedback.selectionClick);
-    return _play('send', volume: 0.55);
+    return _play('send', volume: 0.85);
   }
 
   /// Warm major arpeggio — successful login, completed scan, saved action.
   Future<void> success() {
     _haptic(HapticFeedback.lightImpact);
-    return _play('success', volume: 0.75);
+    return _play('success', volume: 1.0);
   }
 
   /// Gentle two-note descent — failed login, rejected action.
   Future<void> error() {
     _haptic(HapticFeedback.heavyImpact);
-    return _play('error', volume: 0.75);
+    return _play('error', volume: 1.0);
   }
 
   // --- preference control -------------------------------------------------

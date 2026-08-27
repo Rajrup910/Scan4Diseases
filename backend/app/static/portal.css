@@ -1373,6 +1373,16 @@ body.has-expanded-chat .site-footer {
   pointer-events: none !important;
   visibility: hidden !important;
 }
+/* The floating dock is trapped in a lower stacking context than the expanded
+   chat panel, so it was punching through and covering the chat's input row and
+   send button. While any chat is expanded, retire the dock entirely — it
+   navigates away from the focused screening anyway, and hiding it guarantees it
+   can never block the chat. It fades back in on Restore. */
+body.has-expanded-chat .dock {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
 
 .ai-chat.is-expanded .ai-chat-intro {
   margin: var(--s-1) 0 var(--s-2);
@@ -4414,9 +4424,17 @@ tr.is-archiving {
    feels responsive rather than laggy. */
 .dock-item.dock-item-btn {
   border: 0;
-  background: transparent;
   font-family: inherit;
   cursor: pointer;
+}
+/* Only the RESTING button is transparent. This rule used to set
+   `background: transparent` unconditionally, and since it sits after the
+   active-gradient rule at equal specificity it clobbered the fill on the
+   active Patient pill (a <button>) — leaving white text on nothing, invisible
+   in light mode. Excluding .is-active lets the teal gradient win, matching the
+   Report pill (an <a>). */
+.dock-item.dock-item-btn:not(.is-active) {
+  background: transparent;
 }
 .dock-item, .dock-item-btn {
   transition:
