@@ -110,6 +110,15 @@
         { freq: 520, type: "sine", gain: 0.04, dur: 0.07 },
         { freq: 780, type: "sine", gain: 0.04, dur: 0.09, delay: 0.06 }
       ]); },
+      // Crisp per-notch tick as the patient dial rotates one step — brighter and
+      // shorter than `tap` so a fast spin reads as a row of ticks, not taps.
+      dialTick: function () { seq([{ freq: 880, to: 720, type: "triangle", gain: 0.03, dur: 0.035, cutoff: 3200 }]); },
+      // Distinct rising two-note lock-in when a patient is finally selected —
+      // clearly different from the rotation tick so "landed" is unmistakable.
+      select: function () { seq([
+        { freq: 600, type: "sine", gain: 0.045, dur: 0.08 },
+        { freq: 900, to: 1050, type: "sine", gain: 0.05, dur: 0.16, delay: 0.07 }
+      ]); },
       // Panels rising / settling.
       open: function () { seq([
         { freq: 440, to: 660, type: "sine", gain: 0.035, dur: 0.13, cutoff: 2600 },
@@ -191,7 +200,7 @@
      doubles up. Capture phase so the tap is scheduled before a link navigates
      away. */
   (function () {
-    var TAP_SEL = ".btn-primary, .btn-open, .dock-item, .cmdk-item, .patient-arc-chip";
+    var TAP_SEL = ".btn-primary, .btn-open, .dock-item, .cmdk-item";
     var SKIP_SEL = "[data-theme-toggle],[data-sound-toggle],[data-dock-refresh],[data-cmdk-open],[data-dock-picker],[data-patient-dial-close]";
     document.addEventListener("click", function (e) {
       var t = e.target;
@@ -1572,6 +1581,7 @@
           var activeChip = track.querySelector(".patient-arc-chip.is-active");
           if (activeChip) activeChip.classList.add("is-landing");
           if (patientPill) patientPill.classList.add("is-arc-locking");
+          Sound.select();   // distinct lock-in cue, synced with the landing flash
           setTimeout(go, activeIndex === i ? 180 : 300);
         });
         track.appendChild(chip);
@@ -1720,6 +1730,7 @@
         var activeChip = track.querySelector(".patient-arc-chip.is-active");
         if (activeChip) activeChip.classList.add("is-landing");
         if (patientPill) patientPill.classList.add("is-arc-locking");
+        Sound.select();   // distinct lock-in cue, synced with the landing flash
         setTimeout(go, SETTLE_LAND_MS);
       }, SETTLE_IDLE_MS + grace);
     }
@@ -1758,6 +1769,9 @@
       if (Math.abs(delta) < 4) { armSettle(); return; }
       wheelCooldown = now;
       setActive(activeIndex + (delta > 0 ? 1 : -1));
+      // A crisp tick on each meaningful step (rate-capped above, so a fast spin
+      // ticks per notch rather than firing on every raw wheel event).
+      Sound.dialTick();
       armSettle();
     }
     dial.querySelectorAll("[data-patient-dial-close]").forEach(function (b) {
