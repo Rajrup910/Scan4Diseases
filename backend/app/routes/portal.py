@@ -114,14 +114,37 @@ class PortalAuthRequired(Exception):
 
 # --- session cookie ------------------------------------------------------------------
 
-def _set_session_cookie(response: Response, settings: Settings, token: str) -> None:
+def _request_is_https(request: Request | None) -> bool:
+    """Whether the browser reached us over HTTPS, honouring a terminating proxy.
+
+    A reverse proxy (Render, nginx) terminates TLS and forwards the original
+    scheme in `X-Forwarded-Proto`, so trust that first; fall back to the socket
+    scheme for a direct connection."""
+    if request is None:
+        return False
+    forwarded = request.headers.get("x-forwarded-proto", "")
+    if forwarded:
+        # May be a comma-separated list ("https, http"); the client-facing one is first.
+        return forwarded.split(",")[0].strip().lower() == "https"
+    return request.url.scheme == "https"
+
+
+def _set_session_cookie(
+    response: Response, settings: Settings, token: str, request: Request | None = None
+) -> None:
+    # The `Secure` flag must track the ACTUAL scheme the browser used, not the
+    # app_env: a `Secure` cookie is silently discarded over plain HTTP, so tying
+    # it to "production" meant a doctor opening the portal from another device
+    # over http (a LAN IP, a tunnel) was accepted but never got a session and
+    # bounced back to the login page. Over HTTPS it stays Secure; over HTTP the
+    # cookie is set without Secure so the session actually persists.
     response.set_cookie(
         key=PORTAL_COOKIE,
         value=token,
         max_age=settings.portal_session_minutes * 60,
         httponly=True,  # not readable by page scripts
         samesite="lax",  # not sent on cross-site POSTs (basic CSRF defence for a demo)
-        secure=(settings.app_env == "production"),  # http is fine for the local/offline demo
+        secure=_request_is_https(request),
         path="/portal",  # never sent to the JSON API paths
     )
 
@@ -261,11 +284,11 @@ def login_submit(
     )
     if "application/json" in request.headers.get("accept", ""):
         json_resp = JSONResponse({"ok": True, "redirect": "/portal/patients"})
-        _set_session_cookie(json_resp, settings, token)
+        _set_session_cookie(json_resp, settings, token, request)
         return json_resp
 
     response = RedirectResponse("/portal/patients", status_code=status.HTTP_303_SEE_OTHER)
-    _set_session_cookie(response, settings, token)
+    _set_session_cookie(response, settings, token, request)
     return response
 
 
@@ -519,6 +542,33 @@ def patient_reports_page(
         "linked_at": linked_at,
     }
 
+    # This patient's appointments with this doctor, surfaced right on the profile so
+    # the doctor can see and act on visits without leaving the patient. Upcoming
+    # (live) visits first, then anything already past/closed.
+    appt_rows = db.scalars(
+        select(Appointment)
+        .where(
+            Appointment.doctor_id == doctor.id,
+            Appointment.patient_id == patient_id,
+        )
+        .order_by(Appointment.scheduled_for)
+    ).all()
+    appts_upcoming: list[dict] = []
+    appts_past: list[dict] = []
+    for a in appt_rows:
+        view = _appt_view(db, a)
+        if a.status in APPT_LIVE_STATUSES and not view["is_past"]:
+            appts_upcoming.append(view)
+        else:
+            appts_past.append(view)
+    appts_past.reverse()  # most-recent past first
+    patient_appointments = {
+        "upcoming": appts_upcoming,
+        "past": appts_past,
+        "count": len(appt_rows),
+        "pending": sum(1 for a in appt_rows if a.status == APPT_REQUESTED),
+    }
+
     return templates.TemplateResponse(
         request,
         "patient_reports.html",
@@ -527,6 +577,7 @@ def patient_reports_page(
             "patient": patient,
             "reports": reports,
             "profile": profile,
+            "appointments": patient_appointments,
             "status_labels": STATUS_LABELS,
         },
     )

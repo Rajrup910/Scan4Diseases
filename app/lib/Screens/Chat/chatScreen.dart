@@ -398,6 +398,10 @@ class AnalyzingResultBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Follow the active theme: the bubble previously rendered as a fixed light
+    // glass chip with dark ink, so in dark mode it showed up as a stray white
+    // pill. Now the glass, the loader and the label all track the brightness.
+    final dark = Theme.of(context).brightness == Brightness.dark;
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
@@ -405,21 +409,26 @@ class AnalyzingResultBubble extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: Themes.liquidGlassDecoration(
           radius: 18,
+          dark: dark,
           borderRadius: BorderRadius.circular(18).copyWith(bottomLeft: const Radius.circular(4)),
-          topAlpha: 0.88,
-          bottomAlpha: 0.72,
+          topAlpha: dark ? 0.82 : 0.88,
+          bottomAlpha: dark ? 0.66 : 0.72,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const SnakeLoader3x3(size: 28),
+            SnakeLoader3x3(
+              size: 28,
+              activeColor: dark ? Themes.tealGlow : Themes.brand,
+              dark: dark,
+            ),
             const SizedBox(width: 10),
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w700,
                 fontSize: 13.5,
-                color: Themes.ink,
+                color: dark ? Themes.darkInk : Themes.ink,
                 letterSpacing: -0.01,
               ),
             ),
@@ -436,12 +445,14 @@ class SnakeLoader3x3 extends StatefulWidget {
   final double size;
   final Color? activeColor;
   final Color? baseColor;
+  final bool dark;
 
   const SnakeLoader3x3({
     super.key,
     this.size = 30.0,
     this.activeColor,
     this.baseColor,
+    this.dark = false,
   });
 
   @override
@@ -469,18 +480,23 @@ class _SnakeLoader3x3State extends State<SnakeLoader3x3>
 
   @override
   Widget build(BuildContext context) {
-    final active = widget.activeColor ?? Themes.brand;
-    final base = widget.baseColor ?? Themes.ink.withValues(alpha: 0.12);
+    final active = widget.activeColor ?? (widget.dark ? Themes.tealGlow : Themes.brand);
+    final base = widget.baseColor ??
+        (widget.dark ? Themes.darkInk.withValues(alpha: 0.16) : Themes.ink.withValues(alpha: 0.12));
 
     return Container(
       width: widget.size,
       height: widget.size,
       padding: EdgeInsets.all(widget.size * 0.12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.95),
+        color: widget.dark
+            ? const Color(0xFF1C222E).withValues(alpha: 0.95)
+            : Colors.white.withValues(alpha: 0.95),
         borderRadius: BorderRadius.circular(widget.size * 0.25),
         border: Border.all(
-          color: Colors.white.withValues(alpha: 0.85),
+          color: widget.dark
+              ? Themes.tealGlow.withValues(alpha: 0.30)
+              : Colors.white.withValues(alpha: 0.85),
           width: 1.0,
         ),
         boxShadow: [

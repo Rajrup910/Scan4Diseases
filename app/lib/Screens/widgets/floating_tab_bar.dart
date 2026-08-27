@@ -80,14 +80,18 @@ class FloatingTabBar extends StatelessWidget {
                     ],
                   ),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    // Equal, flexible slots so any number of tabs (five, here)
+                    // share the pill width without ever overflowing on narrow
+                    // devices; each tab centres a fixed-size touch target.
                     children: [
                       for (final t in tabs)
-                        _TabButton(
-                          tab: t,
-                          selected: currentIndex == t.index,
-                          dark: dark,
-                          onTap: () => onSelect(t.index),
+                        Expanded(
+                          child: _TabButton(
+                            tab: t,
+                            selected: currentIndex == t.index,
+                            dark: dark,
+                            onTap: () => onSelect(t.index),
+                          ),
                         ),
                     ],
                   ),
@@ -130,11 +134,14 @@ class _TabButton extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
+        child: Center(
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOutCubic,
-          width: 46,
-          height: 46,
+          // The visible selection pill is fixed-size and centred within the
+          // tab's flexible slot, so five tabs never overflow the bar.
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
             color: selected
                 ? (dark ? Colors.white.withValues(alpha: 0.18) : Colors.white.withValues(alpha: 0.58))
@@ -161,6 +168,7 @@ class _TabButton extends StatelessWidget {
             curve: Curves.easeOutBack,
             child: Icon(tab.icon, size: 23, color: selected ? activeInk : idleInk),
           ),
+        ),
         ),
       ),
     );

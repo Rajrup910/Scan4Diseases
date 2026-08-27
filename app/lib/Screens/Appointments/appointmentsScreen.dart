@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../services/app_notifications.dart';
 import '../../services/appointments_service.dart';
 import '../../services/sharing_service.dart';
 import '../../services/sound_service.dart';
@@ -638,6 +639,35 @@ class _BookingSheetState extends State<_BookingSheet> {
     if (picked != null) setState(() => _time = picked);
   }
 
+  /// Tell the patient exactly what the booking still needs, rather than leaving
+  /// an inert button. Fires when "Request appointment" is tapped while invalid.
+  void _explainMissing() {
+    SoundService.instance.tap();
+    Haptics.instance.selection();
+    final missing = <String>[];
+    if (_doctorId == null) missing.add('choose a doctor');
+    if (_date == null) missing.add('pick a date');
+    if (_time == null) missing.add('pick a time');
+    if (missing.isEmpty && _combined != null && !_combined!.isAfter(DateTime.now())) {
+      missing.add('pick a time in the future');
+    }
+    final msg = missing.isEmpty
+        ? 'Please complete the form to continue.'
+        : 'To continue, ${_joinNaturally(missing)}.';
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text(msg),
+      ));
+  }
+
+  static String _joinNaturally(List<String> parts) {
+    if (parts.length == 1) return parts.first;
+    if (parts.length == 2) return '${parts[0]} and ${parts[1]}';
+    return '${parts.sublist(0, parts.length - 1).join(', ')} and ${parts.last}';
+  }
+
   Future<void> _submit(List<DoctorDirectoryEntry> doctors) async {
     if (!_valid || _submitting) return;
     Haptics.instance.medium();
@@ -654,6 +684,15 @@ class _BookingSheetState extends State<_BookingSheet> {
       );
       SoundService.instance.success();
       Haptics.instance.success();
+      // Record the successful request in the in-app notification centre so it's
+      // visible from the top-bar bell as well as the booked dialog.
+      AppNotifications.instance.pushLocal(
+        kind: 'requested',
+        title: 'Appointment request sent',
+        body: 'Your request to ${doctor.label} for '
+            '${_fmtDate(appt.scheduledFor)} · ${_fmtTime(appt.scheduledFor)} is awaiting approval.',
+        appointmentId: appt.id,
+      );
       if (!mounted) return;
       Navigator.pop(context);
       showDialog(
@@ -818,8 +857,23 @@ class _BookingSheetState extends State<_BookingSheet> {
                 future: _doctors,
                 builder: (context, snap) {
                   final doctors = snap.data ?? const <DoctorDirectoryEntry>[];
+                  final ready = _valid && !_submitting;
+                  // The button stays visibly active even before the form is
+                  // complete — a disabled FilledButton rendered as a near-black
+                  // slab that read as "broken". When it isn't ready yet, a tap
+                  // explains exactly what's still missing instead of doing
+                  // nothing.
                   return FilledButton.icon(
-                    onPressed: (!_valid || _submitting) ? null : () => _submit(doctors),
+                    onPressed: _submitting
+                        ? null
+                        : () => _valid ? _submit(doctors) : _explainMissing(),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: ready ? Themes.brand : Themes.brand.withValues(alpha: 0.45),
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: Themes.brand.withValues(alpha: 0.45),
+                      disabledForegroundColor: Colors.white,
+                      elevation: 0,
+                    ),
                     icon: _submitting
                         ? const SizedBox(
                             width: 18, height: 18,

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import '../../services/app_notifications.dart';
 import '../../services/auth_service.dart';
 import '../../services/haptics_service.dart';
 import '../../services/language_service.dart';
 import '../../services/motion_service.dart';
+import '../../services/self_exam_reminder.dart';
 import '../../services/sound_service.dart';
 import '../../services/theme_service.dart';
 import '../theme.dart';
@@ -87,7 +89,7 @@ class YouScreen extends StatelessWidget {
                   const Divider(),
                   _languageRow(context, dark),
                   const Divider(),
-                  _row(Icons.notifications_none_rounded, 'Monthly reminder', 'Active', dark),
+                  _reminderRow(context, dark),
                   const Divider(),
                   _row(Icons.privacy_tip_outlined, 'Privacy & consent', 'Managed per report', dark),
                 ]),
@@ -384,14 +386,73 @@ class YouScreen extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(18),
               side: BorderSide(
-                color: dark ? Themes.tealGlow.withValues(alpha: 0.16) : Colors.white.withValues(alpha: 0.85),
-                width: 1.2,
+                color: dark ? Themes.tealGlow.withValues(alpha: 0.16) : Colors.white.withValues(alpha: 0.55),
+                width: 1.0,
               ),
             ),
             child: Column(children: children),
           ),
         ],
       );
+
+  /// Self-check reminder. No longer a static "Active" label — the patient can
+  /// pick the exact date they want to be reminded (a calendar selection) or turn
+  /// it off. When a date is chosen it also lands in the in-app notification feed.
+  Widget _reminderRow(BuildContext context, bool dark) => ValueListenableBuilder<bool>(
+        valueListenable: SelfExamReminder.enabled,
+        builder: (_, on, __) => ValueListenableBuilder<DateTime?>(
+          valueListenable: SelfExamReminder.nextDue,
+          builder: (_, due, __) {
+            final ink = dark ? Themes.darkInk : Themes.ink;
+            final inkSoft = dark ? Themes.darkInkSoft : Themes.inkSoft;
+            final accent = dark ? Themes.tealLight : Themes.brand;
+            final subtitle = on && due != null
+                ? 'Reminds you on ${_date(due)}'
+                : 'Off — tap to pick a date';
+            return ListTile(
+              leading: Icon(on ? Icons.notifications_active_rounded : Icons.notifications_none_rounded,
+                  color: accent, size: 20),
+              title: Text('Self-check reminder',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: ink)),
+              subtitle: Text(subtitle, style: TextStyle(fontSize: 12, color: inkSoft)),
+              trailing: Icon(Icons.chevron_right_rounded, color: inkSoft, size: 20),
+              onTap: () => _editReminder(context, dark, on, due),
+            );
+          },
+        ),
+      );
+
+  Future<void> _editReminder(BuildContext context, bool dark, bool on, DateTime? due) async {
+    Haptics.instance.selection();
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      helpText: 'Remind me to self-check on',
+      initialDate: (due != null && due.isAfter(now)) ? due : now.add(const Duration(days: 30)),
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
+    );
+    if (picked == null) return;
+    await SelfExamReminder.enableOn(picked);
+    SoundService.instance.success();
+    Haptics.instance.success();
+    AppNotifications.instance.pushLocal(
+      kind: 'reminder',
+      title: 'Self-check reminder set',
+      body: "We'll remind you to check your skin on ${_date(picked)}.",
+    );
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        behavior: SnackBarBehavior.floating,
+        content: Text('Reminder set for ${_date(picked)}'),
+        action: SnackBarAction(
+          label: 'Turn off',
+          onPressed: () => SelfExamReminder.disable(),
+        ),
+      ));
+  }
 
   Widget _row(IconData icon, String title, String value, bool dark) => ListTile(
         leading: Icon(icon, color: dark ? Themes.tealLight : Themes.brand, size: 20),

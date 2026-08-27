@@ -1,5 +1,6 @@
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import '../Screens/Appointments/appointmentsScreen.dart';
 import '../Screens/Home/homeScreen.dart';
 import '../Screens/Reports/reportScreen.dart';
 import '../Screens/Service/serviceScreen.dart';
@@ -9,6 +10,8 @@ import '../Screens/theme.dart';
 import '../Screens/widgets/video_background.dart';
 import '../Screens/widgets/floating_tab_bar.dart';
 import '../Screens/widgets/slide_to_start.dart';
+import '../services/app_notifications.dart';
+import '../services/appointments_service.dart';
 import '../services/haptics_service.dart';
 import '../services/self_exam_reminder.dart';
 
@@ -27,6 +30,19 @@ class _MyLandingPageState extends State<MyLandingPage> {
     super.initState();
     // Surface the monthly self-exam reminder once, after the first frame, when it's due.
     WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowSelfExamReminder());
+    // Pull appointments so the top-bar bell can reflect any doctor responses
+    // (approvals, cancellations, recommendations) as soon as the app opens.
+    AppointmentsService.instance.refresh();
+  }
+
+  /// Index reserved for the dedicated Appointments window. It isn't a body tab
+  /// (the screen brings its own Scaffold) — selecting it pushes a full route.
+  static const int _appointmentsTab = 5;
+
+  void _openAppointments() {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const AppointmentsScreen()),
+    );
   }
 
   /// The Home slide-to-start action fires this: the whole mobile screen turns
@@ -79,11 +95,13 @@ class _MyLandingPageState extends State<MyLandingPage> {
   // so the app-bar title is left blank there to avoid showing the title twice.
   final _titles = ['Home', '', '', '', 'Profile'];
 
-  // The four pill tabs; index 2 (New screening) is the standout accent action —
-  // the "+" button set apart from the pill, exactly like the Neurotrace mock.
+  // The pill tabs; index 2 (New screening) is the standout accent action — the
+  // "+" button set apart from the pill, exactly like the Neurotrace mock. Index
+  // 5 (Appointments) opens its own full-screen window rather than a body tab.
   static const _tabs = <NeuroTab>[
     NeuroTab(Icons.home_rounded, 0, 'Home'),
     NeuroTab(Icons.assignment_rounded, 1, 'Reports'),
+    NeuroTab(Icons.calendar_month_rounded, _appointmentsTab, 'Appointments'),
     NeuroTab(Icons.grid_view_rounded, 3, 'Services'),
     NeuroTab(Icons.person_rounded, 4, 'Profile'),
   ];
@@ -115,7 +133,21 @@ class _MyLandingPageState extends State<MyLandingPage> {
               scrolledUnderElevation: 0,
               title: Text(_titles[_currentIndex], style: const TextStyle(fontWeight: FontWeight.w700)),
               actions: [
-                IconButton(onPressed: () => _showNotifications(context), icon: const Icon(Icons.notifications_none_rounded)),
+                ValueListenableBuilder<int>(
+                  valueListenable: AppNotifications.instance.unread,
+                  builder: (_, count, __) => IconButton(
+                    tooltip: 'Notifications',
+                    onPressed: () => _showNotifications(context),
+                    icon: Badge(
+                      isLabelVisible: count > 0,
+                      label: Text('$count'),
+                      backgroundColor: Themes.urgent,
+                      child: Icon(count > 0
+                          ? Icons.notifications_active_rounded
+                          : Icons.notifications_none_rounded),
+                    ),
+                  ),
+                ),
                 const SizedBox(width: 8),
               ],
             ),
@@ -165,8 +197,13 @@ class _MyLandingPageState extends State<MyLandingPage> {
                 // only — no click sound (the old tap cue on every tab press was
                 // the "sound on every click" the audit flagged). Haptics fire
                 // independently of the sound preference.
-                if (i != _currentIndex) Haptics.instance.selection();
-                setState(() => _currentIndex = i);
+                Haptics.instance.selection();
+                // Appointments is a dedicated window, not a body tab.
+                if (i == _appointmentsTab) {
+                  _openAppointments();
+                  return;
+                }
+                if (i != _currentIndex) setState(() => _currentIndex = i);
               },
               tabs: _tabs,
               action: _action,
@@ -187,14 +224,121 @@ class _MyLandingPageState extends State<MyLandingPage> {
   }
 
   void _showNotifications(BuildContext context) {
-    showModalBottomSheet(context: context, showDragHandle: true, builder: (_) => const Padding(
-      padding: EdgeInsets.fromLTRB(24, 8, 24, 30),
-      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text('Notifications', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
-        SizedBox(height: 14),
-        ListTile(leading: Icon(Icons.shield_outlined), title: Text('Your privacy matters'), subtitle: Text('Images should only be uploaded when you choose to screen.')),
-        ListTile(leading: Icon(Icons.info_outline), title: Text('Screening reminder'), subtitle: Text('AI screening is informational and not a medical diagnosis.')),
-      ]),
-    ));
+    // Refresh appointments so the feed reflects the latest doctor responses,
+    // then present the notification centre. Opening it clears the badge.
+    AppointmentsService.instance.refresh();
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (sheetCtx) {
+        // Mark read after the sheet is built so the badge clears once opened.
+        WidgetsBinding.instance.addPostFrameCallback((_) => AppNotifications.instance.markAllRead());
+        final dark = Theme.of(sheetCtx).brightness == Brightness.dark;
+        final inkSoft = dark ? Themes.darkInkSoft : Themes.inkSoft;
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.35,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (_, scrollCtrl) => ValueListenableBuilder<List<AppNotification>>(
+            valueListenable: AppNotifications.instance.items,
+            builder: (_, notes, __) => ListView(
+              controller: scrollCtrl,
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 30),
+              children: [
+                Row(
+                  children: [
+                    const Text('Notifications',
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
+                    const Spacer(),
+                    if (notes.isNotEmpty)
+                      TextButton.icon(
+                        onPressed: _openAppointments,
+                        icon: const Icon(Icons.calendar_month_rounded, size: 18),
+                        label: const Text('Appointments'),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                if (notes.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 36),
+                    child: Column(children: [
+                      Icon(Icons.notifications_off_outlined, size: 40, color: inkSoft),
+                      const SizedBox(height: 10),
+                      Text("You're all caught up",
+                          style: TextStyle(fontWeight: FontWeight.w700, color: inkSoft)),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Approvals, cancellations and visits your doctor recommends will show up here.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12.5, color: inkSoft, height: 1.4),
+                      ),
+                    ]),
+                  )
+                else
+                  for (final n in notes) _notificationTile(n, dark),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _notificationTile(AppNotification n, bool dark) {
+    final (icon, color) = _noteStyle(n.kind, dark);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        leading: Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: dark ? 0.20 : 0.12),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, color: color, size: 20),
+        ),
+        title: Text(n.title,
+            style: TextStyle(
+                fontWeight: FontWeight.w700,
+                fontSize: 14.5,
+                color: dark ? Themes.darkInk : Themes.ink)),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: Text(n.body,
+              style: TextStyle(
+                  fontSize: 12.5, height: 1.35, color: dark ? Themes.darkInkSoft : Themes.inkSoft)),
+        ),
+        onTap: n.appointmentId != null
+            ? () {
+                Navigator.pop(context);
+                _openAppointments();
+              }
+            : null,
+      ),
+    );
+  }
+
+  (IconData, Color) _noteStyle(String kind, bool dark) {
+    switch (kind) {
+      case 'approved':
+        return (Icons.event_available_rounded, dark ? Themes.tealLight : Themes.routine);
+      case 'recommended':
+        return (Icons.medical_services_rounded, dark ? Themes.tealLight : Themes.brand);
+      case 'requested':
+        return (Icons.schedule_send_rounded, Themes.soon);
+      case 'declined':
+        return (Icons.event_busy_rounded, Themes.danger);
+      case 'cancelled':
+        return (Icons.cancel_rounded, Themes.danger);
+      case 'reminder':
+        return (Icons.notifications_active_rounded, dark ? Themes.tealLight : Themes.brand);
+      default:
+        return (Icons.info_outline_rounded, dark ? Themes.darkInkSoft : Themes.inkSoft);
+    }
   }
 }

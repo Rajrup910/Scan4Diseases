@@ -2424,7 +2424,10 @@
         if (items.some(function (a) { return a.status === "requested"; })) cell.classList.add("has-pending");
         var list = document.createElement("div");
         list.className = "appt-cell-items";
-        items.slice(0, 3).forEach(function (a) {
+        // Two chips fit cleanly inside the fixed cell height; anything more
+        // collapses into a "+N more" opener so cells never overflow their row.
+        var shown = 2;
+        items.slice(0, shown).forEach(function (a) {
           var chip = document.createElement("button");
           chip.type = "button";
           chip.className = "appt-chip tone-" + a.tone +
@@ -2435,11 +2438,11 @@
           chip.appendChild(time); chip.appendChild(nm);
           list.appendChild(chip);
         });
-        if (items.length > 3) {
+        if (items.length > shown) {
           var more = document.createElement("button");
           more.type = "button"; more.className = "appt-chip-more";
-          more.textContent = "+" + (items.length - 3) + " more";
-          more.setAttribute("data-appt-open", items[3].id);
+          more.textContent = "+" + (items.length - shown) + " more";
+          more.setAttribute("data-appt-open", items[shown].id);
           list.appendChild(more);
         }
         cell.appendChild(list);
@@ -2500,6 +2503,39 @@
         + '<div class="appt-reason" hidden>'
         + '<textarea name="reason" rows="2" maxlength="1000" placeholder="' + esc(placeholder) + '"></textarea>'
         + '<button class="btn btn-danger appt-act-go" type="submit">' + esc(confirmLabel) + '</button>'
+        + '</div></form>';
+    }
+
+    // Cancelling a confirmed visit is the one irreversible, patient-facing action
+    // here, so it gets a deliberate two-gate flow: a slide-to-confirm handle, then
+    // a second "are you sure" step, both themed and subtly animated. The reason is
+    // carried through in a hidden field and posted only on the final confirmation.
+    function cancelForm(id) {
+      return '<form method="post" action="/portal/appointments/' + id + '/cancel" class="appt-act-form appt-cancel" data-appt-cancel novalidate>'
+        + '<button class="btn btn-ghost appt-act-trigger" type="button">'
+          + '<svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#x"/></svg>'
+          + 'Cancel visit</button>'
+        + '<div class="appt-cancel-body" hidden>'
+          + '<textarea name="reason" rows="2" maxlength="1000" placeholder="Why is this being cancelled? (the patient sees this)"></textarea>'
+          // Gate 1 — slide to confirm.
+          + '<div class="appt-slide" data-appt-slide>'
+            + '<div class="appt-slide-track">'
+              + '<span class="appt-slide-label">Slide to cancel visit</span>'
+              + '<button class="appt-slide-thumb" type="button" aria-label="Slide to cancel visit">'
+                + '<svg class="icon icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>'
+              + '</button>'
+            + '</div>'
+          + '</div>'
+          // Gate 2 — second confirmation (revealed after the slide completes).
+          + '<div class="appt-confirm2" hidden>'
+            + '<p class="appt-confirm2-msg">'
+              + '<svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#alert-triangle"/></svg>'
+              + 'This cancels the visit and notifies the patient. This can’t be undone.</p>'
+            + '<div class="appt-confirm2-row">'
+              + '<button class="btn btn-ghost appt-confirm2-keep" type="button">Keep visit</button>'
+              + '<button class="btn btn-danger btn-danger-gloss appt-act-go" type="submit">Confirm cancel and notify patient</button>'
+            + '</div>'
+          + '</div>'
         + '</div></form>';
     }
 
@@ -2566,7 +2602,7 @@
           + '<button class="btn btn-primary appt-act-approve" type="submit">' + iconUse("check-circle", "icon-sm") + 'Approve request</button></form>';
       }
       if (ap.can_decline) acts += actionForm(ap.id, "decline", "Decline", "Confirm decline", "Optional note to the patient…");
-      if (ap.can_cancel) acts += actionForm(ap.id, "cancel", "Cancel visit", "Confirm — notify patient", "Why is this being cancelled? (the patient sees this)");
+      if (ap.can_cancel) acts += cancelForm(ap.id);
       if (acts) h += '<div class="appt-sum-actions">' + acts + '</div>';
 
       summary.innerHTML = h;
@@ -2594,15 +2630,97 @@
       var trig = e.target.closest(".appt-act-trigger");
       if (trig) {
         var form = trig.closest("form");
-        var reason = form.querySelector(".appt-reason");
-        if (reason) reason.hidden = false;
+        var reveal = form.querySelector(".appt-reason, .appt-cancel-body");
+        if (reveal) reveal.hidden = false;
         trig.hidden = true;
         var ta = form.querySelector("textarea");
         if (ta) ta.focus();
         Sound.tap(); buzz(12);
         return;
       }
+      // "Keep visit" — step back from the second gate, reset the slider.
+      var keep = e.target.closest(".appt-confirm2-keep");
+      if (keep) {
+        var kform = keep.closest("[data-appt-cancel]");
+        if (kform) resetCancel(kform);
+        Sound.tap();
+        return;
+      }
     });
+
+    // Slide-to-confirm: pointer drag on the thumb; completing the slide reveals
+    // the second confirmation gate. Keyboard users can advance it with the
+    // arrow/enter keys on the focused thumb.
+    function resetCancel(form) {
+      var slide = form.querySelector("[data-appt-slide]");
+      var gate2 = form.querySelector(".appt-confirm2");
+      if (slide) { slide.hidden = false; slide.classList.remove("is-armed"); var th = slide.querySelector(".appt-slide-thumb"); if (th) th.style.left = ""; }
+      if (gate2) gate2.hidden = true;
+    }
+    function completeSlide(form) {
+      var slide = form.querySelector("[data-appt-slide]");
+      var gate2 = form.querySelector(".appt-confirm2");
+      if (slide) slide.classList.add("is-armed");
+      Sound.tap(); buzz([12, 24, 12]);
+      // Let the fill finish, then cross-fade to the second gate.
+      setTimeout(function () {
+        if (slide) slide.hidden = true;
+        if (gate2) {
+          gate2.hidden = false;
+          gate2.classList.remove("is-in"); void gate2.offsetWidth; gate2.classList.add("is-in");
+        }
+      }, 240);
+    }
+    function initSlide(thumb) {
+      var track = thumb.parentNode;
+      var slide = thumb.closest("[data-appt-slide]");
+      var form = thumb.closest("[data-appt-cancel]");
+      if (!track || !slide || !form) return;
+      var dragging = false, startX = 0, max = 0;
+      function maxTravel() { return track.clientWidth - thumb.offsetWidth - 8; }
+      function down(e) {
+        dragging = true; slide.classList.add("is-dragging");
+        startX = (e.touches ? e.touches[0].clientX : e.clientX) - thumb.offsetLeft;
+        max = maxTravel();
+        window.addEventListener("pointermove", move);
+        window.addEventListener("pointerup", up);
+      }
+      function move(e) {
+        if (!dragging) return;
+        var x = (e.clientX != null ? e.clientX : startX) - startX;
+        x = Math.max(0, Math.min(max, x));
+        thumb.style.left = x + "px";
+        slide.style.setProperty("--slide-pct", (max ? x / max : 0));
+        if (x >= max - 1) { finish(); }
+      }
+      function up() {
+        if (!dragging) return;
+        dragging = false; slide.classList.remove("is-dragging");
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+        // Snap back if not completed.
+        if (!slide.classList.contains("is-armed")) { thumb.style.left = ""; slide.style.setProperty("--slide-pct", 0); }
+      }
+      function finish() {
+        dragging = false; slide.classList.remove("is-dragging");
+        thumb.style.left = maxTravel() + "px"; slide.style.setProperty("--slide-pct", 1);
+        window.removeEventListener("pointermove", move);
+        window.removeEventListener("pointerup", up);
+        completeSlide(form);
+      }
+      thumb.addEventListener("pointerdown", down);
+      // Keyboard / tap fallback: Enter or Space or ArrowRight completes it.
+      thumb.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " " || e.key === "ArrowRight") { e.preventDefault(); finish(); }
+      });
+    }
+    // Delegate slide-thumb init lazily whenever a summary renders.
+    var _slideObserver = new MutationObserver(function () {
+      page.querySelectorAll(".appt-slide-thumb:not([data-slide-ready])").forEach(function (t) {
+        t.setAttribute("data-slide-ready", "1"); initSlide(t);
+      });
+    });
+    if (summary) _slideObserver.observe(summary, { childList: true, subtree: true });
 
     // A firmer buzz when a destructive/confirming action is actually submitted.
     page.addEventListener("submit", function (e) {

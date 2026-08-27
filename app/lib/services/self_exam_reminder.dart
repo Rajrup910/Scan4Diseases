@@ -44,6 +44,15 @@ class SelfExamReminder {
     await _write();
   }
 
+  /// Enable the reminder for a specific calendar date the patient picked, rather
+  /// than the default one-month cadence. The time is normalised to 09:00 local so
+  /// the prompt surfaces in the morning of the chosen day.
+  static Future<void> enableOn(DateTime date) async {
+    enabled.value = true;
+    nextDue.value = DateTime(date.year, date.month, date.day, 9);
+    await _write();
+  }
+
   static Future<void> disable() async {
     enabled.value = false;
     nextDue.value = null;

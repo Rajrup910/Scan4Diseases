@@ -105,24 +105,31 @@ class Themes {
       ),
       borderRadius: borderRadius ?? BorderRadius.circular(radius),
       border: Border.all(
+        // A hairline rim, like the portal's `--glass-edge`. The light-mode rim
+        // was dropped from 0.88 → 0.55 so panels read as smooth frosted glass
+        // rather than white-outlined, glowing tiles.
         color: dark
-            ? Themes.tealGlow.withValues(alpha: 0.28)
-            : Colors.white.withValues(alpha: 0.88),
-        width: 1.2,
+            ? Themes.tealGlow.withValues(alpha: 0.26)
+            : Colors.white.withValues(alpha: 0.55),
+        width: dark ? 1.1 : 1.0,
       ),
       boxShadow: [
-        // Specular luminous rim sparkle highlight — glossy liquid sheen
+        // A gentle specular sheen — NOT a halo. The light-mode highlight was the
+        // source of the "glowing panel" look (white α.85, blur 10, spread 1); it
+        // is now a soft, spread-free sheen so the gloss reads from the surface,
+        // not an outer glow. Dark mode keeps a faint teal rim accent.
         BoxShadow(
           color: dark
-              ? Themes.tealGlow.withValues(alpha: 0.22)
-              : Colors.white.withValues(alpha: 0.85),
-          blurRadius: 10,
-          spreadRadius: 1,
+              ? Themes.tealGlow.withValues(alpha: 0.16)
+              : Colors.white.withValues(alpha: 0.30),
+          blurRadius: 7,
+          spreadRadius: 0,
+          offset: const Offset(0, -1),
         ),
-        // Ambient soft depth shadow
+        // Ambient soft depth shadow that grounds the panel.
         BoxShadow(
-          color: Colors.black.withValues(alpha: dark ? 0.40 : 0.08),
-          blurRadius: 20,
+          color: Colors.black.withValues(alpha: dark ? 0.38 : 0.07),
+          blurRadius: 18,
           offset: const Offset(0, 8),
         ),
       ],
@@ -309,9 +316,9 @@ class Themes {
         margin: EdgeInsets.zero,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.85), width: 1.2),
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.55), width: 1.0),
         ),
-        shadowColor: Colors.white.withValues(alpha: 0.35),
+        shadowColor: Colors.black.withValues(alpha: 0.06),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(

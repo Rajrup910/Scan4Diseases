@@ -39,6 +39,8 @@
   </div>
 </section>
 
+<div class="patient-layout">
+<div class="patient-main">
 {% if reports %}
 <div class="list-head">
   <div class="segmented" data-segmented data-filter-target="#reports-body">
@@ -160,4 +162,75 @@
   <p>This patient has an active link with you but has not shared any reports yet.</p>
 </div>
 {% endif %}
+</div><!-- /.patient-main -->
+
+<aside class="patient-appts" aria-label="Appointments">
+  <div class="patient-appts-card">
+    <header class="patient-appts-head">
+      <span class="patient-appts-title">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#calendar"/></svg>
+        Appointments
+      </span>
+      {% if appointments.pending %}
+      <span class="appt-badge tone-pending">{{ appointments.pending }} awaiting</span>
+      {% endif %}
+    </header>
+
+    {% if appointments.upcoming or appointments.past %}
+      {% if appointments.upcoming %}
+      <div class="patient-appts-group">
+        <span class="patient-appts-grouplabel">Upcoming</span>
+        <ul class="patient-appts-list">
+          {% for a in appointments.upcoming %}
+          <li>
+            <a class="patient-appt-row" href="/portal/appointments?hl={{ a.id }}">
+              <span class="patient-appt-when">
+                <span class="patient-appt-day">{{ a.day_label }}</span>
+                <span class="patient-appt-time">{{ a.time_label }} · {{ a.duration }} min</span>
+              </span>
+              <span class="patient-appt-body">
+                <span class="patient-appt-cond">{% if a.condition %}{{ a.condition }}{% else %}{{ a.reason or 'General consultation' }}{% endif %}</span>
+                <span class="patient-appt-meta">{{ 'Recommended by you' if a.created_by == 'doctor' else 'Requested by patient' }}</span>
+              </span>
+              <span class="appt-badge tone-{{ a.tone }}">{{ a.status_label }}</span>
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+      {% if appointments.past %}
+      <div class="patient-appts-group">
+        <span class="patient-appts-grouplabel">Past &amp; closed</span>
+        <ul class="patient-appts-list is-past">
+          {% for a in appointments.past[:6] %}
+          <li>
+            <a class="patient-appt-row" href="/portal/appointments?hl={{ a.id }}">
+              <span class="patient-appt-when">
+                <span class="patient-appt-day">{{ a.day_label }}</span>
+                <span class="patient-appt-time">{{ a.time_label }}</span>
+              </span>
+              <span class="patient-appt-body">
+                <span class="patient-appt-cond">{% if a.condition %}{{ a.condition }}{% else %}{{ a.reason or 'General consultation' }}{% endif %}</span>
+              </span>
+              <span class="appt-badge tone-{{ a.tone }}">{{ a.status_label }}</span>
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+    {% else %}
+      <div class="patient-appts-empty">
+        <svg class="icon" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#calendar"/></svg>
+        <p>No visits booked with this patient yet.</p>
+      </div>
+    {% endif %}
+
+    <a class="btn btn-small btn-open patient-appts-cta" href="/portal/appointments">
+      Open appointments <svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#arrow-right"/></svg>
+    </a>
+  </div>
+</aside>
+</div><!-- /.patient-layout -->
 {% endblock %}

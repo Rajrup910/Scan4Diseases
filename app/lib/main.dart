@@ -4,6 +4,7 @@ import 'config.dart';
 import 'LandingPage/landingPage.dart';
 import 'Screens/Auth/authGate.dart';
 import 'Screens/theme.dart';
+import 'services/app_notifications.dart';
 import 'services/auth_service.dart';
 import 'services/haptics_service.dart';
 import 'services/language_service.dart';
@@ -25,6 +26,9 @@ Future<void> main() async {
   await SoundService.instance.load();
   await Haptics.instance.load();
   await SelfExamReminder.load();
+  // Start the in-app notification centre so the top-bar bell reflects doctor
+  // responses (approvals, cancellations, recommendations) and local events.
+  AppNotifications.instance.init();
   runApp(const Scan4DiseasesApp());
 }
 

@@ -5420,14 +5420,21 @@ body { min-height: 100vh; }
   text-transform: uppercase; color: var(--ink-faint);
 }
 
-.appt-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+/* Fixed, equal row heights so every week is the same height and no cell
+   stretches its neighbours. Cells clip their overflow and surface a "+N more"
+   affordance, keeping the grid a clean, uniform matrix regardless of load. */
+.appt-grid {
+  display: grid; grid-template-columns: repeat(7, 1fr);
+  grid-auto-rows: 96px; gap: 6px;
+}
 .appt-grid.is-slide-next { animation: apptSlideNext var(--dur-3) var(--ease-out); }
 .appt-grid.is-slide-prev { animation: apptSlidePrev var(--dur-3) var(--ease-out); }
 @keyframes apptSlideNext { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: none; } }
 @keyframes apptSlidePrev { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: none; } }
 
 .appt-cell {
-  position: relative; min-height: 84px; padding: .35rem .35rem .3rem;
+  position: relative; min-height: 0; height: 100%; overflow: hidden;
+  padding: .35rem .35rem .3rem;
   border-radius: var(--r-2); border: 1px solid var(--border);
   background: var(--surface-2); display: flex; flex-direction: column; gap: 3px;
   transition: border-color var(--dur-1) var(--ease-out), background var(--dur-1) var(--ease-out);
@@ -5442,7 +5449,7 @@ body { min-height: 100vh; }
 }
 .appt-cell-num { font-size: .74rem; font-weight: 700; color: var(--ink-soft); padding: .05rem .1rem; }
 .appt-cell.is-today .appt-cell-num { color: var(--brand); }
-.appt-cell-items { display: flex; flex-direction: column; gap: 3px; overflow: hidden; }
+.appt-cell-items { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 3px; overflow: hidden; }
 
 .appt-chip {
   display: flex; gap: .35rem; align-items: baseline; width: 100%; text-align: left;
@@ -5625,6 +5632,99 @@ body { min-height: 100vh; }
 }
 .btn-danger:hover { background: color-mix(in srgb, var(--danger) 88%, black); transform: translateY(-1px); }
 
+/* Glossy red confirm — a wet top highlight, a saturated gradient body and a
+   soft red glow, with crisp red edges. Reads as a deliberate, weighty button
+   rather than a flat red slab. */
+.btn-danger-gloss {
+  position: relative; overflow: hidden; color: #fff;
+  border: 1px solid color-mix(in srgb, var(--danger) 60%, black);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.28), rgba(255,255,255,0) 42%),
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--danger) 92%, white) 0%,
+      var(--danger) 46%,
+      color-mix(in srgb, var(--danger) 82%, black) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.45),
+    inset 0 -1px 0 rgba(0,0,0,.28),
+    0 4px 14px color-mix(in srgb, var(--danger) 45%, transparent),
+    0 1px 2px rgba(0,0,0,.35);
+  text-shadow: 0 1px 1px rgba(0,0,0,.28);
+  transition: transform var(--dur-1) var(--ease-out), box-shadow var(--dur-1) var(--ease-out), filter var(--dur-1) var(--ease-out);
+}
+.btn-danger-gloss:hover {
+  transform: translateY(-1px); filter: brightness(1.05);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.5),
+    inset 0 -1px 0 rgba(0,0,0,.3),
+    0 6px 20px color-mix(in srgb, var(--danger) 55%, transparent),
+    0 1px 2px rgba(0,0,0,.4);
+}
+.btn-danger-gloss:active { transform: translateY(0) scale(.99); }
+
+/* --- cancel flow: slide-to-confirm --- */
+.appt-cancel-body { display: flex; flex-direction: column; gap: .55rem; }
+.appt-cancel-body textarea {
+  width: 100%; resize: vertical; min-height: 3.2rem; padding: .55rem .65rem;
+  border-radius: var(--r-2); border: 1px solid var(--border); background: var(--surface); color: var(--ink);
+  font: inherit; font-size: .82rem;
+}
+.appt-cancel-body textarea:focus-visible { outline: none; border-color: var(--danger); box-shadow: 0 0 0 3px var(--danger-tint); }
+
+.appt-slide { --slide-pct: 0; user-select: none; }
+.appt-slide-track {
+  position: relative; height: 46px; border-radius: 999px; overflow: hidden;
+  border: 1px solid var(--danger-line);
+  background:
+    linear-gradient(90deg,
+      color-mix(in srgb, var(--danger) 34%, transparent) calc(var(--slide-pct) * 100%),
+      var(--surface-3) calc(var(--slide-pct) * 100%));
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color var(--dur-1) var(--ease-out);
+}
+.appt-slide-label {
+  font-size: .8rem; font-weight: 800; letter-spacing: .01em; color: var(--danger);
+  opacity: calc(1 - var(--slide-pct)); pointer-events: none;
+  padding-left: 1.6rem;
+}
+.appt-slide-thumb {
+  position: absolute; left: 0; top: 0; bottom: 0; margin: 4px 0 4px 4px;
+  width: 40px; height: 38px; display: inline-grid; place-items: center;
+  border-radius: 999px; border: 1px solid color-mix(in srgb, var(--danger) 55%, black);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,.3), rgba(255,255,255,0) 45%),
+    linear-gradient(180deg, color-mix(in srgb, var(--danger) 90%, white), var(--danger));
+  color: #fff; cursor: grab; touch-action: none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.5), 0 2px 6px color-mix(in srgb, var(--danger) 45%, transparent);
+}
+.appt-slide.is-dragging .appt-slide-thumb { cursor: grabbing; }
+.appt-slide:not(.is-dragging) .appt-slide-thumb { transition: left var(--dur-2) var(--ease-out); }
+.appt-slide-thumb:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.appt-slide.is-armed .appt-slide-track { border-color: var(--danger); }
+
+/* --- cancel flow: second confirmation gate --- */
+.appt-confirm2 { display: flex; flex-direction: column; gap: .6rem; }
+.appt-confirm2.is-in { animation: apptGateIn var(--dur-3) var(--ease-spring); }
+@keyframes apptGateIn {
+  from { opacity: 0; transform: translateY(6px) scale(.99); }
+  to { opacity: 1; transform: none; }
+}
+.appt-confirm2-msg {
+  display: flex; gap: .45rem; align-items: flex-start; margin: 0;
+  padding: .55rem .65rem; border-radius: var(--r-2);
+  background: var(--danger-tint); border: 1px solid var(--danger-line); color: var(--danger);
+  font-size: .8rem; line-height: 1.4; font-weight: 600;
+}
+.appt-confirm2-msg .icon { flex: none; margin-top: .1rem; }
+.appt-confirm2-row { display: flex; gap: .5rem; }
+.appt-confirm2-row .appt-confirm2-keep { flex: 0 0 auto; }
+.appt-confirm2-row .appt-act-go { flex: 1; justify-content: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .appt-confirm2.is-in { animation: none; }
+  .appt-slide:not(.is-dragging) .appt-slide-thumb { transition: none; }
+}
+
 /* --- recommend dialog --- */
 .appt-reco-dialog {
   border: none; background: transparent; padding: 0; max-width: 460px; width: calc(100% - 2rem);
@@ -5647,10 +5747,22 @@ body { min-height: 100vh; }
 .appt-field select, .appt-field input, .appt-field textarea {
   width: 100%; padding: .55rem .65rem; border-radius: var(--r-2);
   border: 1px solid var(--border); background: var(--surface); color: var(--ink);
-  font: inherit; font-size: .88rem;
+  font: inherit; font-size: .88rem; color-scheme: inherit;
+  transition: border-color var(--dur-1) var(--ease-out), box-shadow var(--dur-1) var(--ease-out);
 }
+/* Style the native selects to match the panel: strip the OS chrome and draw a
+   themed chevron so the dropdowns read as part of the glass panel, not raw
+   browser controls. */
+.appt-field select {
+  -webkit-appearance: none; appearance: none; cursor: pointer;
+  padding-right: 2rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23808a99' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right .6rem center;
+}
+.appt-field select:hover { border-color: color-mix(in srgb, var(--brand) 45%, var(--border)); }
 .appt-field select:focus-visible, .appt-field input:focus-visible, .appt-field textarea:focus-visible {
-  outline: 2px solid var(--brand); outline-offset: 1px; border-color: var(--brand);
+  outline: none; border-color: var(--brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 22%, transparent);
 }
 .appt-field-row { display: flex; gap: .7rem; }
 .appt-field-row .appt-field { flex: 1; }
@@ -5661,3 +5773,51 @@ body { min-height: 100vh; }
   .appt-grid.is-slide-next, .appt-grid.is-slide-prev,
   .appt-summary.is-in, .appt-reco-dialog[open] { animation: none; }
 }
+
+/* --- patient profile: reports + appointments rail --- */
+.patient-layout {
+  display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 1.1rem;
+  align-items: start;
+}
+@media (max-width: 1040px) { .patient-layout { grid-template-columns: 1fr; } }
+.patient-main { min-width: 0; }
+
+.patient-appts { position: sticky; top: 84px; }
+@media (max-width: 1040px) { .patient-appts { position: static; } }
+.patient-appts-card {
+  border-radius: var(--r-3); border: 1px solid var(--border);
+  background: var(--glass-sheen), var(--glass-fill-strong);
+  backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--shadow-2); padding: 1rem 1rem 1.05rem;
+  display: flex; flex-direction: column; gap: .85rem;
+}
+.patient-appts-head { display: flex; align-items: center; justify-content: space-between; gap: .6rem; }
+.patient-appts-title {
+  display: inline-flex; align-items: center; gap: .45rem;
+  font-size: .95rem; font-weight: 800; color: var(--ink);
+}
+.patient-appts-title .icon { color: var(--brand); }
+.patient-appts-group { display: flex; flex-direction: column; gap: .4rem; }
+.patient-appts-grouplabel {
+  font-size: .66rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.patient-appts-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .45rem; }
+.patient-appt-row {
+  display: flex; align-items: center; gap: .6rem; text-decoration: none;
+  padding: .55rem .6rem; border-radius: var(--r-2); border: 1px solid var(--border);
+  background: var(--surface); color: var(--ink);
+  transition: border-color var(--dur-1) var(--ease-out), transform var(--dur-1) var(--ease-out), box-shadow var(--dur-1) var(--ease-out);
+}
+.patient-appt-row:hover { border-color: var(--brand); transform: translateY(-1px); box-shadow: var(--shadow-1); }
+.patient-appts-list.is-past .patient-appt-row { opacity: .72; }
+.patient-appt-when { display: flex; flex-direction: column; min-width: 4.6rem; }
+.patient-appt-day { font-size: .7rem; font-weight: 700; color: var(--ink); }
+.patient-appt-time { font-size: .68rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.patient-appt-body { flex: 1; min-width: 0; }
+.patient-appt-cond { display: block; font-size: .82rem; font-weight: 700; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.patient-appt-meta { display: block; font-size: .7rem; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.patient-appts-empty { text-align: center; color: var(--ink-soft); padding: 1.2rem .5rem; }
+.patient-appts-empty .icon { width: 1.9rem; height: 1.9rem; color: var(--ink-faint); margin-bottom: .4rem; }
+.patient-appts-empty p { margin: 0; font-size: .82rem; line-height: 1.4; }
+.patient-appts-cta { align-self: stretch; justify-content: center; margin-top: .2rem; }
