@@ -6,8 +6,11 @@
   <meta name="robots" content="noindex, nofollow">
   <meta name="color-scheme" content="light dark">
   <title>{% block title %}Doctor Portal{% endblock %} · Scan4Disease</title>
-  <link rel="icon" type="image/png" href="/portal/static/brand_icon_transparent.png">
-  <link rel="apple-touch-icon" type="image/png" href="/portal/static/brand_icon.png">
+  {# Circular badge so the icon reads as a round logo when Chrome/Google turns the
+     site into a desktop or home-screen shortcut (transparent corners = a circle). #}
+  <link rel="icon" type="image/png" sizes="64x64" href="/portal/static/favicon_circular.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="/portal/static/brand_icon_circular.png">
+  <link rel="apple-touch-icon" type="image/png" href="/portal/static/brand_icon_circular.png">
   {# Set the theme before first paint so there is no flash. Explicit choice wins;
      otherwise the OS preference drives it (handled in CSS). #}
   <script>

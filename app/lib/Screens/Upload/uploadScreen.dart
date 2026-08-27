@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../theme.dart';
 import '../app_data.dart';
+import '../../services/haptics_service.dart';
 import '../../services/language_service.dart';
 import '../../services/sound_service.dart';
 import 'DiagnoseAPI.dart';
@@ -54,13 +55,20 @@ class _UploadScreenState extends State<UploadScreen> {
         maxHeight: _maxUploadEdge,
         imageQuality: 90,
       );
-      if (image != null && mounted) setState(() => _image = image);
+      if (image != null && mounted) {
+        Haptics.instance.selection(); // a picked image landed in the card
+        setState(() => _image = image);
+      }
     }
     catch (e) { log('$e'); if (mounted) _error('Unable to select the image. Please try again.'); }
   }
 
   Future<void> _predict() async {
-    if (_image == null) return _error('Please add a clear skin image first.');
+    if (_image == null) {
+      Haptics.instance.warning(); // nudge: nothing to analyse yet
+      return _error('Please add a clear skin image first.');
+    }
+    Haptics.instance.medium(); // firm confirm that the analysis has started
     setState(() => _loading = true);
     try {
       final result = await _api.predict(

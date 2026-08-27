@@ -4357,6 +4357,27 @@ tr.is-archiving {
 .reports-data-table th:last-child,
 .reports-data-table td:last-child     { width: 96px; text-align: right; padding-right: 14px; }
 
+/* The per-patient profile table has one fewer column (no "Patient" column),
+   so the generic nth-child widths above land on the wrong columns and drift.
+   Re-map them here so Condition stays flexible and Triage/Status match the
+   main worklist exactly — keeping every page's columns aligned. */
+.reports-data-table.patient-reports-table th:nth-child(3),
+.reports-data-table.patient-reports-table td:nth-child(3) {   /* Condition — absorbs slack */
+  width: auto;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+}
+/* table-layout:fixed sizes columns from the header row, so the Confidence,
+   Triage and Status *headers* must carry the width here (their td classes
+   alone are ignored in fixed layout). */
+.reports-data-table.patient-reports-table th:nth-child(4),
+.reports-data-table.patient-reports-table td:nth-child(4) { width: 130px; }   /* Confidence */
+.reports-data-table.patient-reports-table th:nth-child(5),
+.reports-data-table.patient-reports-table td:nth-child(5) { width: 170px; }   /* Triage */
+.reports-data-table.patient-reports-table th:nth-child(6),
+.reports-data-table.patient-reports-table td:nth-child(6) { width: 120px; }   /* Status */
+
 .reports-data-table td.date-cell {
   font-family: var(--font-mono);
   font-size: .82rem;

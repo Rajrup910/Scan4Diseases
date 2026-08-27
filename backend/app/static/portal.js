@@ -182,13 +182,16 @@
   });
 
   /* --- 1c. ambient interaction sounds ---------------------------------------------
-     One delegated click handler gives the whole UI a soft tap on any meaningful
-     control. Controls that already emit a *dedicated* cue (theme/sound toggles,
-     dock refresh, the palette/dial openers, the login submit) are skipped so
-     they never double up. Capture phase so the tap is scheduled before a link
-     navigates away. */
+     A soft tap on the *meaningful* actions only — primary buttons, opening a
+     report, dock navigation, and picking an item from the command palette or the
+     patient dial. Minor, high-frequency controls (plain/ghost buttons, list
+     tabs, segmented filters, menu items, the account trigger) stay SILENT so the
+     UI does not click on every single press. Panels, sends, refreshes and
+     success/error states already carry their own dedicated cue, so nothing here
+     doubles up. Capture phase so the tap is scheduled before a link navigates
+     away. */
   (function () {
-    var TAP_SEL = "button, .btn, .dock-item, [role='menuitem'], .tab, .seg, .cmdk-item, .patient-arc-chip, .account-trigger";
+    var TAP_SEL = ".btn-primary, .btn-open, .dock-item, .cmdk-item, .patient-arc-chip";
     var SKIP_SEL = "[data-theme-toggle],[data-sound-toggle],[data-dock-refresh],[data-cmdk-open],[data-dock-picker],[data-patient-dial-close]";
     document.addEventListener("click", function (e) {
       var t = e.target;
@@ -995,11 +998,12 @@
       .then(function (result) {
         var card = document.querySelector(".login-card");
         if (!result.ok) {
-          // Authentication failed: render subtle glossy ruby cross in background of logo
-          Sound.error();
+          // Authentication failed: the ruby disc pops and the cross draws first;
+          // the soft error tone follows once the mark has landed (~0.56s), so the
+          // sequence reads authenticate → animation → sound, never sound-first.
           delete loginForm.dataset.going;
           var msg = (result.data && result.data.error) ? result.data.error : "Email or password is incorrect.";
-          
+
           if (btn) {
             btn.disabled = false;
             btn.innerHTML = originalBtnText;
@@ -1007,9 +1011,12 @@
           if (card) {
             card.classList.remove("is-auth-success");
             card.classList.add("is-auth-error");
+            setTimeout(function () { Sound.error(); }, 520);
             setTimeout(function () {
               card.classList.remove("is-auth-error");
             }, 1800);
+          } else {
+            Sound.error();
           }
 
           var errEl = document.createElement("p");
@@ -1025,17 +1032,19 @@
           return;
         }
 
-        // Authentication succeeded: render sleek blurry glossy emerald tick in the background of the logo
-        Sound.success();
+        // Authentication succeeded: play the emerald disc-pop + checkmark draw
+        // FIRST, then sound the success cue as the tick lands (~0.56s) so audio
+        // follows the animation. The redirect waits for the arpeggio to breathe.
         if (card) {
           card.classList.remove("is-auth-error");
           card.classList.add("is-auth-success");
         }
+        setTimeout(function () { Sound.success(); }, 560);
 
         setTimeout(function () {
           var target = (result.data && result.data.redirect) ? result.data.redirect : "/portal/patients";
           window.location.href = target;
-        }, 1150);
+        }, 1450);
       })
       .catch(function () {
         // Fallback standard submit

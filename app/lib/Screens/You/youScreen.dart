@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
+import '../../services/haptics_service.dart';
 import '../../services/language_service.dart';
 import '../../services/motion_service.dart';
 import '../../services/sound_service.dart';
@@ -81,6 +82,8 @@ class YouScreen extends StatelessWidget {
                   _motionRow(context, dark),
                   const Divider(),
                   _soundRow(context, dark),
+                  const Divider(),
+                  _hapticsRow(context, dark),
                   const Divider(),
                   _languageRow(context, dark),
                   const Divider(),
@@ -174,9 +177,15 @@ class YouScreen extends StatelessWidget {
           return dark ? Themes.darkBorder : const Color(0xFFB4BBC7);
         }),
         trackOutlineWidth: WidgetStateProperty.all(1.4),
-        onChanged: (_) => ThemeService.instance.toggle(context),
+        onChanged: (_) {
+          Haptics.instance.selection();
+          ThemeService.instance.toggle(context);
+        },
       ),
-      onTap: () => ThemeService.instance.toggle(context),
+      onTap: () {
+        Haptics.instance.selection();
+        ThemeService.instance.toggle(context);
+      },
     );
   }
 
@@ -221,9 +230,19 @@ class YouScreen extends StatelessWidget {
               }),
               trackOutlineWidth: WidgetStateProperty.all(1.4),
               // The OS setting wins; don't let the switch imply otherwise.
-              onChanged: forcedByOs ? null : (v) => MotionService.instance.set(v),
+              onChanged: forcedByOs
+                  ? null
+                  : (v) {
+                      Haptics.instance.selection();
+                      MotionService.instance.set(v);
+                    },
             ),
-            onTap: forcedByOs ? null : () => MotionService.instance.toggle(),
+            onTap: forcedByOs
+                ? null
+                : () {
+                    Haptics.instance.selection();
+                    MotionService.instance.toggle();
+                  },
           );
         },
       );
@@ -260,6 +279,41 @@ class YouScreen extends StatelessWidget {
               onChanged: (v) => SoundService.instance.setEnabled(v),
             ),
             onTap: () => SoundService.instance.toggleEnabled(),
+          );
+        },
+      );
+
+  /// Haptic-feedback toggle. Independent of the sound switch, so a user can keep
+  /// the tactile ticks and confirmations even with sounds silenced.
+  Widget _hapticsRow(BuildContext context, bool dark) => ValueListenableBuilder<bool>(
+        valueListenable: Haptics.instance.enabled,
+        builder: (_, on, __) {
+          final ink = dark ? Themes.darkInk : Themes.ink;
+          final inkSoft = dark ? Themes.darkInkSoft : Themes.inkSoft;
+          final accent = dark ? Themes.tealLight : Themes.brand;
+          return ListTile(
+            leading: Icon(
+              on ? Icons.vibration_rounded : Icons.smartphone_rounded,
+              color: accent,
+              size: 20,
+            ),
+            title: Text('Haptic feedback',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: ink)),
+            subtitle: Text(
+              on ? 'Subtle taps for steps, actions and results' : 'Off',
+              style: TextStyle(fontSize: 12, color: inkSoft),
+            ),
+            trailing: Switch.adaptive(
+              value: on,
+              activeThumbColor: Themes.tealGlow,
+              trackOutlineColor: WidgetStateProperty.resolveWith((states) {
+                if (states.contains(WidgetState.selected)) return Themes.tealGlow;
+                return dark ? Themes.darkBorder : const Color(0xFFB4BBC7);
+              }),
+              trackOutlineWidth: WidgetStateProperty.all(1.4),
+              onChanged: (v) => Haptics.instance.setEnabled(v),
+            ),
+            onTap: () => Haptics.instance.toggleEnabled(),
           );
         },
       );

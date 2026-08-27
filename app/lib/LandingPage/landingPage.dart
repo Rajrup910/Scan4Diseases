@@ -9,8 +9,8 @@ import '../Screens/theme.dart';
 import '../Screens/widgets/video_background.dart';
 import '../Screens/widgets/floating_tab_bar.dart';
 import '../Screens/widgets/slide_to_start.dart';
+import '../services/haptics_service.dart';
 import '../services/self_exam_reminder.dart';
-import '../services/sound_service.dart';
 
 class MyLandingPage extends StatefulWidget {
   final CameraDescription? firstCam;
@@ -161,7 +161,11 @@ class _MyLandingPageState extends State<MyLandingPage> {
             bottomNavigationBar: FloatingTabBar(
               currentIndex: _currentIndex,
               onSelect: (i) {
-                if (i != _currentIndex) SoundService.instance.tap();
+                // Switching tabs is routine navigation: a subtle haptic tick
+                // only — no click sound (the old tap cue on every tab press was
+                // the "sound on every click" the audit flagged). Haptics fire
+                // independently of the sound preference.
+                if (i != _currentIndex) Haptics.instance.selection();
                 setState(() => _currentIndex = i);
               },
               tabs: _tabs,

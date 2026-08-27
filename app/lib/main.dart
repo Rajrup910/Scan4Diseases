@@ -5,6 +5,7 @@ import 'LandingPage/landingPage.dart';
 import 'Screens/Auth/authGate.dart';
 import 'Screens/theme.dart';
 import 'services/auth_service.dart';
+import 'services/haptics_service.dart';
 import 'services/language_service.dart';
 import 'services/motion_service.dart';
 import 'services/self_exam_reminder.dart';
@@ -22,6 +23,7 @@ Future<void> main() async {
   await ThemeService.instance.load();
   await MotionService.instance.load();
   await SoundService.instance.load();
+  await Haptics.instance.load();
   await SelfExamReminder.load();
   runApp(const Scan4DiseasesApp());
 }

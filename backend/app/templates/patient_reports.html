@@ -76,7 +76,7 @@
   <svg class="bulk-lines" data-bulk-lines aria-hidden="true"></svg>
 
 <div class="table-wrap reports-table-card">
-  <table class="data reports-data-table" data-reports-table>
+  <table class="data reports-data-table patient-reports-table" data-reports-table>
     <thead>
       <tr>
         <th class="th-cb"><label class="custom-cb"><input type="checkbox" data-select-all aria-label="Select all reports"><span class="cb-box"></span></label></th>
@@ -103,8 +103,18 @@
         <td class="condition-cell">
           <span class="condition-name">{{ r.condition }}</span>
           {% if r.symptoms and r.symptoms.get('language') == 'hi' %}
+          {# Same bilingual marquee tag as the main worklist so the Hindi
+             indicator reads and animates identically across every page. #}
           <span class="lang-tag-hi" title="Generated in Hindi">
-            <span class="lang-icon">हि</span> हिन्दी
+            <span class="lang-marquee" aria-hidden="true">
+              <span class="lang-marquee-track">
+                <span class="lang-marquee-item">Generated in Hindi</span>
+                <span class="lang-marquee-item">हिन्दी में तैयार</span>
+                <span class="lang-marquee-item">Generated in Hindi</span>
+                <span class="lang-marquee-item">हिन्दी में तैयार</span>
+              </span>
+            </span>
+            <span class="sr-only">Generated in Hindi</span>
           </span>
           {% endif %}
         </td>
@@ -121,7 +131,17 @@
           <span class="muted">—</span>
           {% endif %}
         </td>
-        <td><span class="badge triage-{{ tone }}">{{ r.triage }}</span></td>
+        <td>
+          {# Marquee the triage label so the full phrase (e.g. "Prompt
+             dermatologist consultation") stays legible and scrolls inside the
+             fixed badge slot — identical to the main worklist for uniformity. #}
+          <span class="badge triage-{{ tone }} triage-marquee" title="{{ r.triage }}">
+            <span class="triage-marquee-track">
+              <span class="triage-marquee-item">{{ r.triage }}</span>
+              <span class="triage-marquee-item">{{ r.triage }}</span>
+            </span>
+          </span>
+        </td>
         <td><span class="badge status-{{ r.status }}">{{ status_labels.get(r.status, r.status) }}</span></td>
         <td class="row-action">
           <a class="btn btn-small btn-open" href="/portal/reports/{{ r.id }}">

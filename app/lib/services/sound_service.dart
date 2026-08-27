@@ -1,7 +1,8 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+import 'haptics_service.dart';
 
 /// App-wide subtle UI sound theme.
 ///
@@ -125,24 +126,21 @@ class SoundService {
     }
   }
 
-  void _haptic(Future<void> Function() fn) {
-    if (!enabled.value) return;
-    try {
-      fn();
-    } catch (_) {}
-  }
-
   // --- the cue palette (mirrors the web Sound module) ---------------------
+  //
+  // Haptics are routed through the independent [Haptics] service (its own
+  // on/off preference), so a cue's tactile half still fires when sound is
+  // muted — and vice versa.
 
   /// Soft muted click — the workhorse for buttons, chips, list rows.
   Future<void> tap() {
-    _haptic(HapticFeedback.selectionClick);
+    Haptics.instance.selection();
     return _play('tap', volume: 0.8);
   }
 
   /// Two-note affirm for a state flip (theme / sound / a switch).
   Future<void> toggle() {
-    _haptic(HapticFeedback.selectionClick);
+    Haptics.instance.selection();
     return _play('toggle', volume: 0.9);
   }
 
@@ -157,19 +155,19 @@ class SoundService {
 
   /// Outgoing chat message blip.
   Future<void> send() {
-    _haptic(HapticFeedback.selectionClick);
+    Haptics.instance.selection();
     return _play('send', volume: 0.85);
   }
 
   /// Warm major arpeggio — successful login, completed scan, saved action.
   Future<void> success() {
-    _haptic(HapticFeedback.lightImpact);
+    Haptics.instance.success();
     return _play('success', volume: 1.0);
   }
 
   /// Gentle two-note descent — failed login, rejected action.
   Future<void> error() {
-    _haptic(HapticFeedback.heavyImpact);
+    Haptics.instance.warning();
     return _play('error', volume: 1.0);
   }
 

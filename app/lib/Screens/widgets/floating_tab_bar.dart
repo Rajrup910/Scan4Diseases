@@ -45,6 +45,12 @@ class FloatingTabBar extends StatelessWidget {
                 child: Container(
                   height: 64,
                   decoration: BoxDecoration(
+                    // Light theme mirrors the website's dock: a near-clear glass
+                    // fill (definition comes from the blur + a hairline edge, not
+                    // a milky white sheet), a soft top-to-bottom sheen, and a
+                    // single gentle drop shadow — NO bright white halo, so the
+                    // pill reads as smooth frosted glass rather than a glossy,
+                    // glowing panel.
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
@@ -54,23 +60,20 @@ class FloatingTabBar extends StatelessWidget {
                               Themes.darkSurface.withValues(alpha: 0.70),
                             ]
                           : [
-                              Colors.white.withValues(alpha: 0.84),
-                              Colors.white.withValues(alpha: 0.68),
+                              Colors.white.withValues(alpha: 0.32),
+                              Colors.white.withValues(alpha: 0.18),
                             ],
                     ),
                     borderRadius: BorderRadius.circular(28),
                     border: Border.all(
-                      color: Colors.white.withValues(alpha: dark ? 0.25 : 0.85),
-                      width: 1.2,
+                      color: Colors.white.withValues(alpha: dark ? 0.25 : 0.55),
+                      width: 1.0,
                     ),
                     boxShadow: [
+                      // Depth only — the earlier white glow (alpha .55) was the
+                      // source of the "glossy" look in light mode; it is gone.
                       BoxShadow(
-                        color: Colors.white.withValues(alpha: dark ? 0.08 : 0.55),
-                        blurRadius: 4,
-                        spreadRadius: 0.5,
-                      ),
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: dark ? 0.35 : 0.08),
+                        color: Colors.black.withValues(alpha: dark ? 0.35 : 0.10),
                         blurRadius: 20,
                         offset: const Offset(0, 8),
                       ),
@@ -134,11 +137,11 @@ class _TabButton extends StatelessWidget {
           height: 46,
           decoration: BoxDecoration(
             color: selected
-                ? (dark ? Colors.white.withValues(alpha: 0.18) : Colors.white.withValues(alpha: 0.85))
+                ? (dark ? Colors.white.withValues(alpha: 0.18) : Colors.white.withValues(alpha: 0.58))
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(14),
             border: selected
-                ? Border.all(color: Colors.white.withValues(alpha: dark ? 0.30 : 0.85), width: 1)
+                ? Border.all(color: Colors.white.withValues(alpha: dark ? 0.30 : 0.60), width: 1)
                 : null,
             boxShadow: selected
                 ? [
