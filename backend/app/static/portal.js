@@ -2099,17 +2099,31 @@
       var tr = cb.closest("tr");
       if (!tr) return;
       var reportId = cb.getAttribute("data-row-id") || "";
-      var cond = cellText(tr, ".condition-name");
+      var cond = tr.getAttribute("data-condition") || cellText(tr, ".condition-name");
       var patient = cellText(tr, ".patient-link");
-      var date = cellText(tr, ".date-cell");
+      var date = tr.getAttribute("data-date") || cellText(tr, ".date-cell");
       var conf = cellText(tr, ".conf-pct");
-      var triageEl = tr.querySelector("td.triage-cell .badge, .badge[class*='triage-'], td:nth-child(6) .badge");
-      var statusEl = tr.querySelector("td.status-cell .badge, .badge[class*='status-'], td:nth-child(7) .badge");
+      var confNum = parseInt((conf || "").replace(/[^0-9]/g, ""), 10);
       var openLink = tr.querySelector(".btn-open, a.btn");
-      var href = openLink ? openLink.getAttribute("href") : "#";
-      var triageItem = triageEl ? triageEl.querySelector(".triage-marquee-item") : null;
-      var triageText = (triageEl ? (triageEl.getAttribute("title") || (triageItem ? triageItem.textContent : triageEl.textContent)) : "").trim() || "—";
-      var statusText = (statusEl ? statusEl.textContent : "").trim() || "—";
+      var href = openLink ? openLink.getAttribute("href") : (reportId ? "/portal/reports/" + reportId : "#");
+
+      var triageText = tr.getAttribute("data-triage") || "";
+      if (!triageText) {
+        var triageEl = tr.querySelector("td.triage-cell .badge, .badge[class*='triage-'], td:nth-child(6) .badge");
+        if (triageEl) {
+          var triageItem = triageEl.querySelector(".triage-marquee-item");
+          triageText = triageEl.getAttribute("data-triage-text") || triageEl.getAttribute("title") || (triageItem ? triageItem.textContent : triageEl.textContent);
+        }
+      }
+      triageText = (triageText || "").trim() || "—";
+      var tone = tr.getAttribute("data-triage-tone") || triageTone(triageText);
+
+      var statusText = tr.getAttribute("data-status-label") || "";
+      if (!statusText) {
+        var statusEl = tr.querySelector("td.status-cell .badge, .badge[class*='status-'], td:nth-child(7) .badge");
+        statusText = statusEl ? statusEl.textContent : "";
+      }
+      statusText = (statusText || "").trim() || "—";
       var label = COL_LABELS[idx] || String(idx + 1);
 
       compareSession.reports.push({
@@ -2120,7 +2134,6 @@
 
       var imageSrc = reportId ? "/portal/reports/" + reportId + "/image" : "";
       var camSrc = reportId ? "/portal/reports/" + reportId + "/gradcam" : "";
-      var tone = triageTone(triageText);
       var triageBadgeHtml = triageText !== "—"
         ? '<span class="badge triage-' + escapeHtml(tone) + '">' + escapeHtml(triageText) + '</span>'
         : "—";

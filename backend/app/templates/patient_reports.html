@@ -94,7 +94,7 @@
       {% for r in reports %}
       {% set _t = (r.triage or "")|lower %}
       {% set tone = 'urgent' if 'urgent' in _t else ('soon' if 'prompt' in _t or 'soon' in _t else 'routine') %}
-      <tr data-status="{{ r.status }}" data-search-text="{{ r.condition }} {{ r.triage }} {{ status_labels.get(r.status, r.status) }}" style="view-transition-name: report-{{ r.id }};">
+      <tr data-status="{{ r.status }}" data-triage="{{ r.triage }}" data-triage-tone="{{ tone }}" data-status-label="{{ status_labels.get(r.status, r.status) }}" data-search-text="{{ r.condition }} {{ r.triage }} {{ status_labels.get(r.status, r.status) }}" style="view-transition-name: report-{{ r.id }};">
         <td class="td-cb">
           <label class="custom-cb">
             <input type="checkbox" class="row-cb" data-row-id="{{ r.id }}" aria-label="Select report {{ r.id }}">
