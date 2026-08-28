@@ -88,10 +88,9 @@ app/.flutter-plugins-dependencies
 dotnet/**/bin/
 dotnet/**/obj/
 
-# ---------- Local planning / working notes (not part of the published repo) ----------
-PROJECT_STATUS.md
-docs/reference/MASTER_SPEC.md
-docs/reference/Scan4Disease - Project Plan & Roadmap.md
-HANDOFF_*.md
-DEMO_RUNSHEET.md
+# ---------- Markdown files (Only root README.md and PROJECT_REPORT.md committed) ----------
+*.md
+!/README.md
+!/PROJECT_REPORT.md
+
 
