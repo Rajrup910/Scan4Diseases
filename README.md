@@ -316,6 +316,47 @@ The distribution workflow follows a streamlined, direct path:
 
 ---
 
+### Copy-Ready Website & Landing Page Buttons
+
+You can embed the following ready-to-use snippets into your website, portal header, or landing page:
+
+#### Option A: Shield Badge CTA (Markdown)
+```markdown
+[![Download Android APK](https://img.shields.io/badge/Download-Android%20APK-0284c7?style=for-the-badge&logo=android&logoColor=white)](https://github.com/Rajrup910/Scan4Diseases/releases/latest)
+```
+
+#### Option B: Modern Styled Button (HTML / CSS)
+```html
+<!-- Copy & paste into your website landing page, hero section, or navigation bar -->
+<a href="https://github.com/Rajrup910/Scan4Diseases/releases/latest" 
+   target="_blank" 
+   rel="noopener noreferrer" 
+   class="btn-apk-download"
+   style="display: inline-flex; align-items: center; gap: 10px; padding: 12px 24px; background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #ffffff; font-weight: 600; font-family: system-ui, -apple-system, sans-serif; font-size: 15px; text-decoration: none; border-radius: 10px; box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35); transition: all 0.2s ease;">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+    <path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9993.4482.9993.9993.0001.5511-.4483.9997-.9993.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997m11.4045-6.02l1.996-3.4572c.1556-.2696.0633-.6138-.2063-.7694-.2691-.1556-.6133-.0633-.7689.2063l-2.0223 3.5028C15.346 8.2434 13.7225 7.9174 12 7.9174c-1.7225 0-3.346.326-4.8805.8865L5.0972 5.3011c-.1556-.2696-.4998-.3619-.7689-.2063-.2696.1556-.3619.4998-.2063.7694l1.996 3.4572C2.6885 11.1706.3435 14.8624.3435 19.1667h23.313c0-4.3043-2.345-7.9961-5.775-9.8453"/>
+  </svg>
+  <span>Download Android App</span>
+</a>
+```
+
+---
+
+### Android Sideloading Notice: "Install from Unknown Source"
+
+Because Scan4Diseases is distributed directly via GitHub Releases outside Google Play:
+
+1. **Browser Download Warning**: When downloading in Chrome or mobile browsers, Android may show:
+   > *"File might be harmful. Do you want to download Scan4Diseases-v1.0.0.apk anyway?"*  
+   - Tap **Download anyway**.
+2. **First-Time Install Permission**: When opening the downloaded APK, Android may display:
+   > *"For your security, your phone is not allowed to install unknown apps from this source."*  
+   - Tap **Settings** -> Toggle **Allow from this source** (or *Install unknown apps*) to **On** -> Return to the installer and tap **Install**.
+3. **Play Protect Verification**: If Google Play Protect displays an *"Unrecognized app"* advisory:
+   - Tap **More details** -> **Install anyway**.
+
+---
+
 ### Release Versioning & APK Naming Standards
 
 All published artifacts adhere to semantic versioning (`vMAJOR.MINOR.PATCH`):
@@ -325,6 +366,33 @@ All published artifacts adhere to semantic versioning (`vMAJOR.MINOR.PATCH`):
 | `v1.0.0` | `Scan4Diseases v1.0.0 — Production Release` | `Scan4Diseases-v1.0.0.apk` | **Initial Release** | Production build with 7-class CNN, Grad-CAM, offline skin guide, triage rules, and clinician portal sync. |
 | `v1.1.0` | `Scan4Diseases v1.1.0 — Incremental Update` | `Scan4Diseases-v1.1.0.apk` | *Planned* | Enhanced anamnesis questionnaire, additional regional language packs, and offline caching. |
 | `v2.0.0` | `Scan4Diseases v2.0.0 — Major Upgrade` | `Scan4Diseases-v2.0.0.apk` | *Planned* | Longitudinal patient tracking, dermoscopic hardware camera integration, and multi-hospital federation. |
+
+---
+
+### Maintainer Step-by-Step Checklist for Publishing a New APK
+
+1. **Compile the Production Release Binary**:
+   ```powershell
+   cd app
+   flutter clean
+   flutter pub get
+   flutter build apk --release
+   ```
+2. **Locate & Rename the Output Binary**:
+   * Binary path: `app/build/app/outputs/flutter-apk/app-release.apk`
+   * Copy/rename to: `Scan4Diseases-v1.0.0.apk`
+3. **Open GitHub Releases Page**:
+   * Navigate to: [https://github.com/Rajrup910/Scan4Diseases/releases](https://github.com/Rajrup910/Scan4Diseases/releases)
+   * Click the **"Draft a new release"** button (or open `https://github.com/Rajrup910/Scan4Diseases/releases/new`).
+4. **Configure Release Information**:
+   * **Tag version**: Type `v1.0.0` (select *Create new tag: v1.0.0 on publish*).
+   * **Target**: `main` branch.
+   * **Release title**: `Scan4Diseases v1.0.0 — Official Android Release`.
+   * **Description**: Provide release notes, highlights, and SHA-256 hash.
+5. **Attach the APK Asset**:
+   * Drag and drop `Scan4Diseases-v1.0.0.apk` into the upload box. Wait until the upload is 100% complete.
+6. **Publish and Verify**:
+   * Ensure **"Set as the latest release"** is checked -> Click **"Publish release"**.
 
 ---
 
@@ -376,6 +444,10 @@ demo_test_samples/
   * **Triage Category:** `Urgent medical evaluation` (High Urgency)
   * **Safety Rules Triggered:** `R1_malignant_class`, `R3_malignant_mass_high`
   * **Grad-CAM:** Concentrates on the asymmetric peripheral margins and deep core pigment network.
+* **Structured Prompts for AI Chatbot Assistant:**
+  1. *"What is the significance of the irregular borders in this lesion?"*
+  2. *"Why does the app recommend urgent medical evaluation instead of waiting?"*
+  3. *"What should I ask my dermatologist during the appointment?"*
 
 ---
 
@@ -391,6 +463,9 @@ demo_test_samples/
   * **Triage Category:** `Urgent medical evaluation` / `Prompt dermatologist consultation`
   * **Safety Rules Triggered:** `R1_malignant_class`
   * **Grad-CAM:** Identifies the elevated nodular core and telangiectatic margins.
+* **Structured Prompts for AI Chatbot Assistant:**
+  1. *"Does basal cell carcinoma usually metastasize to distant organs?"*
+  2. *"What are standard surgical margins or Mohs micrographic surgery options for BCC?"*
 
 ---
 
@@ -406,6 +481,9 @@ demo_test_samples/
   * **Triage Category:** `Prompt dermatologist consultation`
   * **Safety Rules Triggered:** `R2_premalignant_class`, `R4b_premalignant_mass`
   * **Grad-CAM:** Activates strongly across the keratotic crusting region.
+* **Structured Prompts for AI Chatbot Assistant:**
+  1. *"What is the annual conversion risk from actinic keratosis to invasive squamous cell carcinoma?"*
+  2. *"What are field-directed therapies (topical 5-FU, imiquimod, PDT) vs lesion-directed cryotherapy?"*
 
 ---
 
@@ -421,6 +499,9 @@ demo_test_samples/
   * **Triage Category:** `Routine dermatologist consultation` (Low Urgency / Reassuring)
   * **Safety Rules Triggered:** `R9_default_routine`
   * **Grad-CAM:** Uniformly distributed across the circular pigment area.
+* **Structured Prompts for AI Chatbot Assistant:**
+  1. *"What signs should I watch for using monthly ABCDE self-examinations?"*
+  2. *"How frequently should individuals with multiple dysplastic nevi be mapped with digital dermoscopy?"*
 
 ---
 
@@ -433,10 +514,34 @@ demo_test_samples/
   * **Pipeline Outcome:** `OTHER_DAMAGE` (Front-Stage Router Triggered)
   * **Confidence:** `~99.3% Non-Neoplastic Trauma`
   * **Triage:** Local first-aid guidance and wound hygiene care.
+* **Structured Prompts for AI Chatbot Assistant:**
+  1. *"How do I keep a minor skin abrasion clean and prevent secondary bacterial infection?"*
+  2. *"What symptoms indicate that a healing wound requires formal medical attention?"*
 
 ---
 
 ## 7. Technical Reference, Local Installation & Troubleshooting
+
+### Demonstration Sequence: Mobile App to Web Portal
+1. **Initialize Backend**:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File scripts\run_backend.ps1
+   ```
+2. **Launch Patient Mobile App**:
+   * Connect real device via USB / wireless ADB (`powershell -ExecutionPolicy Bypass -File scripts\connect_phone.ps1`) or iOS Simulator.
+   * Log in as Patient: `raj@gmail.com` / `12345678`.
+3. **Perform Live Screening**:
+   * Navigate to **Scan Skin** -> Pick `01_melanoma_malignant.jpg` -> Fill Anamnesis survey.
+   * Observe inference latency (<400ms on server) -> Inspect Grad-CAM overlay -> Switch between English and Hindi results.
+4. **Share Screening with Clinician**:
+   * Tap **Share with Doctor** -> Select **Dr. A. Rao** -> Submit.
+5. **Open Clinician Web Portal**:
+   * Navigate to `https://scan4diseases.onrender.com/portal/login` (or `http://localhost:8000/portal/login`).
+   * Sign in as `dr.rao@example.com` / `Str0ngPass!`.
+6. **Clinician Triage & Audit**:
+   * Inspect the shared report in the Patient Roster -> Examine side-by-side original and Grad-CAM decrypted image -> Update status to **Reviewed** and sign off with a clinical note.
+
+---
 
 ### Technology Stack
 
