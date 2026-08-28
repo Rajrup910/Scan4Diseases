@@ -2107,9 +2107,9 @@
       var statusEl = tr.querySelector("td.status-cell .badge, .badge[class*='status-'], td:nth-child(7) .badge");
       var openLink = tr.querySelector(".btn-open, a.btn");
       var href = openLink ? openLink.getAttribute("href") : "#";
-      var confNum = parseInt((conf || "").replace(/[^0-9]/g, ""), 10);
-      var triageText = triageEl ? triageEl.textContent.trim() : "—";
-      var statusText = statusEl ? statusEl.textContent.trim() : "—";
+      var triageItem = triageEl ? triageEl.querySelector(".triage-marquee-item") : null;
+      var triageText = (triageEl ? (triageEl.getAttribute("title") || (triageItem ? triageItem.textContent : triageEl.textContent)) : "").trim() || "—";
+      var statusText = (statusEl ? statusEl.textContent : "").trim() || "—";
       var label = COL_LABELS[idx] || String(idx + 1);
 
       compareSession.reports.push({
@@ -2120,6 +2120,14 @@
 
       var imageSrc = reportId ? "/portal/reports/" + reportId + "/image" : "";
       var camSrc = reportId ? "/portal/reports/" + reportId + "/gradcam" : "";
+      var tone = triageTone(triageText);
+      var triageBadgeHtml = triageText !== "—"
+        ? '<span class="badge triage-' + escapeHtml(tone) + '">' + escapeHtml(triageText) + '</span>'
+        : "—";
+      var statusSlug = statusText.toLowerCase().replace(/[^a-z0-9]+/g, "_");
+      var statusBadgeHtml = statusText !== "—"
+        ? '<span class="badge status-' + escapeHtml(statusSlug) + '">' + escapeHtml(statusText) + '</span>'
+        : "—";
 
       var col = document.createElement("div");
       col.className = "compare-col";
@@ -2142,8 +2150,8 @@
             ? '<div class="compare-meter-track"><div class="compare-meter-fill" style="width:' + confNum + '%"></div></div><span class="compare-v mono">' + escapeHtml(conf) + '</span>'
             : '<span class="compare-v">' + escapeHtml(conf) + '</span>') +
         '</div>' +
-        '<div class="compare-row"><span class="compare-k">Triage</span><span class="compare-v">' + (triageEl ? triageEl.outerHTML : "—") + '</span></div>' +
-        '<div class="compare-row"><span class="compare-k">Status</span><span class="compare-v">' + (statusEl ? statusEl.outerHTML : "—") + '</span></div>' +
+        '<div class="compare-row"><span class="compare-k">Triage</span><span class="compare-v">' + triageBadgeHtml + '</span></div>' +
+        '<div class="compare-row"><span class="compare-k">Status</span><span class="compare-v">' + statusBadgeHtml + '</span></div>' +
         '<a class="btn btn-small" href="' + escapeHtml(href) + '">Open report ' +
           '<svg class="icon icon-sm" aria-hidden="true"><use href="/portal/static/vendor/icons/sprite.svg#arrow-right"/></svg></a>';
       // Stagger the column entrance so the panels cascade in rather than
