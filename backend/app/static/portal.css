@@ -3799,8 +3799,9 @@ body.is-transitioning .flow-takeover,
 
 /* Triage marquee: same seamless loop, but for the triage badge — long
    phrases like "Prompt dermatologist consultation" now scroll horizontally
-   inside the fixed badge slot instead of being ellipsised. Pauses on hover. */
-.reports-data-table .badge.triage-marquee {
+   inside the fixed badge slot instead of being ellipsised. Pauses on hover.
+   Adapted universally to table cells, compare modal cards, and panels. */
+.badge.triage-marquee {
   display: inline-flex;
   align-items: center;
   padding-left: .55rem;
@@ -3808,6 +3809,8 @@ body.is-transitioning .flow-takeover,
   overflow: hidden;
   white-space: nowrap;
   text-overflow: clip;
+  max-width: 100%;
+  box-sizing: border-box;
   mask-image: linear-gradient(90deg, transparent 0, #000 6%, #000 94%, transparent 100%);
   -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 6%, #000 94%, transparent 100%);
 }
@@ -3820,7 +3823,7 @@ body.is-transitioning .flow-takeover,
   will-change: transform;
 }
 .triage-marquee-item { display: inline-block; }
-.reports-data-table .badge.triage-marquee:hover .triage-marquee-track {
+.badge.triage-marquee:hover .triage-marquee-track {
   animation-play-state: paused;
 }
 @keyframes triage-scroll {
@@ -5137,6 +5140,8 @@ body { min-height: 100vh; }
   color: var(--ink);
   animation: compare-col-in 360ms var(--ease-out) both;
   box-shadow: inset 0 1px 0 var(--glass-gloss);
+  min-width: 0;
+  overflow: hidden;
 }
 :root[data-theme="dark"] .compare-col {
   background: rgba(255, 255, 255, .04);
@@ -5159,9 +5164,9 @@ body { min-height: 100vh; }
 }
 :root[data-theme="dark"] .compare-col-label { color: #6EE7B7; }
 
-.compare-col-head { display: flex; flex-direction: column; gap: .2rem; }
-.compare-cond { font-weight: 700; font-size: 1.08rem; line-height: 1.25; color: var(--ink); }
-.compare-patient { font-size: .82rem; color: var(--ink-soft); }
+.compare-col-head { display: flex; flex-direction: column; gap: .2rem; min-width: 0; }
+.compare-cond { font-weight: 700; font-size: 1.08rem; line-height: 1.25; color: var(--ink); word-break: break-word; }
+.compare-patient { font-size: .82rem; color: var(--ink-soft); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* Image pair: lesion photo + Grad-CAM overlay side by side; each labelled */
 .compare-images {
@@ -5207,7 +5212,7 @@ body { min-height: 100vh; }
   padding: .5rem;
 }
 
-.compare-row { display: flex; flex-direction: column; gap: .2rem; }
+.compare-row { display: flex; flex-direction: column; gap: .2rem; min-width: 0; }
 .compare-k {
   font-family: var(--font-mono);
   font-size: .66rem;
@@ -5215,8 +5220,23 @@ body { min-height: 100vh; }
   letter-spacing: .05em;
   color: var(--ink-soft);
 }
-.compare-v { font-size: .92rem; color: var(--ink); font-weight: 550; }
+.compare-v { font-size: .92rem; color: var(--ink); font-weight: 550; min-width: 0; }
 .compare-v.mono { font-family: var(--font-mono); font-weight: 600; }
+.compare-col .compare-v {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+}
+.compare-col .badge {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+.compare-col .badge.triage-marquee {
+  max-width: 100%;
+  width: auto;
+  box-sizing: border-box;
+}
 :root[data-theme="dark"] .compare-v { color: #F1F5F9; }
 :root[data-theme="dark"] .compare-k { color: #94A3B8; }
 .compare-meter-track { height: 8px; border-radius: 999px; background: var(--surface-3); overflow: hidden; margin-top: .15rem; }

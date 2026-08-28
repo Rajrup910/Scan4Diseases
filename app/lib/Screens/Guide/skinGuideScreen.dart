@@ -21,15 +21,18 @@ class SkinGuideScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final inkSoft = dark ? Themes.darkInkSoft : Themes.muted;
+
     return Scaffold(
       appBar: AppBar(title: const Text('Skin health guide')),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 32),
         children: [
-          const Text(
+          Text(
             'Evidence-based basics on spotting skin change early, protecting your skin, '
             'and reading an AI screening result correctly.',
-            style: TextStyle(color: Themes.muted, height: 1.4, fontSize: 14.5),
+            style: TextStyle(color: inkSoft, height: 1.4, fontSize: 14.5),
           ),
           const SizedBox(height: 16),
           const _Section(
@@ -104,33 +107,45 @@ class SkinGuideScreen extends StatelessWidget {
     );
   }
 
-  Widget _footer(BuildContext context) => Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFFF8E8),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFF1D18A)),
+  Widget _footer(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final ink = dark ? Themes.darkInk : Themes.ink;
+    final bg = dark ? const Color(0xFF231C10) : const Color(0xFFFFF8E8);
+    final border = dark ? const Color(0xFF6E5621) : const Color(0xFFF1D18A);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: border),
+      ),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        const Icon(Icons.info_outline_rounded, color: Themes.warning),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(
+              'General information, not medical advice. No app — this one included — can '
+              'rule out skin cancer. Anything that worries you deserves an in-person exam.',
+              style: TextStyle(height: 1.4, color: ink, fontSize: 13),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.push(
+                  context, MaterialPageRoute(builder: (_) => const NearbyDoctorsScreen())),
+              icon: const Icon(Icons.location_on_outlined, size: 18),
+              label: const Text('Find a dermatologist'),
+              style: OutlinedButton.styleFrom(
+                side: BorderSide(color: border),
+                foregroundColor: dark ? Themes.tealLight : Themes.primary,
+              ),
+            ),
+          ]),
         ),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Icon(Icons.info_outline_rounded, color: Themes.warning),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text(
-                'General information, not medical advice. No app — this one included — can '
-                'rule out skin cancer. Anything that worries you deserves an in-person exam.',
-                style: TextStyle(height: 1.4),
-              ),
-              const SizedBox(height: 10),
-              OutlinedButton.icon(
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NearbyDoctorsScreen())),
-                icon: const Icon(Icons.location_on_outlined, size: 18),
-                label: const Text('Find a dermatologist'),
-              ),
-            ]),
-          ),
-        ]),
-      );
+      ]),
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -155,40 +170,57 @@ class _Section extends StatelessWidget {
   final bool initiallyExpanded;
 
   @override
-  Widget build(BuildContext context) => Card(
-        margin: const EdgeInsets.only(bottom: 12),
-        clipBehavior: Clip.antiAlias,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.85), width: 1.2),
-        ),
-        child: Theme(
-          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-          child: ExpansionTile(
-            initiallyExpanded: initiallyExpanded,
-            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            expandedCrossAxisAlignment: CrossAxisAlignment.start,
-            leading: Container(
-              padding: const EdgeInsets.all(9),
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withValues(alpha: 0.85)),
-              ),
-              child: Icon(icon, color: accent),
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = dark ? const Color(0xFF161A22) : Colors.white;
+    final borderColor = dark ? Themes.darkBorder : Themes.border;
+    final iconBorder = dark ? const Color(0xFF262C38) : Themes.borderSubtle;
+    final ink = dark ? Themes.darkInk : Themes.ink;
+    final inkSoft = dark ? Themes.darkInkSoft : Themes.muted;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      clipBehavior: Clip.antiAlias,
+      color: cardColor,
+      elevation: dark ? 0 : 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: borderColor, width: 1.1),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          initiallyExpanded: initiallyExpanded,
+          tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+          childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          expandedCrossAxisAlignment: CrossAxisAlignment.start,
+          iconColor: inkSoft,
+          collapsedIconColor: inkSoft,
+          leading: Container(
+            padding: const EdgeInsets.all(9),
+            decoration: BoxDecoration(
+              color: accent.withValues(alpha: dark ? 0.18 : 0.12),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: iconBorder),
             ),
-            title: Text(title,
-                style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
-            subtitle: Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Text(subtitle,
-                  style: const TextStyle(color: Themes.muted, fontSize: 12.5, height: 1.3)),
-            ),
-            children: [child],
+            child: Icon(icon, color: accent),
           ),
+          title: Text(
+            title,
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5, color: ink),
+          ),
+          subtitle: Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(
+              subtitle,
+              style: TextStyle(color: inkSoft, fontSize: 12.5, height: 1.3),
+            ),
+          ),
+          children: [child],
         ),
-      );
+      ),
+    );
+  }
 }
 
 /// Bulleted list. Explicitly left-aligned — a bare [Column] centres short rows.
@@ -198,26 +230,36 @@ class _Bullets extends StatelessWidget {
   final Color color;
 
   @override
-  Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: items
-            .map((t) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 7),
-                      child: Container(
-                        width: 6,
-                        height: 6,
-                        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-                      ),
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final ink = dark ? Themes.darkInk : Themes.ink;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: items
+          .map((t) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 7),
+                    child: Container(
+                      width: 6,
+                      height: 6,
+                      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(child: Text(t, style: const TextStyle(height: 1.45))),
-                  ]),
-                ))
-            .toList(),
-      );
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      t,
+                      style: TextStyle(height: 1.45, color: ink, fontSize: 13.5),
+                    ),
+                  ),
+                ]),
+              ))
+          .toList(),
+    );
+  }
 }
 
 class _InfoNote extends StatelessWidget {
@@ -227,18 +269,29 @@ class _InfoNote extends StatelessWidget {
   final Color color;
 
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.07),
-          borderRadius: BorderRadius.circular(12),
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final ink = dark ? Themes.darkInk : Themes.ink;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: dark ? 0.16 : 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: dark ? 0.35 : 0.22)),
+      ),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Icon(icon, size: 18, color: color),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: TextStyle(fontSize: 12.5, height: 1.4, color: ink),
+          ),
         ),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Icon(icon, size: 18, color: color),
-          const SizedBox(width: 8),
-          Expanded(child: Text(text, style: const TextStyle(fontSize: 12.5, height: 1.4))),
-        ]),
-      );
+      ]),
+    );
+  }
 }
 
 /// A tappable checklist with a progress bar. State lasts for the session.
@@ -257,6 +310,7 @@ class _ChecklistState extends State<_Checklist> {
 
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
     final total = widget.items.length;
     final complete = _done.length == total && total > 0;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -267,7 +321,7 @@ class _ChecklistState extends State<_Checklist> {
             child: LinearProgressIndicator(
               value: total == 0 ? 0 : _done.length / total,
               minHeight: 7,
-              backgroundColor: Themes.border,
+              backgroundColor: dark ? const Color(0xFF262C38) : Themes.border,
               color: widget.color,
             ),
           ),
@@ -278,7 +332,7 @@ class _ChecklistState extends State<_Checklist> {
                 TextStyle(fontWeight: FontWeight.w800, fontSize: 12.5, color: widget.color)),
       ]),
       const SizedBox(height: 8),
-      for (var i = 0; i < total; i++) _row(i),
+      for (var i = 0; i < total; i++) _row(i, dark),
       if (complete && widget.doneLabel != null) ...[
         const SizedBox(height: 6),
         Row(children: [
@@ -302,8 +356,12 @@ class _ChecklistState extends State<_Checklist> {
     ]);
   }
 
-  Widget _row(int i) {
+  Widget _row(int i, bool dark) {
     final checked = _done.contains(i);
+    final ink = dark ? Themes.darkInk : Themes.ink;
+    final inkSoft = dark ? Themes.darkInkSoft : Themes.muted;
+    final uncheckColor = dark ? Themes.darkInkSoft : Themes.border;
+
     return InkWell(
       borderRadius: BorderRadius.circular(10),
       onTap: () => setState(() => checked ? _done.remove(i) : _done.add(i)),
@@ -313,7 +371,7 @@ class _ChecklistState extends State<_Checklist> {
           Icon(
             checked ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
             size: 20,
-            color: checked ? widget.color : Themes.border,
+            color: checked ? widget.color : uncheckColor,
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -321,9 +379,10 @@ class _ChecklistState extends State<_Checklist> {
               widget.items[i],
               style: TextStyle(
                 height: 1.4,
-                color: checked ? Themes.muted : Themes.ink,
+                fontSize: 13.5,
+                color: checked ? inkSoft.withValues(alpha: dark ? 0.55 : 0.8) : ink,
                 decoration: checked ? TextDecoration.lineThrough : null,
-                decorationColor: Themes.muted,
+                decorationColor: inkSoft,
               ),
             ),
           ),
@@ -341,36 +400,41 @@ class _PhotoChecklist extends StatelessWidget {
   const _PhotoChecklist();
 
   @override
-  Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text(
-            'The model sees only what your camera captured. Work through this before you '
-            'shoot — it takes about thirty seconds.',
-            style: TextStyle(color: Themes.muted, height: 1.4, fontSize: 13),
-          ),
-          SizedBox(height: 12),
-          _Checklist(
-            color: Themes.primary,
-            doneLabel: 'Conditions look good — take the photo now.',
-            items: [
-              'Indirect daylight: face a window, no overhead spotlight, flash off.',
-              'Lesion centred, filling roughly a third of the frame.',
-              'Lens 10–15 cm away and parallel to the skin, not angled.',
-              'Tap the screen on the lesion and wait for focus to lock.',
-              'Place a ruler or coin beside it so size is readable.',
-              'Clean the area — no makeup, cream, ink or overlying hair.',
-              'Plain background; move off patterned bedding or clothing.',
-              'Take two frames: one close-up, one wider showing body location.',
-            ],
-          ),
-          SizedBox(height: 12),
-          _InfoNote(
-            'Retake rather than submit a blurred or shadowed image. A poor photo produces a '
-            'confidently wrong result, which is more dangerous than no result at all.',
-          ),
-        ],
-      );
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final inkSoft = dark ? Themes.darkInkSoft : Themes.muted;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'The model sees only what your camera captured. Work through this before you '
+          'shoot — it takes about thirty seconds.',
+          style: TextStyle(color: inkSoft, height: 1.4, fontSize: 13),
+        ),
+        const SizedBox(height: 12),
+        const _Checklist(
+          color: Themes.primary,
+          doneLabel: 'Conditions look good — take the photo now.',
+          items: [
+            'Indirect daylight: face a window, no overhead spotlight, flash off.',
+            'Lesion centred, filling roughly a third of the frame.',
+            'Lens 10–15 cm away and parallel to the skin, not angled.',
+            'Tap the screen on the lesion and wait for focus to lock.',
+            'Place a ruler or coin beside it so size is readable.',
+            'Clean the area — no makeup, cream, ink or overlying hair.',
+            'Plain background; move off patterned bedding or clothing.',
+            'Take two frames: one close-up, one wider showing body location.',
+          ],
+        ),
+        const SizedBox(height: 12),
+        const _InfoNote(
+          'Retake rather than submit a blurred or shadowed image. A poor photo produces a '
+          'confidently wrong result, which is more dangerous than no result at all.',
+        ),
+      ],
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -389,76 +453,87 @@ class _AbcdeGuide extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Left shows the reassuring pattern, right the concerning one. Evolution (E) is '
-            'the strongest single predictor — change matters more than appearance.',
-            style: TextStyle(color: Themes.muted, height: 1.4, fontSize: 13),
-          ),
-          const SizedBox(height: 14),
-          for (final r in _rows) _row(r.$1, r.$2, r.$3),
-          const _InfoNote(
-            'Ugly duckling sign: a spot that simply looks unlike all your others deserves '
-            'review even when it passes every ABCDE test.',
-            icon: Icons.search_rounded,
-            color: Themes.warning,
-          ),
-        ],
-      );
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final inkSoft = dark ? Themes.darkInkSoft : Themes.muted;
 
-  Widget _row(String letter, String title, String text) => Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: [
-            _LesionMark(letter: letter, concerning: false),
-            const Icon(Icons.arrow_right_alt_rounded, size: 15, color: Themes.muted),
-            _LesionMark(letter: letter, concerning: true),
-          ]),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                Container(
-                  width: 22,
-                  height: 22,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: Themes.primary,
-                    borderRadius: BorderRadius.circular(7),
-                  ),
-                  child: Text(letter,
-                      style: const TextStyle(
-                          color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12)),
-                ),
-                const SizedBox(width: 8),
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
-              ]),
-              const SizedBox(height: 4),
-              Text(text,
-                  style: const TextStyle(color: Themes.muted, height: 1.35, fontSize: 12.8)),
-            ]),
-          ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Left shows the reassuring pattern, right the concerning one. Evolution (E) is '
+          'the strongest single predictor — change matters more than appearance.',
+          style: TextStyle(color: inkSoft, height: 1.4, fontSize: 13),
+        ),
+        const SizedBox(height: 14),
+        for (final r in _rows) _row(r.$1, r.$2, r.$3, dark),
+        const _InfoNote(
+          'Ugly duckling sign: a spot that simply looks unlike all your others deserves '
+          'review even when it passes every ABCDE test.',
+          icon: Icons.search_rounded,
+          color: Themes.warning,
+        ),
+      ],
+    );
+  }
+
+  Widget _row(String letter, String title, String text, bool dark) {
+    final ink = dark ? Themes.darkInk : Themes.ink;
+    final inkSoft = dark ? Themes.darkInkSoft : Themes.muted;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          _LesionMark(letter: letter, concerning: false, dark: dark),
+          Icon(Icons.arrow_right_alt_rounded, size: 15, color: inkSoft),
+          _LesionMark(letter: letter, concerning: true, dark: dark),
         ]),
-      );
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Container(
+                width: 22,
+                height: 22,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Themes.primary,
+                  borderRadius: BorderRadius.circular(7),
+                ),
+                child: Text(letter,
+                    style: const TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.w900, fontSize: 12)),
+              ),
+              const SizedBox(width: 8),
+              Text(title, style: TextStyle(fontWeight: FontWeight.w800, color: ink)),
+            ]),
+            const SizedBox(height: 4),
+            Text(text,
+                style: TextStyle(color: inkSoft, height: 1.35, fontSize: 12.8)),
+          ]),
+        ),
+      ]),
+    );
+  }
 }
 
 /// A small drawn lesion illustrating one ABCDE feature (no image assets needed).
 class _LesionMark extends StatelessWidget {
-  const _LesionMark({required this.letter, required this.concerning});
+  const _LesionMark({required this.letter, required this.concerning, required this.dark});
   final String letter;
   final bool concerning;
+  final bool dark;
 
   @override
   Widget build(BuildContext context) => Container(
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: const Color(0xFFF4E6DC),
+          color: dark ? const Color(0xFF26201B) : const Color(0xFFF4E6DC),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: (concerning ? Themes.danger : Themes.mint).withValues(alpha: 0.45),
+            color: (concerning ? Themes.danger : Themes.mint).withValues(alpha: dark ? 0.60 : 0.45),
           ),
         ),
         child: CustomPaint(painter: _LesionPainter(letter, concerning)),
@@ -590,96 +665,109 @@ class _SunProtection extends StatelessWidget {
   ];
 
   @override
-  Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text('How much protection SPF actually gives',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
-          const SizedBox(height: 8),
-          Row(children: const [
-            Expanded(child: _SpfStat('SPF 15', '≈93%', 'UVB blocked')),
-            SizedBox(width: 8),
-            Expanded(child: _SpfStat('SPF 30', '≈97%', 'UVB blocked')),
-            SizedBox(width: 8),
-            Expanded(child: _SpfStat('SPF 50', '≈98%', 'UVB blocked')),
-          ]),
-          const SizedBox(height: 10),
-          const _InfoNote(
-            'Nothing reaches 100%. Beyond SPF 50 the extra benefit is marginal — how much '
-            'you apply and how often you reapply matters far more than the number.',
-          ),
-          const SizedBox(height: 16),
-          const Text('Apply enough — most people use half of what they should',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
-          const SizedBox(height: 8),
-          const _Bullets(color: Themes.warning, items: [
-            'Face and neck: about half a teaspoon (2–3 ml).',
-            'Whole body: about 30 ml — roughly a shot glass.',
-            'Reapply every two hours, and straight after swimming or towelling.',
-            'Apply 15–20 minutes before going out so it binds to the skin.',
-          ]),
-          const SizedBox(height: 12),
-          const Text('UV index — what the number means',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5)),
-          const SizedBox(height: 8),
-          for (final b in _uvBands) _uvRow(b.$1, b.$2, b.$3),
-          const SizedBox(height: 10),
-          const _Bullets(color: Themes.warning, items: [
-            'Up to 80% of UV passes through light cloud — overcast is not safe.',
-            'Window glass blocks UVB but not UVA, which still ages and damages skin.',
-            'Snow reflects up to 80% of UV, sand about 15%, water about 10%.',
-            'Tightly woven or UPF 50 fabric outperforms any sunscreen.',
-            'Tanning beds emit concentrated UVA and raise melanoma risk — avoid entirely.',
-          ]),
-        ],
-      );
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final ink = dark ? Themes.darkInk : Themes.ink;
 
-  Widget _uvRow(String range, String meaning, Color color) => Padding(
-        padding: const EdgeInsets.only(bottom: 6),
-        child: Row(children: [
-          Container(
-            width: 44,
-            padding: const EdgeInsets.symmetric(vertical: 3),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(7)),
-            child: Text(range,
-                style: const TextStyle(
-                    color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11.5)),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-              child: Text(meaning, style: const TextStyle(fontSize: 12.8, height: 1.3))),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('How much protection SPF actually gives',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: ink)),
+        const SizedBox(height: 8),
+        Row(children: [
+          Expanded(child: _SpfStat('SPF 15', '≈93%', 'UVB blocked', dark)),
+          const SizedBox(width: 8),
+          Expanded(child: _SpfStat('SPF 30', '≈97%', 'UVB blocked', dark)),
+          const SizedBox(width: 8),
+          Expanded(child: _SpfStat('SPF 50', '≈98%', 'UVB blocked', dark)),
         ]),
-      );
+        const SizedBox(height: 10),
+        const _InfoNote(
+          'Nothing reaches 100%. Beyond SPF 50 the extra benefit is marginal — how much '
+          'you apply and how often you reapply matters far more than the number.',
+        ),
+        const SizedBox(height: 16),
+        Text('Apply enough — most people use half of what they should',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: ink)),
+        const SizedBox(height: 8),
+        const _Bullets(color: Themes.warning, items: [
+          'Face and neck: about half a teaspoon (2–3 ml).',
+          'Whole body: about 30 ml — roughly a shot glass.',
+          'Reapply every two hours, and straight after swimming or towelling.',
+          'Apply 15–20 minutes before going out so it binds to the skin.',
+        ]),
+        const SizedBox(height: 12),
+        Text('UV index — what the number means',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5, color: ink)),
+        const SizedBox(height: 8),
+        for (final b in _uvBands) _uvRow(b.$1, b.$2, b.$3, dark),
+        const SizedBox(height: 10),
+        const _Bullets(color: Themes.warning, items: [
+          'Up to 80% of UV passes through light cloud — overcast is not safe.',
+          'Window glass blocks UVB but not UVA, which still ages and damages skin.',
+          'Snow reflects up to 80% of UV, sand about 15%, water about 10%.',
+          'Tightly woven or UPF 50 fabric outperforms any sunscreen.',
+          'Tanning beds emit concentrated UVA and raise melanoma risk — avoid entirely.',
+        ]),
+      ],
+    );
+  }
+
+  Widget _uvRow(String range, String meaning, Color color, bool dark) {
+    final ink = dark ? Themes.darkInk : Themes.ink;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(children: [
+        Container(
+          width: 44,
+          padding: const EdgeInsets.symmetric(vertical: 3),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(7)),
+          child: Text(range,
+              style: const TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11.5)),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+            child: Text(meaning, style: TextStyle(fontSize: 12.8, height: 1.3, color: ink))),
+      ]),
+    );
+  }
 }
 
 class _SpfStat extends StatelessWidget {
-  const _SpfStat(this.label, this.value, this.caption);
+  const _SpfStat(this.label, this.value, this.caption, this.dark);
   final String label;
   final String value;
   final String caption;
+  final bool dark;
 
   @override
-  Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-        decoration: BoxDecoration(
-          color: Themes.warning.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Themes.warning.withValues(alpha: 0.3)),
-        ),
-        child: Column(children: [
-          Text(label,
-              style: const TextStyle(
-                  fontSize: 11.5, fontWeight: FontWeight.w700, color: Themes.muted)),
-          const SizedBox(height: 2),
-          Text(value,
-              style: const TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.w900, color: Themes.warning)),
-          Text(caption,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 10, color: Themes.muted)),
-        ]),
-      );
+  Widget build(BuildContext context) {
+    final inkSoft = dark ? Themes.darkInkSoft : Themes.muted;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Themes.warning.withValues(alpha: dark ? 0.14 : 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Themes.warning.withValues(alpha: dark ? 0.40 : 0.30)),
+      ),
+      child: Column(children: [
+        Text(label,
+            style: TextStyle(
+                fontSize: 11.5, fontWeight: FontWeight.w700, color: inkSoft)),
+        const SizedBox(height: 2),
+        Text(value,
+            style: const TextStyle(
+                fontSize: 16, fontWeight: FontWeight.w900, color: Themes.warning)),
+        Text(caption,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 10, color: inkSoft)),
+      ]),
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -690,36 +778,41 @@ class _SelfExamChecklist extends StatelessWidget {
   const _SelfExamChecklist();
 
   @override
-  Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: const [
-          Text(
-            'Do this in bright light with a full-length and a hand mirror. Work in the same '
-            'order every month so nothing is missed, and photograph anything you are '
-            'watching so next month has something to compare against.',
-            style: TextStyle(color: Themes.muted, height: 1.4, fontSize: 13),
-          ),
-          SizedBox(height: 12),
-          _Checklist(
-            color: Themes.mint,
-            doneLabel: 'Full check complete — note anything new before you finish.',
-            items: [
-              'Face, lips, ears and behind the ears.',
-              'Scalp — part the hair in sections, or ask for help.',
-              'Neck, chest and torso; lift the breasts to see underneath.',
-              'Underarms, both sides of arms, elbows.',
-              'Hands: palms, backs, between fingers, and under the nails.',
-              'Back and shoulders using a mirror, or ask a partner.',
-              'Buttocks and genital area.',
-              'Front and back of thighs and shins.',
-              'Calves and behind the knees.',
-              'Feet: tops, soles, heels, and between the toes.',
-            ],
-          ),
-          SizedBox(height: 12),
-          _SelfExamReminderTile(),
-        ],
-      );
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final inkSoft = dark ? Themes.darkInkSoft : Themes.muted;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Do this in bright light with a full-length and a hand mirror. Work in the same '
+          'order every month so nothing is missed, and photograph anything you are '
+          'watching so next month has something to compare against.',
+          style: TextStyle(color: inkSoft, height: 1.4, fontSize: 13),
+        ),
+        const SizedBox(height: 12),
+        const _Checklist(
+          color: Themes.mint,
+          doneLabel: 'Full check complete — note anything new before you finish.',
+          items: [
+            'Face, lips, ears and behind the ears.',
+            'Scalp — part the hair in sections, or ask for help.',
+            'Neck, chest and torso; lift the breasts to see underneath.',
+            'Underarms, both sides of arms, elbows.',
+            'Hands: palms, backs, between fingers, and under the nails.',
+            'Back and shoulders using a mirror, or ask a partner.',
+            'Buttocks and genital area.',
+            'Front and back of thighs and shins.',
+            'Calves and behind the knees.',
+            'Feet: tops, soles, heels, and between the toes.',
+          ],
+        ),
+        const SizedBox(height: 12),
+        const _SelfExamReminderTile(),
+      ],
+    );
+  }
 }
 
 class _SelfExamReminderTile extends StatelessWidget {
@@ -734,53 +827,59 @@ class _SelfExamReminderTile extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) => ValueListenableBuilder<bool>(
-        valueListenable: SelfExamReminder.enabled,
-        builder: (_, enabled, __) => Container(
-          padding: const EdgeInsets.fromLTRB(12, 4, 6, 4),
-          decoration: BoxDecoration(
-            color: Themes.mint.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Themes.mint.withValues(alpha: 0.35)),
-          ),
-          child: Row(children: [
-            const Icon(Icons.notifications_active_outlined, color: Themes.mint, size: 20),
-            const SizedBox(width: 10),
-            Expanded(
-              child: ValueListenableBuilder<DateTime?>(
-                valueListenable: SelfExamReminder.nextDue,
-                builder: (_, due, __) => Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Monthly reminder',
-                        style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5)),
-                    Text(
-                      enabled && due != null
-                          ? 'Next prompt around ${_fmt(due)}'
-                          : 'Prompts you in-app when the next check is due.',
-                      style: const TextStyle(color: Themes.muted, fontSize: 12),
-                    ),
-                  ],
-                ),
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final ink = dark ? Themes.darkInk : Themes.ink;
+    final inkSoft = dark ? Themes.darkInkSoft : Themes.muted;
+
+    return ValueListenableBuilder<bool>(
+      valueListenable: SelfExamReminder.enabled,
+      builder: (_, enabled, __) => Container(
+        padding: const EdgeInsets.fromLTRB(12, 4, 6, 4),
+        decoration: BoxDecoration(
+          color: Themes.mint.withValues(alpha: dark ? 0.14 : 0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Themes.mint.withValues(alpha: dark ? 0.40 : 0.35)),
+        ),
+        child: Row(children: [
+          const Icon(Icons.notifications_active_outlined, color: Themes.mint, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: ValueListenableBuilder<DateTime?>(
+              valueListenable: SelfExamReminder.nextDue,
+              builder: (_, due, __) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Monthly reminder',
+                      style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5, color: ink)),
+                  Text(
+                    enabled && due != null
+                        ? 'Next prompt around ${_fmt(due)}'
+                        : 'Prompts you in-app when the next check is due.',
+                    style: TextStyle(color: inkSoft, fontSize: 12),
+                  ),
+                ],
               ),
             ),
-            Switch(
-              value: enabled,
-              onChanged: (on) async {
-                on ? await SelfExamReminder.enable() : await SelfExamReminder.disable();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    behavior: SnackBarBehavior.floating,
-                    content: Text(on
-                        ? 'Monthly self-exam reminder on.'
-                        : 'Reminder turned off.'),
-                  ));
-                }
-              },
-            ),
-          ]),
-        ),
-      );
+          ),
+          Switch(
+            value: enabled,
+            onChanged: (on) async {
+              on ? await SelfExamReminder.enable() : await SelfExamReminder.disable();
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                  behavior: SnackBarBehavior.floating,
+                  content: Text(on
+                      ? 'Monthly self-exam reminder on.'
+                      : 'Reminder turned off.'),
+                ));
+              }
+            },
+          ),
+        ]),
+      ),
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -825,28 +924,34 @@ class _Labelled extends StatelessWidget {
   final String body;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(bottom: 14),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Padding(
-              padding: EdgeInsets.only(top: 3),
-              child: Icon(Icons.check_circle_outline_rounded, size: 16, color: Themes.primary),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(title,
-                  style: const TextStyle(fontWeight: FontWeight.w800, height: 1.3)),
-            ),
-          ]),
-          const SizedBox(height: 4),
-          Padding(
-            padding: const EdgeInsets.only(left: 24),
-            child: Text(body,
-                style: const TextStyle(color: Themes.muted, height: 1.45, fontSize: 12.8)),
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final ink = dark ? Themes.darkInk : Themes.ink;
+    final inkSoft = dark ? Themes.darkInkSoft : Themes.muted;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 3),
+            child: Icon(Icons.check_circle_outline_rounded, size: 16, color: Themes.primary),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(title,
+                style: TextStyle(fontWeight: FontWeight.w800, height: 1.3, color: ink)),
           ),
         ]),
-      );
+        const SizedBox(height: 4),
+        Padding(
+          padding: const EdgeInsets.only(left: 24),
+          child: Text(body,
+              style: TextStyle(color: inkSoft, height: 1.45, fontSize: 12.8)),
+        ),
+      ]),
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -949,6 +1054,9 @@ class _ConditionExplorerState extends State<_ConditionExplorer> {
 
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final ink = dark ? Themes.darkInk : Themes.ink;
+    final inkSoft = dark ? Themes.darkInkSoft : Themes.muted;
     final c = _conditions[_selected];
     final (color, label) = switch (c.urgency) {
       'urgent' => (Themes.danger, 'See a doctor promptly'),
@@ -969,11 +1077,12 @@ class _ConditionExplorerState extends State<_ConditionExplorer> {
               labelStyle: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: _selected == i ? Colors.white : Themes.ink,
+                color: _selected == i ? Colors.white : ink,
               ),
               selectedColor: Themes.primary,
-              backgroundColor: Themes.surface,
-              side: BorderSide(color: _selected == i ? Themes.primary : Themes.border),
+              backgroundColor: dark ? const Color(0xFF1B202A) : Themes.surface,
+              side: BorderSide(
+                  color: _selected == i ? Themes.primary : (dark ? Themes.darkBorder : Themes.border)),
               onSelected: (_) => setState(() => _selected = i),
             ),
         ],
@@ -983,15 +1092,15 @@ class _ConditionExplorerState extends State<_ConditionExplorer> {
         width: double.infinity,
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.06),
+          color: color.withValues(alpha: dark ? 0.12 : 0.06),
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withValues(alpha: 0.32)),
+          border: Border.all(color: color.withValues(alpha: dark ? 0.45 : 0.32)),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Expanded(
               child: Text(c.name,
-                  style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15)),
+                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15, color: ink)),
             ),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
@@ -1004,17 +1113,17 @@ class _ConditionExplorerState extends State<_ConditionExplorer> {
           ]),
           const SizedBox(height: 8),
           Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Icon(Icons.visibility_outlined, size: 15, color: Themes.muted),
+            Icon(Icons.visibility_outlined, size: 15, color: inkSoft),
             const SizedBox(width: 6),
             Expanded(
               child: Text(c.looks,
-                  style: const TextStyle(
-                      fontSize: 12.5, height: 1.35, fontWeight: FontWeight.w600)),
+                  style: TextStyle(
+                      fontSize: 12.5, height: 1.35, fontWeight: FontWeight.w600, color: ink)),
             ),
           ]),
           const SizedBox(height: 8),
           Text(c.detail,
-              style: const TextStyle(color: Themes.muted, height: 1.45, fontSize: 12.6)),
+              style: TextStyle(color: inkSoft, height: 1.45, fontSize: 12.6)),
         ]),
       ),
     ]);
@@ -1074,31 +1183,43 @@ class _MythBusterState extends State<_MythBuster> {
   ];
 
   @override
-  Widget build(BuildContext context) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (var i = 0; i < _myths.length; i++) _tile(i),
-        ],
-      );
+  Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var i = 0; i < _myths.length; i++) _tile(i, dark),
+      ],
+    );
+  }
 
-  Widget _tile(int i) {
+  Widget _tile(int i, bool dark) {
     final open = _revealed.contains(i);
+    final ink = dark ? Themes.darkInk : Themes.ink;
+    final inkSoft = dark ? Themes.darkInkSoft : Themes.muted;
+    final cardBg = dark ? const Color(0xFF1B202A) : Colors.white;
+    final borderColor = dark ? Themes.darkBorder : Themes.border;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Material(
-        color: Themes.surface,
+        color: cardBg,
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
           onTap: () => setState(() => open ? _revealed.remove(i) : _revealed.add(i)),
-          child: Padding(
+          child: Container(
             padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: borderColor, width: 1.0),
+            ),
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Themes.danger.withValues(alpha: 0.12),
+                    color: Themes.danger.withValues(alpha: dark ? 0.20 : 0.12),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: const Text('MYTH',
@@ -1108,10 +1229,10 @@ class _MythBusterState extends State<_MythBuster> {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(_myths[i].$1,
-                      style: const TextStyle(fontWeight: FontWeight.w700, height: 1.35)),
+                      style: TextStyle(fontWeight: FontWeight.w700, height: 1.35, color: ink)),
                 ),
                 Icon(open ? Icons.expand_less_rounded : Icons.expand_more_rounded,
-                    size: 20, color: Themes.muted),
+                    size: 20, color: inkSoft),
               ]),
               AnimatedCrossFade(
                 duration: const Duration(milliseconds: 180),
@@ -1124,7 +1245,7 @@ class _MythBusterState extends State<_MythBuster> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Themes.mint.withValues(alpha: 0.14),
+                        color: Themes.mint.withValues(alpha: dark ? 0.22 : 0.14),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: const Text('FACT',
@@ -1136,8 +1257,8 @@ class _MythBusterState extends State<_MythBuster> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(_myths[i].$2,
-                          style: const TextStyle(
-                              color: Themes.muted, height: 1.45, fontSize: 12.8)),
+                          style: TextStyle(
+                              color: inkSoft, height: 1.45, fontSize: 12.8)),
                     ),
                   ]),
                 ),
@@ -1210,6 +1331,8 @@ class _GlossaryState extends State<_Glossary> {
 
   @override
   Widget build(BuildContext context) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final inkSoft = dark ? Themes.darkInkSoft : Themes.muted;
     final q = _query.trim().toLowerCase();
     final matches = q.isEmpty
         ? _terms
@@ -1234,26 +1357,30 @@ class _GlossaryState extends State<_Glossary> {
       ),
       const SizedBox(height: 12),
       if (matches.isEmpty)
-        const Padding(
-          padding: EdgeInsets.symmetric(vertical: 14),
-          child: Text('No matching term.', style: TextStyle(color: Themes.muted)),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          child: Text('No matching term.', style: TextStyle(color: inkSoft)),
         )
       else
-        for (final t in matches) _row(t.$1, t.$2),
+        for (final t in matches) _row(t.$1, t.$2, dark),
     ]);
   }
 
-  Widget _row(String term, String meaning) => Padding(
-        padding: const EdgeInsets.only(bottom: 11),
-        // Left-aligned explicitly: short entries would otherwise centre themselves.
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(term,
-              style: const TextStyle(fontWeight: FontWeight.w800, color: Themes.ink)),
-          const SizedBox(height: 2),
-          Text(meaning,
-              style: const TextStyle(color: Themes.muted, height: 1.42, fontSize: 12.8)),
-        ]),
-      );
+  Widget _row(String term, String meaning, bool dark) {
+    final ink = dark ? Themes.darkInk : Themes.ink;
+    final inkSoft = dark ? Themes.darkInkSoft : Themes.muted;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 11),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text(term,
+            style: TextStyle(fontWeight: FontWeight.w800, color: ink)),
+        const SizedBox(height: 2),
+        Text(meaning,
+            style: TextStyle(color: inkSoft, height: 1.42, fontSize: 12.8)),
+      ]),
+    );
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1284,8 +1411,6 @@ class _FitzpatrickQuiz extends StatefulWidget {
 }
 
 class _FitzpatrickQuizState extends State<_FitzpatrickQuiz> {
-  /// Standard Fitzpatrick self-assessment: genetic disposition, then UV reaction, then
-  /// habits. Each answer scores 0–4; 12 questions give a maximum of 48.
   static const _questions = <_FitzQuestion>[
     _FitzQuestion('Genetic disposition', 'Your eye colour:', [
       ('Light blue, grey or green', 0),
@@ -1416,8 +1541,6 @@ class _FitzpatrickQuizState extends State<_FitzpatrickQuiz> {
         _index = 0;
       });
 
-  /// Standard bands (0–7 / 8–16 / 17–25 / 26–30 / >30 over a 40-point test), rescaled
-  /// to this 48-point questionnaire.
   _FitzType get _result {
     final t = _total;
     if (t <= 9) return _types[0];
@@ -1430,15 +1553,19 @@ class _FitzpatrickQuizState extends State<_FitzpatrickQuiz> {
 
   @override
   Widget build(BuildContext context) {
-    if (_complete) return _resultView();
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    if (_complete) return _resultView(dark);
 
+    final ink = dark ? Themes.darkInk : Themes.ink;
+    final inkSoft = dark ? Themes.darkInkSoft : Themes.muted;
     final q = _questions[_index];
+
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
           decoration: BoxDecoration(
-            color: Themes.primary.withValues(alpha: 0.10),
+            color: Themes.primary.withValues(alpha: dark ? 0.20 : 0.10),
             borderRadius: BorderRadius.circular(20),
           ),
           child: Text(q.group,
@@ -1447,8 +1574,8 @@ class _FitzpatrickQuizState extends State<_FitzpatrickQuiz> {
         ),
         const Spacer(),
         Text('${_index + 1} of ${_questions.length}',
-            style: const TextStyle(
-                color: Themes.muted, fontSize: 12, fontWeight: FontWeight.w700)),
+            style: TextStyle(
+                color: inkSoft, fontSize: 12, fontWeight: FontWeight.w700)),
       ]),
       const SizedBox(height: 8),
       ClipRRect(
@@ -1456,15 +1583,15 @@ class _FitzpatrickQuizState extends State<_FitzpatrickQuiz> {
         child: LinearProgressIndicator(
           value: _answers.length / _questions.length,
           minHeight: 6,
-          backgroundColor: Themes.border,
+          backgroundColor: dark ? const Color(0xFF262C38) : Themes.border,
           color: Themes.primary,
         ),
       ),
       const SizedBox(height: 14),
       Text(q.prompt,
-          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5, height: 1.35)),
+          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5, height: 1.35, color: ink)),
       const SizedBox(height: 10),
-      for (final c in q.choices) _choice(c.$1, c.$2),
+      for (final c in q.choices) _choice(c.$1, c.$2, dark),
       const SizedBox(height: 6),
       Row(children: [
         if (_index > 0)
@@ -1484,12 +1611,17 @@ class _FitzpatrickQuizState extends State<_FitzpatrickQuiz> {
     ]);
   }
 
-  Widget _choice(String label, int score) {
+  Widget _choice(String label, int score, bool dark) {
     final selected = _answers[_index] == score;
+    final ink = dark ? Themes.darkInk : Themes.ink;
+    final unselectedBg = dark ? const Color(0xFF1B202A) : Colors.white;
+    final unselectedBorder = dark ? Themes.darkBorder : Themes.border;
+    final unselectedIcon = dark ? Themes.darkInkSoft : Themes.border;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 7),
       child: Material(
-        color: selected ? Themes.primary : Themes.surface,
+        color: selected ? Themes.primary : unselectedBg,
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
@@ -1499,7 +1631,7 @@ class _FitzpatrickQuizState extends State<_FitzpatrickQuiz> {
             padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: selected ? Themes.primary : Themes.border),
+              border: Border.all(color: selected ? Themes.primary : unselectedBorder),
             ),
             child: Row(children: [
               Icon(
@@ -1507,7 +1639,7 @@ class _FitzpatrickQuizState extends State<_FitzpatrickQuiz> {
                     ? Icons.radio_button_checked_rounded
                     : Icons.radio_button_unchecked_rounded,
                 size: 18,
-                color: selected ? Colors.white : Themes.border,
+                color: selected ? Colors.white : unselectedIcon,
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -1515,7 +1647,7 @@ class _FitzpatrickQuizState extends State<_FitzpatrickQuiz> {
                     style: TextStyle(
                       fontSize: 13.5,
                       height: 1.3,
-                      color: selected ? Colors.white : Themes.ink,
+                      color: selected ? Colors.white : ink,
                       fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                     )),
               ),
@@ -1526,8 +1658,10 @@ class _FitzpatrickQuizState extends State<_FitzpatrickQuiz> {
     );
   }
 
-  Widget _resultView() {
+  Widget _resultView(bool dark) {
     final t = _result;
+    final inkSoft = dark ? Themes.darkInkSoft : Themes.muted;
+
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Container(
         width: double.infinity,
@@ -1562,9 +1696,9 @@ class _FitzpatrickQuizState extends State<_FitzpatrickQuiz> {
         ]),
       ),
       const SizedBox(height: 12),
-      _resultRow(Icons.wb_sunny_outlined, 'Burn risk', t.burnTime, Themes.warning),
+      _resultRow(Icons.wb_sunny_outlined, 'Burn risk', t.burnTime, Themes.warning, dark),
       const SizedBox(height: 8),
-      _resultRow(Icons.shield_outlined, 'Your sun routine', t.advice, Themes.mint),
+      _resultRow(Icons.shield_outlined, 'Your sun routine', t.advice, Themes.mint, dark),
       const SizedBox(height: 12),
       const _InfoNote(
         'Skin type describes UV sensitivity, not risk on its own. Family history, mole '
@@ -1579,31 +1713,35 @@ class _FitzpatrickQuizState extends State<_FitzpatrickQuiz> {
         ),
       ]),
       const SizedBox(height: 6),
-      const Text('A self-assessment aid, not a medical test.',
+      Text('A self-assessment aid, not a medical test.',
           style: TextStyle(
-              color: Themes.muted, fontSize: 11.5, fontStyle: FontStyle.italic)),
+              color: inkSoft, fontSize: 11.5, fontStyle: FontStyle.italic)),
     ]);
   }
 
-  Widget _resultRow(IconData icon, String label, String text, Color color) => Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.07),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.28)),
+  Widget _resultRow(IconData icon, String label, String text, Color color, bool dark) {
+    final ink = dark ? Themes.darkInk : Themes.ink;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: dark ? 0.12 : 0.07),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: dark ? 0.38 : 0.28)),
+      ),
+      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Icon(icon, size: 18, color: color),
+        const SizedBox(width: 9),
+        Expanded(
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(label,
+                style: TextStyle(
+                    fontWeight: FontWeight.w800, fontSize: 12.5, color: color)),
+            const SizedBox(height: 2),
+            Text(text, style: TextStyle(height: 1.4, fontSize: 12.8, color: ink)),
+          ]),
         ),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Icon(icon, size: 18, color: color),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(label,
-                  style: TextStyle(
-                      fontWeight: FontWeight.w800, fontSize: 12.5, color: color)),
-              const SizedBox(height: 2),
-              Text(text, style: const TextStyle(height: 1.4, fontSize: 12.8)),
-            ]),
-          ),
-        ]),
-      );
+      ]),
+    );
+  }
 }

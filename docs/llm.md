@@ -13,51 +13,22 @@ prediction + questionnaire + triage category  (all already decided)
                     ↓
             controlled system prompt
                     ↓
-                  Qwen3
+        Groq API (openai/gpt-oss-120b)
                     ↓
               safety filter
                     ↓
        explanation + fixed disclaimer
 ```
 
-## Why an 8B model, not a 70B
+## Cloud Provider: Groq API (`openai/gpt-oss-120b`)
 
-Expect this question in a review. The answer: **this task is writing, not medical
-reasoning.** The reasoning lives in the CNN and in the rule layer. An 8B model is entirely
-capable of rephrasing a structured JSON object into four short paragraphs, and it fits in
-8 GB of VRAM alongside development work. A larger model would produce marginally better
-prose and no better medicine.
+The backend connects to **Groq Cloud API** via its OpenAI-compatible endpoint. Groq's LPU hardware delivers ultra-low latency (<500ms) for real-time patient explanation generation and bilingual English/Hindi support.
 
-## Why local, not a hosted API
-
-Three arguments, in order of strength:
-
-1. **Privacy.** Skin photographs and symptom answers never leave the machine. For medical
-   data that is an ethical argument, not a nice-to-have.
-2. **No recurring cost.** A free app for rural users cannot carry a per-scan bill.
-3. **Works without reliable internet** — which is the exact population the project claims
-   to serve.
-
-A budget constraint became a design justification. Say it that way in the report.
-
-## Setup
-
-```bash
-winget install --id Ollama.Ollama --source winget
-```
-
-```bash
-ollama pull qwen3:8b
-```
-
-Ollama exposes an OpenAI-compatible endpoint at `http://localhost:11434/v1`, so the backend
-talks to it with plain HTTP and no vendor SDK. Swapping to a hosted provider is a URL change.
-
-Test Hindi **before** promising bilingual support in the report:
-
-```bash
-ollama run qwen3:8b "एक तिल और मेलेनोमा में क्या अंतर है? दो वाक्यों में बताइए।"
-```
+Key configurations:
+- **Model**: `openai/gpt-oss-120b` (specified via `LLM_MODEL`)
+- **Endpoint**: `https://api.groq.com/openai/v1` (via `LLM_BASE_URL`)
+- **Authentication**: API key passed via standard Bearer token (`LLM_API_KEY`)
+- **Rate Limiting**: Built-in sliding-window limiter (`LLM_RATE_LIMIT_RPM=10`, `LLM_RATE_LIMIT_MAX_CONCURRENT=2`) to manage API quotas smoothly without thrashing.
 
 On an 8 GB card, do not train and run the LLM simultaneously. If VRAM is tight during
 development, use `qwen3:4b` and switch to 8B for the demo.
@@ -121,7 +92,7 @@ client. The system prompt is a request; the filter is the check. See
 
 ## Failure behaviour
 
-The LLM is **optional infrastructure**. If Ollama is not running:
+The LLM is **optional infrastructure**. If the cloud API is unreachable or rate-limited:
 
 - `/predict` returns 200 with the classification, heatmap, triage category, triage advice
   and disclaimer, plus `explanation_available: false`.
@@ -133,14 +104,16 @@ that the safety-relevant output does not depend on the language model.
 
 ## Configuration
 
-| Variable | Default |
-|---|---|
-| `LLM_ENABLED` | `true` |
-| `LLM_BASE_URL` | `http://localhost:11434/v1` |
-| `LLM_MODEL` | `qwen3:8b` |
-| `LLM_TEMPERATURE` | `0.3` — low, because this is explanation, not creative writing |
-| `LLM_MAX_TOKENS` | `700` |
-| `LLM_TIMEOUT_SECONDS` | `60` |
+| Variable | Production Value | Description |
+|---|---|---|
+| `LLM_ENABLED` | `true` | Enables/disables LLM service |
+| `LLM_BASE_URL` | `https://api.groq.com/openai/v1` | Groq Cloud OpenAI-compatible endpoint |
+| `LLM_MODEL` | `openai/gpt-oss-120b` | High-parameter instruction-tuned model |
+| `LLM_API_KEY` | *(Set via secret)* | Groq API Bearer token |
+| `LLM_TEMPERATURE` | `0.3` | Factual, clinical explanation without creative drift |
+| `LLM_MAX_TOKENS` | `700` | Max tokens per completion |
+| `LLM_TIMEOUT_SECONDS` | `30.0` | API request timeout |
+| `LLM_RATE_LIMIT_RPM` | `10` | Requests/minute quota rate limiter |
 
 ## Evaluating the explanations
 

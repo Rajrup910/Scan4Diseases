@@ -2103,8 +2103,8 @@
       var patient = cellText(tr, ".patient-link");
       var date = cellText(tr, ".date-cell");
       var conf = cellText(tr, ".conf-pct");
-      var triageEl = tr.querySelector("td:nth-child(6) .badge");
-      var statusEl = tr.querySelector("td:nth-child(7) .badge");
+      var triageEl = tr.querySelector("td.triage-cell .badge, .badge[class*='triage-'], td:nth-child(6) .badge");
+      var statusEl = tr.querySelector("td.status-cell .badge, .badge[class*='status-'], td:nth-child(7) .badge");
       var openLink = tr.querySelector(".btn-open, a.btn");
       var href = openLink ? openLink.getAttribute("href") : "#";
       var confNum = parseInt((conf || "").replace(/[^0-9]/g, ""), 10);

@@ -68,70 +68,81 @@ class _NearbyDoctorsScreenState extends State<NearbyDoctorsScreen> {
         itemBuilder: (_, i) => _card(clinics[i]),
       );
 
-  Widget _card(Clinic c) => Card(
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.85), width: 1.2),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(18),
-          onTap: () => NearbyDoctors.directionsTo(c),
-          child: Padding(
-            padding: const EdgeInsets.all(15),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: (c.isDermatology ? Themes.primary : Themes.mint).withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white.withValues(alpha: 0.85)),
-                ),
-                child: Icon(c.isDermatology ? Icons.medical_services_outlined : Icons.local_hospital_outlined,
-                    color: c.isDermatology ? Themes.primary : Themes.mint),
-              ),
-              const SizedBox(width: 13),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(c.name,
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5)),
-                  const SizedBox(height: 3),
-                  Row(children: [
-                    _chip(c.kind, c.isDermatology),
-                    const SizedBox(width: 8),
-                    const Icon(Icons.place_outlined, size: 14, color: Themes.muted),
-                    const SizedBox(width: 2),
-                    Text(c.distanceLabel,
-                        style: const TextStyle(color: Themes.muted, fontWeight: FontWeight.w700, fontSize: 12.5)),
-                  ]),
-                  if (c.address != null) ...[
-                    const SizedBox(height: 4),
-                    Text(c.address!, style: const TextStyle(color: Themes.muted, fontSize: 12.5)),
-                  ],
-                ]),
-              ),
-              const SizedBox(width: 6),
-              Column(children: const [
-                Icon(Icons.directions_rounded, color: Themes.primary),
-                SizedBox(height: 2),
-                Text('Directions', style: TextStyle(color: Themes.primary, fontSize: 11, fontWeight: FontWeight.w700)),
-              ]),
-            ]),
-          ),
-        ),
-      );
+  Widget _card(Clinic c) {
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = dark ? const Color(0xFF161A22) : Colors.white;
+    final borderColor = dark ? Themes.darkBorder : Themes.border;
+    final iconBorder = dark ? const Color(0xFF262C38) : Themes.borderSubtle;
+    final ink = dark ? Themes.darkInk : Themes.ink;
+    final inkSoft = dark ? Themes.darkInkSoft : Themes.muted;
 
-  Widget _chip(String label, bool derma) => Container(
+    return Card(
+      margin: EdgeInsets.zero,
+      color: cardColor,
+      elevation: dark ? 0 : 1,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(color: borderColor, width: 1.1),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => NearbyDoctors.directionsTo(c),
+        child: Padding(
+          padding: const EdgeInsets.all(15),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: (c.isDermatology ? Themes.primary : Themes.mint).withValues(alpha: dark ? 0.18 : 0.12),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: iconBorder),
+              ),
+              child: Icon(c.isDermatology ? Icons.medical_services_outlined : Icons.local_hospital_outlined,
+                  color: c.isDermatology ? Themes.primary : Themes.mint),
+            ),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(c.name,
+                    style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15.5, color: ink)),
+                const SizedBox(height: 3),
+                Row(children: [
+                  _chip(c.kind, c.isDermatology, dark),
+                  const SizedBox(width: 8),
+                  Icon(Icons.place_outlined, size: 14, color: inkSoft),
+                  const SizedBox(width: 2),
+                  Text(c.distanceLabel,
+                      style: TextStyle(color: inkSoft, fontWeight: FontWeight.w700, fontSize: 12.5)),
+                ]),
+                if (c.address != null) ...[
+                  const SizedBox(height: 4),
+                  Text(c.address!, style: TextStyle(color: inkSoft, fontSize: 12.5)),
+                ],
+              ]),
+            ),
+            const SizedBox(width: 6),
+            Column(children: const [
+              Icon(Icons.directions_rounded, color: Themes.primary),
+              SizedBox(height: 2),
+              Text('Directions', style: TextStyle(color: Themes.primary, fontSize: 11, fontWeight: FontWeight.w700)),
+            ]),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  Widget _chip(String label, bool derma, bool dark) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         decoration: BoxDecoration(
-          color: (derma ? Themes.primary : Themes.muted).withValues(alpha: 0.10),
+          color: (derma ? Themes.primary : Themes.muted).withValues(alpha: dark ? 0.18 : 0.10),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(label,
             style: TextStyle(
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-                color: derma ? Themes.primary : Themes.muted)),
+                color: derma ? (dark ? Themes.tealLight : Themes.primary) : (dark ? Themes.darkInkSoft : Themes.muted))),
       );
 
   Widget _error(Object? error) {

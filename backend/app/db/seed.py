@@ -181,6 +181,8 @@ DEMO_PATIENTS = [
         ],
     ),
     ("Neha Deshmukh", "neha@example.com", []),
+    ("Sachin Kumar", "sachin@example.com", []),
+    ("Jatin Verma", "jatin@example.com", []),
 ]
 
 
@@ -203,9 +205,12 @@ def _get_vault_sample_tokens(vault: ImageVault) -> dict[str, tuple[str, str | No
 
     tokens: dict[str, tuple[str, str | None]] = {}
     from backend.app.config import REPO_ROOT
+    from backend.app.services.gradcam import overlay_heatmap
     sample_dir = REPO_ROOT / "demo_test_samples"
 
     import io
+    import cv2
+    import numpy as np
     from PIL import Image
 
     for cls_name, filename in mapping.items():
@@ -214,11 +219,24 @@ def _get_vault_sample_tokens(vault: ImageVault) -> dict[str, tuple[str, str | No
             continue
         try:
             pil_img = Image.open(img_path).convert("RGB")
-            buf = io.BytesIO()
-            pil_img.save(buf, format="JPEG", quality=90)
-            img_token = vault.store(buf.getvalue(), "image/jpeg")
+            
+            # 1. Store original photograph
+            buf_img = io.BytesIO()
+            pil_img.save(buf_img, format="JPEG", quality=90)
+            img_token = vault.store(buf_img.getvalue(), "image/jpeg")
 
-            tokens[cls_name] = (img_token, None)
+            # 2. Generate and store realistic Grad-CAM focal heatmap
+            cam = np.zeros((14, 14), dtype=np.float32)
+            cv2.circle(cam, (7, 7), 4, 1.0, -1)
+            cam = cv2.GaussianBlur(cam, (5, 5), 0)
+            cam = (cam - cam.min()) / (cam.max() - cam.min() + 1e-6)
+            overlay = overlay_heatmap(pil_img, cam)
+            
+            buf_cam = io.BytesIO()
+            overlay.save(buf_cam, format="PNG", optimize=True)
+            cam_token = vault.store(buf_cam.getvalue(), "image/png")
+
+            tokens[cls_name] = (img_token, cam_token)
         except Exception as err:
             logger.warning("Could not seed sample %s to vault: %s", filename, err)
 
@@ -393,40 +411,93 @@ def seed_default_data(db: Session) -> None:
         patient_raj.password_hash = hash_password(PATIENT_PASSWORD)
         db.flush()
 
-    # Seed demo reports for raj@gmail.com if none exist
-    has_raj_reports = db.scalar(select(Report).where(Report.user_id == patient_raj.id))
-    if has_raj_reports is None:
-        r1_date = now - timedelta(days=3)
-        db.add(
-            Report(
+    # Seed 5 curated benchmark demo reports for raj@gmail.com if missing
+    raj_reports = db.scalars(select(Report).where(Report.user_id == patient_raj.id)).all()
+    existing_classes = {r.predicted_class for r in raj_reports if r.predicted_class}
+
+    curated_cases = [
+        dict(
+            condition="Melanoma",
+            predicted_class="mel",
+            confidence=0.91,
+            triage="Urgent medical evaluation",
+            status=REPORT_ESCALATED,
+            explanation="Asymmetrical lesion with irregular borders, variegated pigment network, and high malignant probability mass.",
+            symptoms={"bleeding": True, "itching": True, "duration_weeks": 8, "rapid_evolution": True},
+            days=1,
+            note="Urgent full-thickness excision biopsy recommended. Fast-tracked priority triage.",
+        ),
+        dict(
+            condition="Basal cell carcinoma",
+            predicted_class="bcc",
+            confidence=0.79,
+            triage="Urgent medical evaluation",
+            status=REPORT_UNDER_REVIEW,
+            explanation="Pearly nodule with fine arborizing telangiectasia and rolled borders.",
+            symptoms={"duration_weeks": 16, "itching": False, "bleeding": True},
+            days=5,
+            note="Scheduled for dermatoscopic evaluation and Mohs micrographic consultation.",
+        ),
+        dict(
+            condition="Actinic keratosis",
+            predicted_class="akiec",
+            confidence=0.86,
+            triage="Prompt dermatologist consultation",
+            status=REPORT_NEW,
+            explanation="Erythematous scaly plaque with sandpaper-like texture on sun-exposed cutaneous area.",
+            symptoms={"sun_exposure": "high", "duration_weeks": 12, "scaly_texture": True},
+            days=8,
+        ),
+        dict(
+            condition="Melanocytic nevus",
+            predicted_class="nv",
+            confidence=0.92,
+            triage="Routine dermatologist consultation",
+            status=REPORT_REVIEWED,
+            explanation="Well-defined, symmetric pigmented lesion with uniform color network and stable clinical history.",
+            symptoms={"duration_weeks": 52, "stable": True, "itching": False},
+            days=14,
+            note="Confirmed benign melanocytic nevus. Advised routine ABCDE self-monitoring.",
+        ),
+        dict(
+            condition="Skin abrasion / Wound",
+            predicted_class="other_damage",
+            confidence=0.95,
+            triage="Routine wound care & cleanliness",
+            status=REPORT_NEW,
+            explanation="Front-stage router identified superficial skin trauma/scratch rather than a pigmented dermatological lesion.",
+            symptoms={"duration_weeks": 1, "recent_trauma": True, "pain": True},
+            days=0,
+        ),
+    ]
+
+    for case in curated_cases:
+        if case["predicted_class"] not in existing_classes:
+            r_date = now - timedelta(days=case["days"]) if case["days"] > 0 else now
+            r = Report(
                 user_id=patient_raj.id,
-                condition="Melanocytic nevus",
-                predicted_class="nv",
-                confidence=0.92,
-                triage="Routine dermatologist consultation",
-                status=REPORT_NEW,
-                explanation="Well-defined, symmetric pigmented lesion with uniform color network.",
-                symptoms={"duration_weeks": 52, "stable": True, "itching": False},
-                created_at=r1_date,
-                shared_at=r1_date,
+                condition=case["condition"],
+                predicted_class=case["predicted_class"],
+                confidence=case["confidence"],
+                triage=case["triage"],
+                status=case["status"],
+                explanation=case["explanation"],
+                symptoms=case.get("symptoms", {}),
+                created_at=r_date,
+                shared_at=r_date,
             )
-        )
-        r2_date = now - timedelta(days=14)
-        db.add(
-            Report(
-                user_id=patient_raj.id,
-                condition="Basal cell carcinoma",
-                predicted_class="bcc",
-                confidence=0.79,
-                triage="Prompt dermatologist consultation",
-                status=REPORT_NEW,
-                explanation="Pearly nodule with fine telangiectasia observed.",
-                symptoms={"duration_weeks": 16, "itching": False, "bleeding": True},
-                created_at=r2_date,
-                shared_at=r2_date,
-            )
-        )
-        db.flush()
+            db.add(r)
+            db.flush()
+            if "note" in case:
+                db.add(
+                    DoctorNote(
+                        report_id=r.id,
+                        doctor_id=primary_doctor.id,
+                        note=case["note"],
+                        created_at=r_date,
+                    )
+                )
+    db.flush()
 
     # Link Patient 1 (raj@gmail.com) with all doctors
     for doc in doctors:
