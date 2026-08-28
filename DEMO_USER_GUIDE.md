@@ -540,7 +540,7 @@ demo_test_samples/
 
 ---
 
-## 6. Interactive Demonstration & 25-Image Flow
+## 7. Interactive Demonstration & 25-Image Flow
 
 ### Demonstration Sequence: Mobile App to Web Portal
 1. **Initialize Backend**:
@@ -563,20 +563,9 @@ demo_test_samples/
 
 ---
 
-## 7. Technical Reference & Troubleshooting
-
-| Diagnostic Scenario | Verified Resolution |
-|---|---|
-| **Mobile App: "Network error / Connection refused"** | Run `powershell -ExecutionPolicy Bypass -File scripts\connect_phone.ps1` to re-forward port 8000 via ADB reverse. |
-| **Mobile App: Direct Wi-Fi Testing** | On the app login screen, tap the **Server Config** gear icon and enter your machine's LAN IP: `http://192.168.x.x:8000`. |
-| **SSL / HTTPS Certificates on Cloud** | Render Cloud provides automatic TLS 1.3 certificates. No custom root certificate installation required on Android / iOS. |
-| **PyTorch Inference Device** | Default auto-detects CUDA/MPS; falls back safely to multi-threaded CPU inference. |
-
----
-
 ## 8. Clinician Web Portal - Visual Showcase (Light & Dark Mode)
 
-### 7.1 Doctor Authentication & Secure Workstation Login
+### 8.1 Doctor Authentication & Secure Workstation Login
 The gateway to the Clinician Decision-Support Portal. Features biometric/credential inputs, server health indicators, and security notices.
 
 <table>
@@ -590,11 +579,11 @@ The gateway to the Clinician Decision-Support Portal. Features biometric/credent
   </tr>
 </table>
 
-*Figure 7.1: Clinician workstation login screen (`Website demo images/01_portal_login_light.png` & `_dark.png`).*
+*Figure 8.1: Clinician workstation login screen.*
 
 ---
 
-### 7.2 Security Rate Limiting & Auth Error Notification Toast Pop
+### 8.2 Security Rate Limiting & Auth Error Notification Toast Pop
 Displays interactive security defense: rate limits unauthorized authentication attempts and flashes cryptographic error tokens.
 
 <table>
@@ -608,11 +597,11 @@ Displays interactive security defense: rate limits unauthorized authentication a
   </tr>
 </table>
 
-*Figure 7.2: Security rate-limiting and validation notification toast (`Website demo images/02_portal_login_error_light.png` & `_dark.png`).*
+*Figure 8.2: Security rate-limiting and validation notification toast.*
 
 ---
 
-### 7.3 Central Patient Roster & Triage Priority Directory
+### 8.3 Central Patient Roster & Triage Priority Directory
 Main clinical overview showing incoming patient screenings prioritized by clinical triage urgency (Urgent Red, Prompt Amber, Routine Green).
 
 <table>
@@ -626,11 +615,11 @@ Main clinical overview showing incoming patient screenings prioritized by clinic
   </tr>
 </table>
 
-*Figure 7.3: Central patient triage roster (`Website demo images/03_portal_patient_roster_light.png` & `_dark.png`).*
+*Figure 8.3: Central patient triage roster.*
 
 ---
 
-### 7.4 Global Command Palette (Ctrl+K / Cmd+K) Omnisearch Modal Pop
+### 8.4 Global Command Palette (Ctrl+K / Cmd+K) Omnisearch Modal Pop
 Instant keyboard-driven search to navigate patients, diagnosis ICD codes, anamnesis symptoms, and audit trails.
 
 <table>
@@ -644,11 +633,29 @@ Instant keyboard-driven search to navigate patients, diagnosis ICD codes, anamne
   </tr>
 </table>
 
-*Figure 7.4: Omnisearch command palette modal (`Website demo images/04_portal_command_palette_light.png` & `_dark.png`).*
+*Figure 8.4: Omnisearch command palette modal.*
 
 ---
 
-### 7.5 Longitudinal Patient Case Timeline & Historical Screenings
+### 8.5 Radial Patient Quick-Switch Arc Dial & Rotating Wheel Selector
+A semi-circular floating glass chooser that pivots on the Patient pill on the bottom dock. Patient chips sit on the top half of an invisible wheel; scrolling or keyboard arrow keys rotate the dial via `--dial-angle` with absolute pixel coordinates, allowing clinicians to rapidly pivot between patient records without navigating away from active screening workflows.
+
+<table>
+  <tr>
+    <th width="50%" align="center">Light Mode</th>
+    <th width="50%" align="center">Dark Mode</th>
+  </tr>
+  <tr>
+    <td align="center"><img src="Website%20demo%20images/04.1_portal_dial_selector_light.png" width="450" alt="Dial Selector Light Mode"></td>
+    <td align="center"><img src="Website%20demo%20images/04.1_portal_dial_selector_dark.png" width="450" alt="Dial Selector Dark Mode"></td>
+  </tr>
+</table>
+
+*Figure 8.5: Radial patient quick-switch arc wheel & keyboard-navigable dial.*
+
+---
+
+### 8.6 Longitudinal Patient Case Timeline & Historical Screenings
 Chronological timeline view tracking patient lesion evolution across multiple hospital visits.
 
 <table>
@@ -662,11 +669,11 @@ Chronological timeline view tracking patient lesion evolution across multiple ho
   </tr>
 </table>
 
-*Figure 7.5: Longitudinal patient screening history (`Website demo images/05_portal_patient_timeline_light.png` & `_dark.png`).*
+*Figure 8.6: Longitudinal patient screening history.*
 
 ---
 
-### 7.6 Interactive Triage Filtering Tabs (Urgent / Prompt / Routine) Active State
+### 8.7 Interactive Triage Filtering Tabs (Urgent / Prompt / Routine) Active State
 Live filtering by clinical severity allows dermatologists to immediately isolate malignant cases.
 
 <table>
@@ -680,11 +687,11 @@ Live filtering by clinical severity allows dermatologists to immediately isolate
   </tr>
 </table>
 
-*Figure 7.6: Active triage filtering state (`Website demo images/06_portal_triage_filtering_light.png` & `_dark.png`).*
+*Figure 8.7: Active triage filtering state.*
 
 ---
 
-### 7.7 Deep Clinical Case Inspection & High-Resolution Canvas Viewer
+### 8.8 Deep Clinical Case Inspection & High-Resolution Canvas Viewer
 High-resolution medical image inspection view with clinical anamnesis metadata, CNN softmax probability distribution, and symptom logs.
 
 <table>
@@ -698,11 +705,11 @@ High-resolution medical image inspection view with clinical anamnesis metadata, 
   </tr>
 </table>
 
-*Figure 7.7: Deep clinical case inspection canvas (`Website demo images/07_portal_case_inspection_light.png` & `_dark.png`).*
+*Figure 8.8: Deep clinical case inspection canvas.*
 
 ---
 
-### 7.8 Explainable AI (Grad-CAM) Heatmap Overlay & Opacity Slider Transition
+### 8.9 Explainable AI (Grad-CAM) Heatmap Overlay & Opacity Slider Transition
 Interactive Gradient-weighted Class Activation Mapping overlay verifying the neural network's focus on lesion borders.
 
 <table>
@@ -716,11 +723,11 @@ Interactive Gradient-weighted Class Activation Mapping overlay verifying the neu
   </tr>
 </table>
 
-*Figure 7.8: Grad-CAM Explainable AI overlay (`Website demo images/08_portal_gradcam_overlay_light.png` & `_dark.png`).*
+*Figure 8.9: Grad-CAM Explainable AI overlay.*
 
 ---
 
-### 7.9 Side-by-Side Dual-Image Comparison Window
+### 8.10 Side-by-Side Dual-Report Comparison Window
 Synchronized side-by-side viewer for comparing dermoscopic lesions against baseline historical screenings.
 
 <table>
@@ -734,11 +741,29 @@ Synchronized side-by-side viewer for comparing dermoscopic lesions against basel
   </tr>
 </table>
 
-*Figure 7.9: Dual-image comparative viewer (`Website demo images/09_portal_dual_compare_light.png` & `_dark.png`).*
+*Figure 8.10: Dual-image comparative inspection viewer.*
 
 ---
 
-### 7.10 Clinical Triage Decision-Support Matrix & Rule Engine Log
+### 8.11 Dual-Report Comparative Inspection & Differential Metrics Widget
+Differential inspection module showing calculated confidence delta ($\Delta$), lesion evolution metrics, and triage agreement flags.
+
+<table>
+  <tr>
+    <th width="50%" align="center">Light Mode</th>
+    <th width="50%" align="center">Dark Mode</th>
+  </tr>
+  <tr>
+    <td align="center"><img src="Website%20demo%20images/09.1_portal_dual_compare_widget_light.png" width="450" alt="Dual Compare Widget Light Mode"></td>
+    <td align="center"><img src="Website%20demo%20images/09.1_portal_dual_compare_widget_dark.png" width="450" alt="Dual Compare Widget Dark Mode"></td>
+  </tr>
+</table>
+
+*Figure 8.11: Dual-report differential comparison widget.*
+
+---
+
+### 8.12 Clinical Triage Decision-Support Matrix & Rule Engine Log
 Displays the exact deterministic safety rule triggered (`R1_malignant_class`, `R3_malignant_mass_high`) and clinical reasoning chain.
 
 <table>
@@ -752,11 +777,11 @@ Displays the exact deterministic safety rule triggered (`R1_malignant_class`, `R
   </tr>
 </table>
 
-*Figure 7.10: Deterministic triage rule engine audit matrix (`Website demo images/10_portal_triage_matrix_light.png` & `_dark.png`).*
+*Figure 8.12: Deterministic triage rule engine audit matrix.*
 
 ---
 
-### 7.11 Doctor Clinical Notes, Second Opinions & Differential Diagnosis Form
+### 8.13 Doctor Clinical Notes, Second Opinions & Differential Diagnosis Form
 Interactive clinical documentation interface allowing dermatologists to record notes, request biopsies, and update case triage.
 
 <table>
@@ -770,11 +795,11 @@ Interactive clinical documentation interface allowing dermatologists to record n
   </tr>
 </table>
 
-*Figure 7.11: Clinician consultation note editor (`Website demo images/11_portal_doctor_notes_light.png` & `_dark.png`).*
+*Figure 8.13: Clinician consultation note editor.*
 
 ---
 
-### 7.12 Status Update Workflow & Clinical Escalation Trigger Action
+### 8.14 Status Update Workflow & Clinical Escalation Trigger Action
 Single-click workflow actions to transition cases between *New*, *Under Review*, *Escalated*, and *Reviewed*.
 
 <table>
@@ -788,11 +813,11 @@ Single-click workflow actions to transition cases between *New*, *Under Review*,
   </tr>
 </table>
 
-*Figure 7.12: Case escalation and status update workflow (`Website demo images/12_portal_status_action_light.png` & `_dark.png`).*
+*Figure 8.14: Case escalation and status update workflow.*
 
 ---
 
-### 7.13 Appointment Calendar & Clinic Consultation Booking Hub
+### 8.15 Appointment Calendar & Clinic Consultation Booking Hub
 Complete appointment scheduling system showing booked patient consultations, clinical urgency badges, and calendar views.
 
 <table>
@@ -806,11 +831,11 @@ Complete appointment scheduling system showing booked patient consultations, cli
   </tr>
 </table>
 
-*Figure 7.13: Appointment calendar and schedule management (`Website demo images/13_portal_appointments_calendar_light.png` & `_dark.png`).*
+*Figure 8.15: Appointment calendar and schedule management.*
 
 ---
 
-### 7.14 Appointment Details Modal & Recommend-a-Visit Clinical Drawer
+### 8.16 Appointment Details Modal & Recommend-a-Visit Clinical Drawer
 Slide-in drawer showing comprehensive visit details, linked screening history, and doctor consultation recommendation tools.
 
 <table>
@@ -824,11 +849,11 @@ Slide-in drawer showing comprehensive visit details, linked screening history, a
   </tr>
 </table>
 
-*Figure 7.14: Appointment details and visit recommendation drawer (`Website demo images/14_portal_appointment_detail_light.png` & `_dark.png`).*
+*Figure 8.16: Appointment details and visit recommendation drawer.*
 
 ---
 
-### 7.16 Keyboard Shortcuts Cheatsheet Modal Pop
+### 8.17 Keyboard Shortcuts Cheatsheet Modal Pop
 Comprehensive keyboard shortcuts directory for rapid navigation without taking hands off the keyboard.
 
 <table>
@@ -842,13 +867,13 @@ Comprehensive keyboard shortcuts directory for rapid navigation without taking h
   </tr>
 </table>
 
-*Figure 7.16: Keyboard shortcuts cheatsheet modal (`Website demo images/16_portal_keyboard_shortcuts_light.png` & `_dark.png`).*  
+*Figure 8.17: Keyboard shortcuts cheatsheet modal.*
 
 ---
 
 ## 9. Mobile Application - Visual Showcase (Light & Dark Mode)
 
-### 8.1 Onboarding & Clinical Disclaimer Gate
+### 9.1 Onboarding & Clinical Disclaimer Gate
 Introductory flow presenting the tripartite clinical safety disclaimer, regulatory framing, and system overview.
 
 <table>
@@ -857,16 +882,16 @@ Introductory flow presenting the tripartite clinical safety disclaimer, regulato
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/01_app_onboarding_light.png" width="300" alt="App Onboarding Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/01_app_onboarding_dark.png" width="300" alt="App Onboarding Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/01_app_onboarding_light.jpeg" width="300" alt="App Onboarding Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/01_app_onboarding_dark.jpeg" width="300" alt="App Onboarding Dark Mode"></td>
   </tr>
 </table>
 
-*Figure 8.1: Patient onboarding screen (`Appp demo images/01_app_onboarding_light.png` & `_dark.png`).*
+*Figure 9.1: Patient onboarding screen.*
 
 ---
 
-### 8.2 Patient Authentication & Multi-Language Selection (English / Hindi)
+### 9.2 Patient Authentication & Multi-Language Selection (English / Hindi)
 Login screen supporting authenticated patient profiles and one-tap language switching.
 
 <table>
@@ -875,16 +900,16 @@ Login screen supporting authenticated patient profiles and one-tap language swit
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/02_app_login_light.png" width="300" alt="App Login Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/02_app_login_dark.png" width="300" alt="App Login Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/02_app_login_light.jpeg" width="300" alt="App Login Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/02_app_login_dark.jpeg" width="300" alt="App Login Dark Mode"></td>
   </tr>
 </table>
 
-*Figure 8.2: Mobile authentication interface (`Appp demo images/02_app_login_light.png` & `_dark.png`).*
+*Figure 9.2: Mobile authentication interface.*
 
 ---
 
-### 8.3 Patient Home Dashboard & Quick-Triage Action Center
+### 9.3 Patient Home Dashboard & Quick-Triage Action Center
 Central home hub featuring recent screenings, UV index advisory, quick scan button, and self-check reminder tiles.
 
 <table>
@@ -893,17 +918,17 @@ Central home hub featuring recent screenings, UV index advisory, quick scan butt
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/03_app_home_dashboard_light.png" width="300" alt="Home Dashboard Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/03_app_home_dashboard_dark.png" width="300" alt="Home Dashboard Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/03_app_home_dashboard_light.jpeg" width="300" alt="Home Dashboard Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/03_app_home_dashboard_dark.jpeg" width="300" alt="Home Dashboard Dark Mode"></td>
   </tr>
 </table>
 
-*Figure 8.3: Patient home dashboard (`Appp demo images/03_app_home_dashboard_light.png` & `_dark.png`).*
+*Figure 9.3: Patient home dashboard.*
 
 ---
 
-### 8.4 Patient Home Dashboard & Quick Actions
-The quick action bar contains New screenigs, My screenigs, Skin health guide and Fin a doctor like services to help the user quickly navigate to quick access features.
+### 9.4 Quick-Action Hub & Feature Shortcuts
+Fast-access drawer to initiate self-checks, book dermatology visits, read glossary entries, and check notifications.
 
 <table>
   <tr>
@@ -911,15 +936,16 @@ The quick action bar contains New screenigs, My screenigs, Skin health guide and
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/03_app_home_quick_actions_light.png" width="300" alt="Home quick actions Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/03_app_home_quick_actions_dark.png" width="300" alt="Home quick actions Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/04_app_home_quick_actions_light.jpeg" width="300" alt="Quick Actions Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/04_app_home_quick_actions_dark.jpeg" width="300" alt="Quick Actions Dark Mode"></td>
   </tr>
 </table>
 
-*Figure 8.4: Patient home  Quich actions (`Appp demo images/04_app_home_quick_actions_light.png` & `_dark.png`).*
+*Figure 9.4: Patient quick-actions interface.*
 
+---
 
-### 8.5 Smart In-App Camera Capture with Circular Framing Guide & Flash
+### 9.5 Smart In-App Camera Capture with Circular Framing Guide & Flash
 In-app camera viewfinder featuring a circular lesion reticle, lighting balance sensors, and torch toggles.
 
 <table>
@@ -928,16 +954,16 @@ In-app camera viewfinder featuring a circular lesion reticle, lighting balance s
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/05_app_camera_capture_light.png" width="300" alt="Camera Capture Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/05_app_camera_capture_dark.png" width="300" alt="Camera Capture Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/05_app_camera_capture_light.jpeg" width="300" alt="Camera Capture Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/05_app_camera_capture_dark.jpeg" width="300" alt="Camera Capture Dark Mode"></td>
   </tr>
 </table>
 
-*Figure 8.5: Camera capture interface with circular framing guide (`Appp demo images/05_app_camera_capture_light.png` & `_dark.png`).*
+*Figure 9.5: Camera capture interface with circular framing guide.*
 
 ---
 
-### 8.6 Clinical Anamnesis Symptom Questionnaire Form
+### 9.6 Clinical Anamnesis Symptom Questionnaire Form
 Step-by-step questionnaire capturing symptom evolution (bleeding, itching, rapid growth, elevation, lesion duration).
 
 <table>
@@ -946,16 +972,16 @@ Step-by-step questionnaire capturing symptom evolution (bleeding, itching, rapid
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/06_app_questionnaire_light.png" width="300" alt="Questionnaire Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/06_app_questionnaire_dark.png" width="300" alt="Questionnaire Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/06_app_questionnaire_light.jpeg" width="300" alt="Questionnaire Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/06_app_questionnaire_dark.jpeg" width="300" alt="Questionnaire Dark Mode"></td>
   </tr>
 </table>
 
-*Figure 8.6: Patient symptom anamnesis form (`Appp demo images/06_app_questionnaire_light.png` & `_dark.png`).*
+*Figure 9.6: Patient symptom anamnesis form.*
 
 ---
 
-### 8.8 High-Risk Urgent Triage Result Screen (Melanoma Example)
+### 9.7 High-Risk Urgent Triage Result Screen (Melanoma Example)
 High urgency alert screen displaying red triage indicator, predicted probability, and doctor consultation advisory.
 
 <table>
@@ -964,16 +990,16 @@ High urgency alert screen displaying red triage indicator, predicted probability
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/08_app_result_urgent_light.png" width="300" alt="Urgent Result Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/08_app_result_urgent_dark.png" width="300" alt="Urgent Result Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/08_app_result_urgent_light.jpeg" width="300" alt="Urgent Result Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/08_app_result_urgent_dark.jpeg" width="300" alt="Urgent Result Dark Mode"></td>
   </tr>
 </table>
 
-*Figure 8.8: High-urgency malignant screening output (`Appp demo images/08_app_result_urgent_light.png` & `_dark.png`).*
+*Figure 9.7: High-urgency malignant screening output.*
 
 ---
 
-### 8.9 Pre-Malignant Prompt Triage Result Screen (Actinic Keratosis Example)
+### 9.8 Pre-Malignant Prompt Triage Result Screen (Actinic Keratosis Example)
 Amber-tier screening result indicating pre-cancerous lesion requiring prompt outpatient evaluation.
 
 <table>
@@ -982,34 +1008,16 @@ Amber-tier screening result indicating pre-cancerous lesion requiring prompt out
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/09_app_result_prompt_light.png" width="300" alt="Prompt Result Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/09_app_result_prompt_dark.png" width="300" alt="Prompt Result Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/09_app_result_prompt_light.jpeg" width="300" alt="Prompt Result Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/09_app_result_prompt_dark.jpeg" width="300" alt="Prompt Result Dark Mode"></td>
   </tr>
 </table>
 
-*Figure 8.9: Prompt outpatient triage output (`Appp demo images/09_app_result_prompt_light.png` & `_dark.png`).*
+*Figure 9.8: Prompt outpatient triage output.*
 
 ---
 
-### 8.10 Reassuring Routine Triage Result Screen (Nevus Example)
-Green-tier reassuring screening result confirming common benign mole patterns with routine self-check tips.
-
-<table>
-  <tr>
-    <th width="50%" align="center">Light Mode</th>
-    <th width="50%" align="center">Dark Mode</th>
-  </tr>
-  <tr>
-    <td align="center"><img src="Appp%20demo%20images/10_app_result_routine_light.png" width="300" alt="Routine Result Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/10_app_result_routine_dark.png" width="300" alt="Routine Result Dark Mode"></td>
-  </tr>
-</table>
-
-*Figure 8.10: Reassuring routine screening output (`Appp demo images/10_app_result_routine_light.png` & `_dark.png`).*
-
----
-
-### 8.11 Front-Stage OOD Router Defense & Non-Lesion Wound Detection
+### 9.9 Front-Stage OOD Router Defense & Non-Lesion Wound Detection
 Demonstrates the OOD gate rejecting superficial abrasions (`OTHER_DAMAGE`) with first-aid guidance.
 
 <table>
@@ -1018,16 +1026,16 @@ Demonstrates the OOD gate rejecting superficial abrasions (`OTHER_DAMAGE`) with 
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/11_app_result_wound_light.png" width="300" alt="Wound Detection Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/11_app_result_wound_dark.png" width="300" alt="Wound Detection Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/11_app_result_wound_light.jpeg" width="300" alt="Wound Detection Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/11_app_result_wound_dark.jpeg" width="300" alt="Wound Detection Dark Mode"></td>
   </tr>
 </table>
 
-*Figure 8.11: Front-stage router trauma rejection screen (`Appp demo images/11_app_result_wound_light.png` & `_dark.png`).*
+*Figure 9.9: Front-stage router trauma rejection screen.*
 
 ---
 
-### 8.12 Interactive Explainable AI (Grad-CAM) Visual Heatmap Screen
+### 9.10 Interactive Explainable AI (Grad-CAM) Visual Heatmap Screen
 Mobile Explainable AI canvas showing activation heatmap superimposed over patient lesion borders.
 
 <table>
@@ -1036,16 +1044,16 @@ Mobile Explainable AI canvas showing activation heatmap superimposed over patien
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/12_app_gradcam_view_light.png" width="300" alt="Mobile Grad-CAM Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/12_app_gradcam_view_dark.png" width="300" alt="Mobile Grad-CAM Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/12_app_gradcam_view_light.jpeg" width="300" alt="Mobile Grad-CAM Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/12_app_gradcam_view_dark.jpeg" width="300" alt="Mobile Grad-CAM Dark Mode"></td>
   </tr>
 </table>
 
-*Figure 8.12: Mobile Explainable AI (Grad-CAM) interface (`Appp demo images/12_app_gradcam_view_light.png` & `_dark.png`).*
+*Figure 9.10: Mobile Explainable AI (Grad-CAM) interface.*
 
 ---
 
-### 8.13 Full 7-Class ISIC Softmax Confidence Distribution Breakdown
+### 9.11 Full 7-Class ISIC Softmax Confidence Distribution Breakdown
 Detailed probability distribution across all 7 diagnostic classes (MEL, NV, BCC, AKIEC, BKL, DF, VASC).
 
 <table>
@@ -1054,16 +1062,16 @@ Detailed probability distribution across all 7 diagnostic classes (MEL, NV, BCC,
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/13_app_all_class_scores_light.png" width="300" alt="All Class Scores Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/13_app_all_class_scores_dark.png" width="300" alt="All Class Scores Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/13_app_all_class_scores_light.jpeg" width="300" alt="All Class Scores Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/13_app_all_class_scores_dark.jpeg" width="300" alt="All Class Scores Dark Mode"></td>
   </tr>
 </table>
 
-*Figure 8.13: 7-Class softmax probability breakdown (`Appp demo images/13_app_all_class_scores_light.png` & `_dark.png`).*
+*Figure 9.11: 7-Class softmax probability breakdown.*
 
 ---
 
-### 8.14 Plain-Language AI Explanation & Clinical Reasoning Breakdown
+### 9.12 Plain-Language AI Explanation & Clinical Reasoning Breakdown
 Plain-language clinical narrative generated under safety constraints, explaining the recommendation in simple terms.
 
 <table>
@@ -1072,16 +1080,16 @@ Plain-language clinical narrative generated under safety constraints, explaining
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/14_app_understanding_result_light.png" width="300" alt="Understanding Result Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/14_app_understanding_result_dark.png" width="300" alt="Understanding Result Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/14_app_understanding_result_light.jpeg" width="300" alt="Understanding Result Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/14_app_understanding_result_dark.jpeg" width="300" alt="Understanding Result Dark Mode"></td>
   </tr>
 </table>
 
-*Figure 8.14: Plain-language AI reasoning module (`Appp demo images/14_app_understanding_result_light.png` & `_dark.png`).*
+*Figure 9.12: Plain-language AI reasoning module.*
 
 ---
 
-### 8.15 Localized Hindi (हिंदी) Screening Result & Urgency Display
+### 9.13 Localized Hindi (हिंदी) Screening Result & Urgency Display
 Complete localized triage display for Hindi-speaking users, translating clinical guidance and class names.
 
 <table>
@@ -1090,16 +1098,16 @@ Complete localized triage display for Hindi-speaking users, translating clinical
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/15_app_hindi_result_light.png" width="300" alt="Hindi Result Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/15_app_hindi_result_dark.png" width="300" alt="Hindi Result Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/15_app_hindi_result_light.jpeg" width="300" alt="Hindi Result Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/15_app_hindi_result_dark.jpeg" width="300" alt="Hindi Result Dark Mode"></td>
   </tr>
 </table>
 
-*Figure 8.15: Hindi localized screening interface (`Appp demo images/15_app_hindi_result_light.png` & `_dark.png`).*
+*Figure 9.13: Hindi localized screening interface.*
 
 ---
 
-### 8.16 Share Screening with Verified Doctor & Cryptographic Consent Sheet
+### 9.14 Share Screening with Verified Doctor & Cryptographic Consent Sheet
 Consent management sheet allowing patients to select a registered doctor and transmit their encrypted screening.
 
 <table>
@@ -1108,16 +1116,16 @@ Consent management sheet allowing patients to select a registered doctor and tra
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/16_app_share_with_doctor_light.png" width="300" alt="Share With Doctor Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/16_app_share_with_doctor_dark.png" width="300" alt="Share With Doctor Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/16_app_share_with_doctor_light.jpeg" width="300" alt="Share With Doctor Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/16_app_share_with_doctor_dark.jpeg" width="300" alt="Share With Doctor Dark Mode"></td>
   </tr>
 </table>
 
-*Figure 8.16: Patient doctor-sharing consent sheet (`Appp demo images/16_app_share_with_doctor_light.png` & `_dark.png`).*
+*Figure 9.14: Patient doctor-sharing consent sheet.*
 
 ---
 
-### 8.17 Book a Consultation with a Verified Dermatologist
+### 9.15 Book a Consultation with a Verified Dermatologist
 Appointment booking interface enabling patients to select specialist doctors, preferred dates, and attach reports.
 
 <table>
@@ -1126,16 +1134,16 @@ Appointment booking interface enabling patients to select specialist doctors, pr
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/17_app_book_appointment_light.png" width="300" alt="Book Appointment Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/17_app_book_appointment_dark.png" width="300" alt="Book Appointment Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/17_app_book_appointment_light.jpeg" width="300" alt="Book Appointment Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/17_app_book_appointment_dark.jpeg" width="300" alt="Book Appointment Dark Mode"></td>
   </tr>
 </table>
 
-*Figure 8.17: Doctor appointment booking workflow (`Appp demo images/17_app_book_appointment_light.png` & `_dark.png`).*
+*Figure 9.15: Doctor appointment booking workflow.*
 
 ---
 
-### 8.18 Patient Appointments Hub & Status Tracking Tab
+### 9.16 Patient Appointments Hub & Status Tracking Tab
 Patient appointment management screen showing confirmed consultations, pending requests, and doctor notes.
 
 <table>
@@ -1144,16 +1152,16 @@ Patient appointment management screen showing confirmed consultations, pending r
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/18_app_appointments_tab_light.png" width="300" alt="Appointments Tab Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/18_app_appointments_tab_dark.png" width="300" alt="Appointments Tab Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/18_app_appointments_tab_light.jpeg" width="300" alt="Appointments Tab Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/18_app_appointments_tab_dark.jpeg" width="300" alt="Appointments Tab Dark Mode"></td>
   </tr>
 </table>
 
-*Figure 8.18: Patient appointments tracking tab (`Appp demo images/18_app_appointments_tab_light.png` & `_dark.png`).*
+*Figure 9.16: Patient appointments tracking tab.*
 
 ---
 
-### 8.19 In-App Notification Center & Doctor Action Alerts
+### 9.17 In-App Notification Center & Doctor Action Alerts
 Real-time notification bell displaying doctor review confirmations, appointment approvals, and clinical recommendations.
 
 <table>
@@ -1162,16 +1170,16 @@ Real-time notification bell displaying doctor review confirmations, appointment 
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/19_app_notifications_light.png" width="300" alt="Notifications Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/19_app_notifications_dark.png" width="300" alt="Notifications Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/19_app_notifications_light.jpeg" width="300" alt="Notifications Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/19_app_notifications_dark.jpeg" width="300" alt="Notifications Dark Mode"></td>
   </tr>
 </table>
 
-*Figure 8.19: In-app notification center (`Appp demo images/19_app_notifications_light.png` & `_dark.png`).*
+*Figure 9.17: In-app notification center.*
 
 ---
 
-### 8.20 Context-Aware AI Dermatological Chatbot Assistant
+### 9.18 Context-Aware AI Dermatological Chatbot Assistant
 Interactive AI chatbot answering patient questions, explaining medical terms, and preparing questions for appointments.
 
 <table>
@@ -1180,16 +1188,16 @@ Interactive AI chatbot answering patient questions, explaining medical terms, an
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/20_app_ai_chatbot_light.png" width="300" alt="AI Chatbot Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/20_app_ai_chatbot_dark.png" width="300" alt="AI Chatbot Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/20_app_ai_chatbot_light.jpeg" width="300" alt="AI Chatbot Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/20_app_ai_chatbot_dark.jpeg" width="300" alt="AI Chatbot Dark Mode"></td>
   </tr>
 </table>
 
-*Figure 8.20: Context-aware AI assistant chatbot (`Appp demo images/20_app_ai_chatbot_light.png` & `_dark.png`).*
+*Figure 9.18: Context-aware AI assistant chatbot.*
 
 ---
 
-### 8.21 AI Assistant Suggested Follow-Up Clinical Inquiries
+### 9.19 AI Assistant Suggested Follow-Up Clinical Inquiries
 Contextual prompt chips providing structured follow-up questions tailored to the patient's predicted lesion class.
 
 <table>
@@ -1198,16 +1206,16 @@ Contextual prompt chips providing structured follow-up questions tailored to the
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/21_app_chatbot_suggestions_light.png" width="300" alt="Chatbot Suggestions Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/21_app_chatbot_suggestions_dark.png" width="300" alt="Chatbot Suggestions Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/21_app_chatbot_suggestions_light.jpeg" width="300" alt="Chatbot Suggestions Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/21_app_chatbot_suggestions_dark.jpeg" width="300" alt="Chatbot Suggestions Dark Mode"></td>
   </tr>
 </table>
 
-*Figure 8.21: Dynamic follow-up question suggestions (`Appp demo images/21_app_chatbot_suggestions_light.png` & `_dark.png`).*
+*Figure 9.19: Dynamic follow-up question suggestions.*
 
 ---
 
-### 8.22 Patient Longitudinal Screening History & Archive Directory
+### 9.20 Patient Longitudinal Screening History & Archive Directory
 Searchable archive displaying all past screenings, timestamps, diagnostic labels, and doctor sharing status.
 
 <table>
@@ -1216,16 +1224,16 @@ Searchable archive displaying all past screenings, timestamps, diagnostic labels
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/22_app_screening_history_light.png" width="300" alt="Screening History Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/22_app_screening_history_dark.png" width="300" alt="Screening History Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/22_app_screening_history_light.jpeg" width="300" alt="Screening History Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/22_app_screening_history_dark.jpeg" width="300" alt="Screening History Dark Mode"></td>
   </tr>
 </table>
 
-*Figure 8.22: Patient screening history directory (`Appp demo images/22_app_screening_history_light.png` & `_dark.png`).*
+*Figure 9.20: Patient screening history directory.*
 
 ---
 
-### 8.23 Monthly Self-Examination Push Reminder Scheduler
+### 9.21 Monthly Self-Examination Push Reminder Scheduler
 Configurable calendar reminder enabling patients to schedule monthly skin self-examinations.
 
 <table>
@@ -1234,16 +1242,16 @@ Configurable calendar reminder enabling patients to schedule monthly skin self-e
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/23_app_monthly_push_reminder_light.png" width="300" alt="Monthly Push Reminder Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/23_app_monthly_push_reminder_dark.png" width="300" alt="Monthly Push Reminder Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/23_app_monthly_push_reminder_light.jpeg" width="300" alt="Monthly Push Reminder Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/23_app_monthly_push_reminder_dark.jpeg" width="300" alt="Monthly Push Reminder Dark Mode"></td>
   </tr>
 </table>
 
-*Figure 8.23: Monthly self-examination reminder push notification (`Appp demo images/23_app_monthly_push_reminder_light.png` & `_dark.png`).*
+*Figure 9.21: Monthly self-examination reminder push notification.*
 
 ---
 
-### 8.24 Find a Dermatologist Directory & Doctor Profile Cards
+### 9.22 Find a Dermatologist Directory & Doctor Profile Cards
 Directory of certified dermatologists with medical council registration numbers, clinic details, and booking links.
 
 <table>
@@ -1252,16 +1260,16 @@ Directory of certified dermatologists with medical council registration numbers,
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/24_app_find_dermatologist_light.png" width="300" alt="Find a Dermatologist Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/24_app_find_dermatologist_dark.png" width="300" alt="Find a Dermatologist Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/24_app_find_dermatologist_light.jpeg" width="300" alt="Find a Dermatologist Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/24_app_find_dermatologist_dark.jpeg" width="300" alt="Find a Dermatologist Dark Mode"></td>
   </tr>
 </table>
 
-*Figure 8.24: Dermatologist directory and clinician profiles (`Appp demo images/24_app_find_dermatologist_light.png` & `_dark.png`).*
+*Figure 9.22: Dermatologist directory and clinician profiles.*
 
 ---
 
-### 8.25 Skin Health Educational Library & Prevention Hub
+### 9.23 Skin Health Educational Library & Prevention Hub
 Educational library covering skin cancer prevention, self-examination protocols, and skin maintenance.
 
 <table>
@@ -1270,16 +1278,16 @@ Educational library covering skin cancer prevention, self-examination protocols,
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/25_app_skin_health_guide_light.png" width="300" alt="Skin Health Guide Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/25_app_skin_health_guide_dark.png" width="300" alt="Skin Health Guide Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/25_app_skin_health_guide_light.jpeg" width="300" alt="Skin Health Guide Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/25_app_skin_health_guide_dark.jpeg" width="300" alt="Skin Health Guide Dark Mode"></td>
   </tr>
 </table>
 
-*Figure 8.25: Skin health educational library (`Appp demo images/25_app_skin_health_guide_light.png` & `_dark.png`).*
+*Figure 9.23: Skin health educational library.*
 
 ---
 
-### 8.26 Interactive ABCDE Melanoma Criteria Educational Guide
+### 9.24 Interactive ABCDE Melanoma Criteria Educational Guide
 Visual educational module detailing **A**symmetry, **B**order, **C**olor, **D**iameter, and **E**volving melanoma signs.
 
 <table>
@@ -1288,16 +1296,16 @@ Visual educational module detailing **A**symmetry, **B**order, **C**olor, **D**i
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/26_app_abcde_rule_guide_light.png" width="300" alt="ABCDE Rule Guide Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/26_app_abcde_rule_guide_dark.png" width="300" alt="ABCDE Rule Guide Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/26_app_abcde_rule_guide_light.jpeg" width="300" alt="ABCDE Rule Guide Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/26_app_abcde_rule_guide_dark.jpeg" width="300" alt="ABCDE Rule Guide Dark Mode"></td>
   </tr>
 </table>
 
-*Figure 8.26: ABCDE melanoma awareness and criteria guide (`Appp demo images/26_app_abcde_rule_guide_light.png` & `_dark.png`).*
+*Figure 9.24: ABCDE melanoma awareness and criteria guide (`Appp demo images/26_app_abcde_rule_guide_light.jpeg` & `_dark.jpeg`).*
 
 ---
 
-### 8.27 Fitzpatrick Skin Phototype Interactive Quiz & UV Suncare
+### 9.25 Fitzpatrick Skin Phototype Interactive Quiz & UV Suncare
 Calculates the user's Fitzpatrick skin phototype (Type I–VI) and generates personalized broad-spectrum SPF advice.
 
 <table>
@@ -1306,16 +1314,20 @@ Calculates the user's Fitzpatrick skin phototype (Type I–VI) and generates per
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/27_app_skin_type_quiz_light.png" width="300" alt="Skin Type Quiz Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/27_app_skin_type_quiz_dark.png" width="300" alt="Skin Type Quiz Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/27_app_skin_type_quiz_light.jpeg" width="300" alt="Skin Type Quiz Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/27_app_skin_type_quiz_dark.jpeg" width="300" alt="Skin Type Quiz Dark Mode"></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="Appp%20demo%20images/27.1_app_skin_type_quiz_light_result.jpeg" width="300" alt="Skin Type Result Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/27.1_app_skin_type_quiz_dark_result.jpeg" width="300" alt="Skin Type Result Dark Mode"></td>
   </tr>
 </table>
 
-*Figure 8.27: Fitzpatrick skin phototyping quiz and UV recommendations (`Appp demo images/27_app_skin_type_quiz_light.png` & `_dark.png`).*
+*Figure 9.25: Fitzpatrick skin phototyping quiz and UV recommendations (`Appp demo images/27_app_skin_type_quiz_light.jpeg` & `_dark.jpeg`).*
 
 ---
 
-### 8.28 Patient Profile, Doctor Consent Revocation & Privacy Controls
+### 9.26 Patient Profile, Doctor Consent Revocation & Privacy Controls
 Profile settings screen allowing patients to manage active doctor consents, review privacy policies, and securely log out.
 
 <table>
@@ -1324,9 +1336,9 @@ Profile settings screen allowing patients to manage active doctor consents, revi
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/28_app_user_profile_light.png" width="300" alt="User Profile Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/28_app_user_profile_dark.png" width="300" alt="User Profile Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/28_app_user_profile_light.jpeg" width="300" alt="User Profile Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/28_app_user_profile_dark.jpeg" width="300" alt="User Profile Dark Mode"></td>
   </tr>
 </table>
 
-*Figure 8.28: Profile settings and consent management controls (`Appp demo images/28_app_user_profile_light.png` & `_dark.png`).*
+*Figure 9.26: Profile settings and consent management controls (`Appp demo images/28_app_user_profile_light.jpeg` & `_dark.jpeg`).*
