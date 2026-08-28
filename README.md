@@ -416,21 +416,25 @@ All demo accounts are configured with authenticated Indian credentials, medical 
 
 ## 6. Five Curated Test Photos Across Lesion Criteria
 
-The five standard validation cases are located in the repository at [`demo_test_samples/`](file:///c:/Users/RAJ/Downloads/Capstone/demo_test_samples):
+The five standard validation test images are stored in [`demo_test_samples/`](demo_test_samples). Click any image or link below to view the high-resolution source:
 
-```
-demo_test_samples/
-├── 01_melanoma_malignant.jpg          # Malignant Melanoma (High Risk / Urgent)
-├── 02_basal_cell_carcinoma.jpg        # Basal Cell Carcinoma (Malignant Carcinoma)
-├── 03_actinic_keratosis_precancer.jpg  # Actinic Keratosis (Pre-malignant)
-├── 04_benign_melanocytic_nevus.jpg    # Benign Melanocytic Nevus (Common Mole)
-└── 05_skin_abrasion_wound.jpg         # Skin Abrasion / Wound (Front-Stage Router)
-```
+| Preview | Case & Diagnosis | Relative Repository Path | Triage Urgency |
+|:---:|---|---|:---:|
+| <a href="demo_test_samples/01_melanoma_malignant.jpg"><img src="demo_test_samples/01_melanoma_malignant.jpg" width="90" alt="Melanoma Sample"></a> | **Case 1: Malignant Melanoma** | [`01_melanoma_malignant.jpg`](demo_test_samples/01_melanoma_malignant.jpg) | 🔴 **Urgent** (`mel`) |
+| <a href="demo_test_samples/02_basal_cell_carcinoma.jpg"><img src="demo_test_samples/02_basal_cell_carcinoma.jpg" width="90" alt="BCC Sample"></a> | **Case 2: Basal Cell Carcinoma** | [`02_basal_cell_carcinoma.jpg`](demo_test_samples/02_basal_cell_carcinoma.jpg) | 🔴 **Urgent / Prompt** (`bcc`) |
+| <a href="demo_test_samples/03_actinic_keratosis_precancer.jpg"><img src="demo_test_samples/03_actinic_keratosis_precancer.jpg" width="90" alt="Actinic Keratosis Sample"></a> | **Case 3: Actinic Keratosis** | [`03_actinic_keratosis_precancer.jpg`](demo_test_samples/03_actinic_keratosis_precancer.jpg) | 🟠 **Prompt** (`akiec`) |
+| <a href="demo_test_samples/04_benign_melanocytic_nevus.jpg"><img src="demo_test_samples/04_benign_melanocytic_nevus.jpg" width="90" alt="Melanocytic Nevus Sample"></a> | **Case 4: Melanocytic Nevus** | [`04_benign_melanocytic_nevus.jpg`](demo_test_samples/04_benign_melanocytic_nevus.jpg) | 🟢 **Routine** (`nv`) |
+| <a href="demo_test_samples/05_skin_abrasion_wound.jpg"><img src="demo_test_samples/05_skin_abrasion_wound.jpg" width="90" alt="Skin Abrasion Sample"></a> | **Case 5: Superficial Wound** | [`05_skin_abrasion_wound.jpg`](demo_test_samples/05_skin_abrasion_wound.jpg) | 🛡️ **Router Trauma** |
 
 ---
 
 ### Case 1: Malignant Melanoma (High Risk / Urgent Medical Evaluation)
-* **File:** `demo_test_samples/01_melanoma_malignant.jpg`
+
+<p align="left">
+  <a href="demo_test_samples/01_melanoma_malignant.jpg"><img src="demo_test_samples/01_melanoma_malignant.jpg" width="160" alt="Malignant Melanoma Test Sample" style="border-radius: 8px; border: 1px solid #30363d;"></a>
+</p>
+
+* **File:** [`demo_test_samples/01_melanoma_malignant.jpg`](demo_test_samples/01_melanoma_malignant.jpg)
 * **Clinical Criteria (ABCDE Rule):**
   * **A (Asymmetry):** Marked asymmetry across both orthogonal axes.
   * **B (Border):** Irregular, scalloped, notched periphery.
@@ -452,7 +456,12 @@ demo_test_samples/
 ---
 
 ### Case 2: Basal Cell Carcinoma (Malignant / Common Carcinoma)
-* **File:** `demo_test_samples/02_basal_cell_carcinoma.jpg`
+
+<p align="left">
+  <a href="demo_test_samples/02_basal_cell_carcinoma.jpg"><img src="demo_test_samples/02_basal_cell_carcinoma.jpg" width="160" alt="Basal Cell Carcinoma Test Sample" style="border-radius: 8px; border: 1px solid #30363d;"></a>
+</p>
+
+* **File:** [`demo_test_samples/02_basal_cell_carcinoma.jpg`](demo_test_samples/02_basal_cell_carcinoma.jpg)
 * **Clinical Criteria:**
   * Translucent, pearly nodule with prominent branching telangiectasia.
   * Rolled border with central depression or ulceration.
@@ -470,7 +479,12 @@ demo_test_samples/
 ---
 
 ### Case 3: Actinic Keratosis (Pre-Malignant Squamous Intraepidermal Neoplasia)
-* **File:** `demo_test_samples/03_actinic_keratosis_precancer.jpg`
+
+<p align="left">
+  <a href="demo_test_samples/03_actinic_keratosis_precancer.jpg"><img src="demo_test_samples/03_actinic_keratosis_precancer.jpg" width="160" alt="Actinic Keratosis Test Sample" style="border-radius: 8px; border: 1px solid #30363d;"></a>
+</p>
+
+* **File:** [`demo_test_samples/03_actinic_keratosis_precancer.jpg`](demo_test_samples/03_actinic_keratosis_precancer.jpg)
 * **Clinical Criteria:**
   * Erythematous, rough, hyperkeratotic papule/plaque on chronically sun-exposed skin.
   * Distinct "sandpaper" texture on tactile examination.
@@ -488,7 +502,12 @@ demo_test_samples/
 ---
 
 ### Case 4: Melanocytic Nevus (Common Benign Mole)
-* **File:** `demo_test_samples/04_benign_melanocytic_nevus.jpg`
+
+<p align="left">
+  <a href="demo_test_samples/04_benign_melanocytic_nevus.jpg"><img src="demo_test_samples/04_benign_melanocytic_nevus.jpg" width="160" alt="Melanocytic Nevus Test Sample" style="border-radius: 8px; border: 1px solid #30363d;"></a>
+</p>
+
+* **File:** [`demo_test_samples/04_benign_melanocytic_nevus.jpg`](demo_test_samples/04_benign_melanocytic_nevus.jpg)
 * **Clinical Criteria:**
   * Uniform round/oval symmetry with homogeneous tan-to-brown coloration.
   * Well-demarcated margins with stable history over years.
@@ -506,7 +525,12 @@ demo_test_samples/
 ---
 
 ### Case 5: Skin Abrasion / Superficial Trauma (Front-Stage Router & OOD Gate)
-* **File:** `demo_test_samples/05_skin_abrasion_wound.jpg`
+
+<p align="left">
+  <a href="demo_test_samples/05_skin_abrasion_wound.jpg"><img src="demo_test_samples/05_skin_abrasion_wound.jpg" width="160" alt="Skin Abrasion Test Sample" style="border-radius: 8px; border: 1px solid #30363d;"></a>
+</p>
+
+* **File:** [`demo_test_samples/05_skin_abrasion_wound.jpg`](demo_test_samples/05_skin_abrasion_wound.jpg)
 * **Clinical Criteria:**
   * Linear epidermal scratch and crusting from mechanical abrasion; no neoplastic lesion.
   * Validates the **Front-Stage OOD Defense**: Rejects non-dermatological inputs (`OTHER_DAMAGE`) before disease classification, preventing false-positive malignant triage alerts.
@@ -935,8 +959,8 @@ Introductory flow presenting the tripartite clinical safety disclaimer, regulato
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/01_app_onboarding_light.jpeg" width="300" alt="App Onboarding Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/01_app_onboarding_dark.jpeg" width="300" alt="App Onboarding Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/01_app_onboarding_light.jpeg" width="220" alt="App Onboarding Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/01_app_onboarding_dark.jpeg" width="220" alt="App Onboarding Dark Mode"></td>
   </tr>
 </table>
 
@@ -953,8 +977,8 @@ Login screen supporting authenticated patient profiles and one-tap language swit
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/02_app_login_light.jpeg" width="300" alt="App Login Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/02_app_login_dark.jpeg" width="300" alt="App Login Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/02_app_login_light.jpeg" width="220" alt="App Login Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/02_app_login_dark.jpeg" width="220" alt="App Login Dark Mode"></td>
   </tr>
 </table>
 
@@ -971,8 +995,8 @@ Central home hub featuring recent screenings, UV index advisory, quick scan butt
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/03_app_home_dashboard_light.jpeg" width="300" alt="Home Dashboard Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/03_app_home_dashboard_dark.jpeg" width="300" alt="Home Dashboard Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/03_app_home_dashboard_light.jpeg" width="220" alt="Home Dashboard Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/03_app_home_dashboard_dark.jpeg" width="220" alt="Home Dashboard Dark Mode"></td>
   </tr>
 </table>
 
@@ -989,8 +1013,8 @@ Fast-access drawer to initiate self-checks, book dermatology visits, read glossa
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/04_app_home_quick_actions_light.jpeg" width="300" alt="Quick Actions Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/04_app_home_quick_actions_dark.jpeg" width="300" alt="Quick Actions Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/04_app_home_quick_actions_light.jpeg" width="220" alt="Quick Actions Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/04_app_home_quick_actions_dark.jpeg" width="220" alt="Quick Actions Dark Mode"></td>
   </tr>
 </table>
 
@@ -1007,8 +1031,8 @@ In-app camera viewfinder featuring a circular lesion reticle, lighting balance s
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/05_app_camera_capture_light.jpeg" width="300" alt="Camera Capture Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/05_app_camera_capture_dark.jpeg" width="300" alt="Camera Capture Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/05_app_camera_capture_light.jpeg" width="220" alt="Camera Capture Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/05_app_camera_capture_dark.jpeg" width="220" alt="Camera Capture Dark Mode"></td>
   </tr>
 </table>
 
@@ -1025,8 +1049,8 @@ Step-by-step questionnaire capturing symptom evolution (bleeding, itching, rapid
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/06_app_questionnaire_light.jpeg" width="300" alt="Questionnaire Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/06_app_questionnaire_dark.jpeg" width="300" alt="Questionnaire Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/06_app_questionnaire_light.jpeg" width="220" alt="Questionnaire Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/06_app_questionnaire_dark.jpeg" width="220" alt="Questionnaire Dark Mode"></td>
   </tr>
 </table>
 
@@ -1043,8 +1067,8 @@ High urgency alert screen displaying red triage indicator, predicted probability
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/08_app_result_urgent_light.jpeg" width="300" alt="Urgent Result Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/08_app_result_urgent_dark.jpeg" width="300" alt="Urgent Result Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/08_app_result_urgent_light.jpeg" width="220" alt="Urgent Result Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/08_app_result_urgent_dark.jpeg" width="220" alt="Urgent Result Dark Mode"></td>
   </tr>
 </table>
 
@@ -1061,8 +1085,8 @@ Amber-tier screening result indicating pre-cancerous lesion requiring prompt out
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/09_app_result_prompt_light.jpeg" width="300" alt="Prompt Result Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/09_app_result_prompt_dark.jpeg" width="300" alt="Prompt Result Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/09_app_result_prompt_light.jpeg" width="220" alt="Prompt Result Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/09_app_result_prompt_dark.jpeg" width="220" alt="Prompt Result Dark Mode"></td>
   </tr>
 </table>
 
@@ -1079,8 +1103,8 @@ Demonstrates the OOD gate rejecting superficial abrasions (`OTHER_DAMAGE`) with 
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/11_app_result_wound_light.jpeg" width="300" alt="Wound Detection Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/11_app_result_wound_dark.jpeg" width="300" alt="Wound Detection Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/11_app_result_wound_light.jpeg" width="220" alt="Wound Detection Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/11_app_result_wound_dark.jpeg" width="220" alt="Wound Detection Dark Mode"></td>
   </tr>
 </table>
 
@@ -1097,8 +1121,8 @@ Mobile Explainable AI canvas showing activation heatmap superimposed over patien
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/12_app_gradcam_view_light.jpeg" width="300" alt="Mobile Grad-CAM Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/12_app_gradcam_view_dark.jpeg" width="300" alt="Mobile Grad-CAM Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/12_app_gradcam_view_light.jpeg" width="220" alt="Mobile Grad-CAM Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/12_app_gradcam_view_dark.jpeg" width="220" alt="Mobile Grad-CAM Dark Mode"></td>
   </tr>
 </table>
 
@@ -1115,8 +1139,8 @@ Detailed probability distribution across all 7 diagnostic classes (MEL, NV, BCC,
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/13_app_all_class_scores_light.jpeg" width="300" alt="All Class Scores Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/13_app_all_class_scores_dark.jpeg" width="300" alt="All Class Scores Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/13_app_all_class_scores_light.jpeg" width="220" alt="All Class Scores Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/13_app_all_class_scores_dark.jpeg" width="220" alt="All Class Scores Dark Mode"></td>
   </tr>
 </table>
 
@@ -1133,8 +1157,8 @@ Plain-language clinical narrative generated under safety constraints, explaining
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/14_app_understanding_result_light.jpeg" width="300" alt="Understanding Result Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/14_app_understanding_result_dark.jpeg" width="300" alt="Understanding Result Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/14_app_understanding_result_light.jpeg" width="220" alt="Understanding Result Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/14_app_understanding_result_dark.jpeg" width="220" alt="Understanding Result Dark Mode"></td>
   </tr>
 </table>
 
@@ -1151,8 +1175,8 @@ Complete localized triage display for Hindi-speaking users, translating clinical
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/15_app_hindi_result_light.jpeg" width="300" alt="Hindi Result Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/15_app_hindi_result_dark.jpeg" width="300" alt="Hindi Result Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/15_app_hindi_result_light.jpeg" width="220" alt="Hindi Result Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/15_app_hindi_result_dark.jpeg" width="220" alt="Hindi Result Dark Mode"></td>
   </tr>
 </table>
 
@@ -1169,8 +1193,8 @@ Consent management sheet allowing patients to select a registered doctor and tra
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/16_app_share_with_doctor_light.jpeg" width="300" alt="Share With Doctor Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/16_app_share_with_doctor_dark.jpeg" width="300" alt="Share With Doctor Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/16_app_share_with_doctor_light.jpeg" width="220" alt="Share With Doctor Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/16_app_share_with_doctor_dark.jpeg" width="220" alt="Share With Doctor Dark Mode"></td>
   </tr>
 </table>
 
@@ -1187,8 +1211,8 @@ Appointment booking interface enabling patients to select specialist doctors, pr
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/17_app_book_appointment_light.jpeg" width="300" alt="Book Appointment Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/17_app_book_appointment_dark.jpeg" width="300" alt="Book Appointment Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/17_app_book_appointment_light.jpeg" width="220" alt="Book Appointment Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/17_app_book_appointment_dark.jpeg" width="220" alt="Book Appointment Dark Mode"></td>
   </tr>
 </table>
 
@@ -1205,8 +1229,8 @@ Patient appointment management screen showing confirmed consultations, pending r
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/18_app_appointments_tab_light.jpeg" width="300" alt="Appointments Tab Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/18_app_appointments_tab_dark.jpeg" width="300" alt="Appointments Tab Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/18_app_appointments_tab_light.jpeg" width="220" alt="Appointments Tab Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/18_app_appointments_tab_dark.jpeg" width="220" alt="Appointments Tab Dark Mode"></td>
   </tr>
 </table>
 
@@ -1223,8 +1247,8 @@ Real-time notification bell displaying doctor review confirmations, appointment 
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/19_app_notifications_light.jpeg" width="300" alt="Notifications Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/19_app_notifications_dark.jpeg" width="300" alt="Notifications Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/19_app_notifications_light.jpeg" width="220" alt="Notifications Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/19_app_notifications_dark.jpeg" width="220" alt="Notifications Dark Mode"></td>
   </tr>
 </table>
 
@@ -1241,8 +1265,8 @@ Interactive AI chatbot answering patient questions, explaining medical terms, an
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/20_app_ai_chatbot_light.jpeg" width="300" alt="AI Chatbot Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/20_app_ai_chatbot_dark.jpeg" width="300" alt="AI Chatbot Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/20_app_ai_chatbot_light.jpeg" width="220" alt="AI Chatbot Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/20_app_ai_chatbot_dark.jpeg" width="220" alt="AI Chatbot Dark Mode"></td>
   </tr>
 </table>
 
@@ -1259,8 +1283,8 @@ Contextual prompt chips providing structured follow-up questions tailored to the
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/21_app_chatbot_suggestions_light.jpeg" width="300" alt="Chatbot Suggestions Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/21_app_chatbot_suggestions_dark.jpeg" width="300" alt="Chatbot Suggestions Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/21_app_chatbot_suggestions_light.jpeg" width="220" alt="Chatbot Suggestions Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/21_app_chatbot_suggestions_dark.jpeg" width="220" alt="Chatbot Suggestions Dark Mode"></td>
   </tr>
 </table>
 
@@ -1277,8 +1301,8 @@ Searchable archive displaying all past screenings, timestamps, diagnostic labels
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/22_app_screening_history_light.jpeg" width="300" alt="Screening History Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/22_app_screening_history_dark.jpeg" width="300" alt="Screening History Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/22_app_screening_history_light.jpeg" width="220" alt="Screening History Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/22_app_screening_history_dark.jpeg" width="220" alt="Screening History Dark Mode"></td>
   </tr>
 </table>
 
@@ -1295,8 +1319,8 @@ Configurable calendar reminder enabling patients to schedule monthly skin self-e
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/23_app_monthly_push_reminder_light.jpeg" width="300" alt="Monthly Push Reminder Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/23_app_monthly_push_reminder_dark.jpeg" width="300" alt="Monthly Push Reminder Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/23_app_monthly_push_reminder_light.jpeg" width="220" alt="Monthly Push Reminder Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/23_app_monthly_push_reminder_dark.jpeg" width="220" alt="Monthly Push Reminder Dark Mode"></td>
   </tr>
 </table>
 
@@ -1313,8 +1337,8 @@ Directory of certified dermatologists with medical council registration numbers,
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/24_app_find_dermatologist_light.jpeg" width="300" alt="Find a Dermatologist Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/24_app_find_dermatologist_dark.jpeg" width="300" alt="Find a Dermatologist Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/24_app_find_dermatologist_light.jpeg" width="220" alt="Find a Dermatologist Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/24_app_find_dermatologist_dark.jpeg" width="220" alt="Find a Dermatologist Dark Mode"></td>
   </tr>
 </table>
 
@@ -1331,8 +1355,70 @@ Educational library covering skin cancer prevention, self-examination protocols,
     <th width="50%" align="center">Dark Mode</th>
   </tr>
   <tr>
-    <td align="center"><img src="Appp%20demo%20images/25_app_skin_health_guide_light.jpeg" width="300" alt="Skin Health Guide Light Mode"></td>
-    <td align="center"><img src="Appp%20demo%20images/25_app_skin_health_guide_dark.jpeg" width="300" alt="Skin Health Guide Dark Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/25_app_skin_health_guide_light.jpeg" width="220" alt="Skin Health Guide Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/25_app_skin_health_guide_dark.jpeg" width="220" alt="Skin Health Guide Dark Mode"></td>
+  </tr>
+</table>
+
+*Figure 9.23: Skin health educational library.*
+
+---
+
+### 9.24 Interactive ABCDE Melanoma Criteria Educational Guide
+Visual educational module detailing **A**symmetry, **B**order, **C**olor, **D**iameter, and **E**volving melanoma signs.
+
+<table>
+  <tr>
+    <th width="50%" align="center">Light Mode</th>
+    <th width="50%" align="center">Dark Mode</th>
+  </tr>
+  <tr>
+    <td align="center"><img src="Appp%20demo%20images/26_app_abcde_rule_guide_light.jpeg" width="220" alt="ABCDE Rule Guide Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/26_app_abcde_rule_guide_dark.jpeg" width="220" alt="ABCDE Rule Guide Dark Mode"></td>
+  </tr>
+</table>
+
+*Figure 9.24: ABCDE melanoma awareness and criteria guide (`Appp demo images/26_app_abcde_rule_guide_light.jpeg` & `_dark.jpeg`).*
+
+---
+
+### 9.25 Fitzpatrick Skin Phototype Interactive Quiz & UV Suncare
+Calculates the user's Fitzpatrick skin phototype (Type I–VI) and generates personalized broad-spectrum SPF advice.
+
+<table>
+  <tr>
+    <th width="50%" align="center">Light Mode</th>
+    <th width="50%" align="center">Dark Mode</th>
+  </tr>
+  <tr>
+    <td align="center"><img src="Appp%20demo%20images/27_app_skin_type_quiz_light.jpeg" width="220" alt="Skin Type Quiz Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/27_app_skin_type_quiz_dark.jpeg" width="220" alt="Skin Type Quiz Dark Mode"></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="Appp%20demo%20images/27.1_app_skin_type_quiz_light_result.jpeg" width="220" alt="Skin Type Result Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/27.1_app_skin_type_quiz_dark_result.jpeg" width="220" alt="Skin Type Result Dark Mode"></td>
+  </tr>
+</table>
+
+*Figure 9.25: Fitzpatrick skin phototyping quiz and UV recommendations (`Appp demo images/27_app_skin_type_quiz_light.jpeg` & `_dark.jpeg`).*
+
+---
+
+### 9.26 Patient Profile, Doctor Consent Revocation & Privacy Controls
+Profile settings screen allowing patients to manage active doctor consents, review privacy policies, and securely log out.
+
+<table>
+  <tr>
+    <th width="50%" align="center">Light Mode</th>
+    <th width="50%" align="center">Dark Mode</th>
+  </tr>
+  <tr>
+    <td align="center"><img src="Appp%20demo%20images/28_app_user_profile_light.jpeg" width="220" alt="User Profile Light Mode"></td>
+    <td align="center"><img src="Appp%20demo%20images/28_app_user_profile_dark.jpeg" width="220" alt="User Profile Dark Mode"></td>
+  </tr>
+</table>
+
+*Figure 9.26: Profile settings and consent management controls (`Appp demo images/28_app_user_profile_light.jpeg` & `_dark.jpeg`).*in Health Guide Dark Mode"></td>
   </tr>
 </table>
 
